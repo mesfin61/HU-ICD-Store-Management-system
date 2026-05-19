@@ -32,7 +32,7 @@ function StockCategory() {
               dataKey="value"
               nameKey="category"
               cx="50%"
-              cy="50%"
+              cy="40%"
               innerRadius={56}
               outerRadius={67}
               paddingAngle={3}
