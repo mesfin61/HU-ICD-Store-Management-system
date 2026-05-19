@@ -3,6 +3,7 @@ import Stats from "../components/dashboard/Stats";
 import InventoryTrendsChart from "../components/dashboard/InventoryTrendsChart";
 import QuickActions from "../components/dashboard/QuickActions";
 import StockCategory from "../components/dashboard/StockCategory";
+import RecentActivities from "../components/dashboard/RecentActivities";
 
 export default function Dashboard() {
   return (
@@ -18,7 +19,7 @@ export default function Dashboard() {
           <StockCategory />
         </div>
       </div>
-      <div></div>
+      <RecentActivities />
     </div>
   );
 }
