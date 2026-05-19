@@ -27,8 +27,8 @@ const dataWithDay = data.map((d) => {
 function InventoryTrendsChart() {
   return (
     <div
-      className="rounded-lg bg-white border-black border-solid divide-black shadow"
-      style={{ width: "60%", height: 300 }}
+      className="rounded-lg bg-white border-black border-solid divide-black shadow-lg p-2"
+      style={{ width: "100%", height: 450 }}
     >
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
@@ -36,7 +36,6 @@ function InventoryTrendsChart() {
           margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
           barCategoryGap="20%"
         >
-          <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="day" />
           <YAxis />
           <Tooltip />

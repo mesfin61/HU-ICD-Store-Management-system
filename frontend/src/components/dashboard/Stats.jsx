@@ -30,7 +30,7 @@ function Stats() {
         </div>
       </div>
       <div className="flex gap-2 mt-2">
-        <span className="flex p-4 gap-6 items-center rounded-lg border bg-white w-64 h-24">
+        <span className="flex p-4 gap-6 shadow-lg items-center rounded-lg border bg-white w-64 h-24">
           <span className="flex flex-col mr-2 flex-auto">
             <h2 className="text-gray-600 text-lg flex-1 font-semibold">
               Total items
@@ -47,7 +47,7 @@ function Stats() {
             <FaCalendarCheck style={{ color: "#003b72", fontSize: "24px" }} />
           </span>
         </span>
-        <span className="flex p-4 gap-6 rounded-lg border items-center space-between bg-white w-64 h-24">
+        <span className="flex p-4 gap-6 shadow-lg rounded-lg border items-center space-between bg-white w-64 h-24">
           <span className="flex flex-col flex-1 mr-2 ">
             <h2 className="text-gray-600 text-lg flex-1 font-semibold">
               Available Stock
@@ -66,7 +66,7 @@ function Stats() {
             />
           </span>
         </span>
-        <span className="flex p-4 gap-6 items-center rounded-lg border bg-white w-64 h-24">
+        <span className="flex p-4 gap-6 shadow-lg items-center rounded-lg border bg-white w-64 h-24">
           <span className="flex flex-col flex-1 mr-2">
             <h2 className="text-gray-600 text-lg flex-1 font-semibold">
               Low Stocks Alert
@@ -83,7 +83,7 @@ function Stats() {
             <MdAddAlert style={{ color: "#b91f1f", fontSize: "24px" }} />
           </span>
         </span>
-        <span className="flex p-4 gap-6 rounded-lg border items-center space-between bg-white w-64 h-24">
+        <span className="flex p-4 gap-6 shadow-lg rounded-lg border items-center space-between bg-white w-64 h-24">
           <span className="flex flex-col flex-auto ">
             <h2 className="text-gray-600 text-lg flex-1 font-semibold">
               pending requests
