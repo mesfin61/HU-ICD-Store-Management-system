@@ -1,10 +1,13 @@
 import React from "react";
+import Stats from "../components/dashboard/Stats";
 
 export default function Dashboard() {
   return (
-    <div>
-      <h2 className="text-2xl font-semibold mb-4">Store Dashboard</h2>
-      <p>Overview of current ICT assets and pending administrative tasks.</p>
+    <div className="flex flex-col gap-3">
+      <Stats />
+
+      <div></div>
+      <div></div>
     </div>
   );
 }
