@@ -5,7 +5,7 @@ import "./App.css";
 import MainLayout from "./components/layout/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
-import Stock from "./pages/Stock";
+import Stock from "./pages/StockManagement";
 import Requests from "./pages/Requests";
 import Reports from "./pages/Reports";
 import Users from "./pages/Users";
