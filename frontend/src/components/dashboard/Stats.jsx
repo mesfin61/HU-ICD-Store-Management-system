@@ -39,7 +39,7 @@ function Stats() {
             <p className="text-green-600 flex flex-1 items-center gap-1">
               <span>
                 <FaArrowTrendUp />
-              </span>{" "}
+              </span>
               4.2%
             </p>
           </span>
