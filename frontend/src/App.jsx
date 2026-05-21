@@ -11,6 +11,7 @@ import Reports from "./pages/Reports";
 import Users from "./pages/Users";
 import Settings from "./pages/Settings";
 import Logout from "./pages/Logout";
+import AddItem from "./components/inventory/AddItem";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="inventory" element={<Inventory />} />
+        <Route path="/inventory/add-new-item" element={<AddItem />} />
         <Route path="stock" element={<Stock />} />
         <Route path="requests" element={<Requests />} />
         <Route path="reports" element={<Reports />} />

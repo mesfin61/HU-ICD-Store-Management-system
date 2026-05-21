@@ -3,8 +3,13 @@ import { FaDownload, FaUpload } from "react-icons/fa";
 import { PiStorefront } from "react-icons/pi";
 import { IoBarChartSharp } from "react-icons/io5";
 import { FaCircleCheck } from "react-icons/fa6";
+import {
+  getInventorySummary,
+  getStoredInventoryItems,
+} from "../inventory/inventoryStorage";
 
 function StockOperations({ onProcessTransaction }) {
+  const summary = getInventorySummary(getStoredInventoryItems());
   const [success, setSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [mode, setMode] = useState("inbound");
@@ -15,10 +20,10 @@ function StockOperations({ onProcessTransaction }) {
   const [reference, setReference] = useState("");
   const [remarks, setRemarks] = useState("");
 
-  const currentStock = 142;
-  const projected = 138;
-  const inTransit = 24;
-  const safetyLevel = 15;
+  const currentStock = summary.totalItems;
+  const projected = Math.max(summary.totalItems - summary.lowStockItems, 0);
+  const inTransit = summary.outStockItems + summary.lowStockItems;
+  const safetyLevel = Math.max(summary.lowStockItems, 5);
 
   const selectedItemLabel = {
     "": "Select an item from inventory...",
@@ -125,7 +130,7 @@ function StockOperations({ onProcessTransaction }) {
                   {mode === "inbound" ? <FaDownload /> : <FaUpload />}{" "}
                 </span>
                 New
-                {mode === "inbound" ? "Stock-In" : "Stock-Out"} Entry
+                {mode === "inbound" ? " Stock-In" : " Stock-Out"} Entry
               </h3>
               <span className="text-xs bg-blue-600 font-semibold text-white px-2 py-1 rounded">
                 {mode === "inbound" ? "INBOUND MODE" : "OUTBOUND MODE"}

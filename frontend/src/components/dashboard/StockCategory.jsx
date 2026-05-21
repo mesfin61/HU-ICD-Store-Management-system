@@ -7,16 +7,26 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+import { getStoredInventoryItems } from "../inventory/inventoryStorage";
 
-const data = [
-  { category: "Computing Devices", value: 400 },
-  { category: "Networking Hardware", value: 300 },
-  { category: "Accessories", value: 300 },
-];
+const fallbackData = [{ category: "Inventory", value: 1 }];
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
 function StockCategory() {
+  const storedItems = getStoredInventoryItems();
+  const categoryMap = storedItems.reduce((accumulator, item) => {
+    accumulator[item.category] = (accumulator[item.category] || 0) + 1;
+    return accumulator;
+  }, {});
+
+  const data = Object.entries(categoryMap).map(([category, value]) => ({
+    category,
+    value,
+  }));
+
+  const chartData = data.length > 0 ? data : fallbackData;
+
   return (
     <div className="flex flex-col p-4 bg-white rounded-lg shadow-lg ">
       <h2 className="text-slate-900 font-semibold">Stock by Category</h2>
@@ -28,7 +38,7 @@ function StockCategory() {
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={data}
+              data={chartData}
               dataKey="value"
               nameKey="category"
               cx="50%"
@@ -37,7 +47,7 @@ function StockCategory() {
               outerRadius={67}
               paddingAngle={3}
             >
-              {data.map((entry, index) => (
+              {chartData.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
                   fill={COLORS[index % COLORS.length]}
@@ -45,6 +55,7 @@ function StockCategory() {
               ))}
             </Pie>
             <Tooltip formatter={(value) => [value, "Items"]} />
+            <Legend />
           </PieChart>
         </ResponsiveContainer>
       </div>
