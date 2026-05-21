@@ -11,8 +11,19 @@ import {
   MdOutlinePendingActions,
 } from "react-icons/md";
 import { IoWarning } from "react-icons/io5";
+import {
+  getInventorySummary,
+  getStoredInventoryItems,
+} from "../inventory/inventoryStorage";
 
 function Stats() {
+  const summary = getInventorySummary(getStoredInventoryItems());
+  const availableStock = Math.max(
+    summary.totalItems - summary.outStockItems,
+    0,
+  );
+  const pendingRequests = summary.lowStockItems + summary.outStockItems;
+
   return (
     <section className="flex flex-col gap-1">
       <div className="flex gap-6 items-center justify-between w-full">
@@ -35,13 +46,7 @@ function Stats() {
             <h2 className="text-gray-600 text-lg flex-1 font-semibold">
               Total items
             </h2>
-            <h1 className="">1253</h1>
-            <p className="text-green-600 flex flex-1 items-center gap-1">
-              <span>
-                <FaArrowTrendUp />
-              </span>
-              4.2%
-            </p>
+            <h1>{summary.totalItems}</h1>
           </span>
           <span className="p-3 items-center rounded-lg bg-slate-400 ">
             <FaCalendarCheck style={{ color: "#003b72", fontSize: "24px" }} />
@@ -52,7 +57,9 @@ function Stats() {
             <h2 className="text-gray-600 text-lg flex-1 font-semibold">
               Available Stock
             </h2>
-            <h1 className="text-green-600 flex-1 font-bold">1253</h1>
+            <h1 className="text-green-600 flex-1 font-bold">
+              {availableStock}
+            </h1>
             <p className="text-green-600 flex flex-1 items-center gap-1">
               <span>
                 <FaRegCircleCheck style={{ color: "green" }} />
@@ -71,7 +78,9 @@ function Stats() {
             <h2 className="text-gray-600 text-lg flex-1 font-semibold">
               Low Stocks Alert
             </h2>
-            <h1 className="text-red-600 flex-1 font-bold">1253</h1>
+            <h1 className="text-red-600 flex-1 font-bold">
+              {summary.lowStockItems}
+            </h1>
             <p className="text-sm text-red-600 flex flex-auto items-center gap-1 font-semibold">
               <span>
                 <IoWarning />
@@ -88,8 +97,12 @@ function Stats() {
             <h2 className="text-gray-600 text-lg flex-1 font-semibold">
               pending requests
             </h2>
-            <h1 className="text-sm text-amber-600 font-semibold">1253</h1>
-            <p className="text-amber-600 text-sm font-semibold">9 new today</p>
+            <h1 className="text-sm text-amber-600 font-semibold">
+              {pendingRequests}
+            </h1>
+            <p className="text-amber-600 text-sm font-semibold">
+              {pendingRequests} flagged items
+            </p>
           </span>
           <span className="p-3 items-center rounded-lg bg-amber-300">
             <MdOutlinePendingActions
