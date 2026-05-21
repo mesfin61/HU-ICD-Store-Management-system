@@ -4,7 +4,10 @@ import { PiStorefront } from "react-icons/pi";
 import { GoAlert } from "react-icons/go";
 import { IoMdCloseCircleOutline } from "react-icons/io";
 import { MdCategory } from "react-icons/md";
-import { getInventorySummary, getStoredInventoryItems } from "./inventoryStorage";
+import {
+  getInventorySummary,
+  getStoredInventoryItems,
+} from "./inventoryStorage";
 
 function InventoryStats() {
   const summary = getInventorySummary(getStoredInventoryItems());
@@ -49,7 +52,9 @@ function InventoryStats() {
             <h2 className="text-gray-600 text-lg flex-1 font-semibold">
               Low Stocks Item
             </h2>
-            <h1 className="text-green-600 flex-1 font-bold">{summary.lowStockItems}</h1>
+            <h1 className="text-green-600 flex-1 font-bold">
+              {summary.lowStockItems}
+            </h1>
           </span>
           <span className="p-3 items-center rounded-lg bg-green-300 ">
             <GoAlert style={{ color: "green", fontSize: "24px" }} />
@@ -60,7 +65,9 @@ function InventoryStats() {
             <h2 className="text-gray-600 text-lg flex-1 font-semibold">
               Out Stock Item
             </h2>
-            <h1 className="text-red-600 flex-1 font-bold">{summary.outStockItems}</h1>
+            <h1 className="text-red-600 flex-1 font-bold">
+              {summary.outStockItems}
+            </h1>
             <p className="text-sm text-red-600 flex flex-auto items-center gap-1 font-semibold">
               require action
             </p>
@@ -76,7 +83,9 @@ function InventoryStats() {
             <h2 className="text-gray-600 text-lg flex-1 font-semibold">
               Active Categories
             </h2>
-            <h1 className="text-sm text-amber-600 font-semibold">{summary.activeCategories}</h1>
+            <h1 className="text-sm text-amber-600 font-semibold">
+              {summary.activeCategories}
+            </h1>
           </span>
           <span className="p-3 items-center rounded-lg bg-amber-300">
             <MdCategory style={{ color: "#d97706", fontSize: "24px" }} />

@@ -38,11 +38,31 @@ function AddItem() {
     const newItem = buildInventoryItem(form);
     const currentItems = getStoredInventoryItems();
 
-    saveStoredInventoryItems([...currentItems, newItem]);
+    // Ensure the itemCode/id is unique to avoid duplicate React keys
+    let uniqueItem = { ...newItem };
+    const originalId = uniqueItem.id;
+    let attempt = 0;
+    while (currentItems.some((it) => it.id === uniqueItem.id)) {
+      attempt += 1;
+      const suffix = `${Date.now().toString().slice(-6)}${attempt > 1 ? `-${attempt}` : ""}`;
+      const base =
+        (form.itemCode || form.itemName || "ITEM").toString().trim() || "ITEM";
+      const candidate = `${base}-${suffix}`;
+      uniqueItem.itemCode = candidate;
+      uniqueItem.id = candidate;
+    }
+
+    if (uniqueItem.id !== originalId) {
+      console.info(
+        `[Inventory] AddItem: resolved id collision, original="${originalId}", new="${uniqueItem.id}"`,
+      );
+    }
+
+    saveStoredInventoryItems([...currentItems, uniqueItem]);
     navigate("/inventory", {
       state: {
-        savedItemName: newItem.itemName,
-        savedItemCode: newItem.itemCode,
+        savedItemName: uniqueItem.itemName,
+        savedItemCode: uniqueItem.itemCode,
       },
     });
   };
@@ -52,10 +72,10 @@ function AddItem() {
   const previewVendor = form.vendor.trim() || "Cisco Systems";
 
   return (
-    <div className="flex gap-6 px-6 py-6">
+    <div className="flex flex-col lg:flex-row gap-6 px-4 py-4">
       <form
         onSubmit={handleSubmit}
-        className="w-2/3 rounded-lg bg-white p-6 shadow"
+        className="w-full lg:w-2/3 rounded-lg bg-white p-6 shadow"
       >
         <div className="mb-6 mt-0 bg-secondary-container p-2">
           <h2 className="text-2xl font-bold text-primary">Item Registration</h2>
@@ -75,8 +95,8 @@ function AddItem() {
             </h3>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2">
               <label className="block font-medium text-primary">
                 Item Name
               </label>
@@ -117,7 +137,7 @@ function AddItem() {
               </select>
             </div>
 
-            <div className="col-span-3">
+            <div className="md:col-span-3">
               <label className="block font-medium text-primary">
                 Description
               </label>
@@ -141,7 +161,7 @@ function AddItem() {
             <h3 className="font-bold text-primary">Stock Details</h3>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-primary">
                 Initial Quantity
@@ -194,7 +214,7 @@ function AddItem() {
             <h3 className="font-bold text-primary">Specifications</h3>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-primary">
                 Vendor/Manufacturer
@@ -253,7 +273,7 @@ function AddItem() {
         </div>
       </form>
 
-      <aside className="w-1/3 space-y-4">
+      <aside className="w-full lg:w-1/3 space-y-4">
         <div className="rounded-lg bg-white pb-4 shadow pt-0">
           <h1 className="bg-primary p-3 text-lg font-bold text-white">
             LIVE PREVIEW

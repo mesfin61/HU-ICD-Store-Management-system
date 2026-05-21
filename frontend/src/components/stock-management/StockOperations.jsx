@@ -77,9 +77,9 @@ function StockOperations({ onProcessTransaction }) {
   };
 
   return (
-    <div className="px-6 pt-1 pb-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
+    <div className="px-0 pt-1 pb-6 md:px-0">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
+        <div className="min-w-0">
           <h2 className="text-2xl font-semibold text-primary">
             Stock Operations
           </h2>
@@ -87,15 +87,15 @@ function StockOperations({ onProcessTransaction }) {
             Manage inbound and outbound technical assets for the directorate.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
           <button
-            className={`px-4 py-2 rounded-md ${mode === "inbound" ? "bg-blue-900 text-white" : "bg-white text-primary border border-primary"}`}
+            className={`w-full sm:w-auto px-4 py-2 rounded-md ${mode === "inbound" ? "bg-blue-900 text-white" : "bg-white text-primary border border-primary"}`}
             onClick={() => setMode("inbound")}
           >
             Stock-In
           </button>
           <button
-            className={`px-4 py-2 rounded-md ${mode === "outbound" ? "bg-blue-900 text-white" : "bg-white text-primary border border-primary"}`}
+            className={`w-full sm:w-auto px-4 py-2 rounded-md ${mode === "outbound" ? "bg-blue-900 text-white" : "bg-white text-primary border border-primary"}`}
             onClick={() => setMode("outbound")}
           >
             Stock-Out
@@ -103,9 +103,9 @@ function StockOperations({ onProcessTransaction }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {success === true ? (
-          <div className="flex items-center flex-col p-8 bg-white rounded-lg shadow-lg ">
+          <div className="flex items-center flex-col p-6 sm:p-8 bg-white rounded-lg shadow-lg w-full lg:col-span-2">
             <span className="animate-bounce p-5 bg-blue-500 rounded-full mb-2">
               <FaCircleCheck style={{ color: "#003b72", fontSize: "48px" }} />
             </span>
@@ -123,9 +123,9 @@ function StockOperations({ onProcessTransaction }) {
             </span>
           </div>
         ) : (
-          <div className="lg:col-span-2 bg-white border rounded-lg shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold flex flex-1 items-center gap-1 text-primary ">
+          <div className="lg:col-span-2 bg-white border rounded-lg shadow-sm p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <h3 className="text-lg font-bold flex flex-1 items-center gap-1 text-primary min-w-0 ">
                 <span>
                   {mode === "inbound" ? <FaDownload /> : <FaUpload />}{" "}
                 </span>
@@ -252,20 +252,20 @@ function StockOperations({ onProcessTransaction }) {
           </div>
         )}
 
-        <aside className="space-y-4">
+        <aside className="space-y-4 lg:sticky lg:top-4">
           {mode === "inbound" ? (
             <div className="bg-white border rounded-lg p-4 shadow-sm w-full">
               <h4 className="text-md font-medium text-primary mb-3">
                 Item Insight
               </h4>
 
-              <span className="flex gap-2 mt-1 items-center p-3 bg-secondary-container rounded-md ">
+              <span className="flex flex-col sm:flex-row gap-2 mt-1 items-start sm:items-center p-3 bg-secondary-container rounded-md ">
                 <span className="p-3 bg-white border-primary rounded">
                   <PiStorefront
                     style={{ color: "#003b72", fontSize: "24px" }}
                   />
                 </span>
-                <span className="ml-3 text-sm font-medium text-primary">
+                <span className="sm:ml-3 text-sm font-medium text-primary">
                   <h2>Current Stock</h2>
                   <span className="text-lg font-bold text-primary">
                     {currentStock} Units
@@ -273,7 +273,7 @@ function StockOperations({ onProcessTransaction }) {
                 </span>
               </span>
 
-              <span className="flex justify-between mt-3 py-2 px-4 gap-2 text-center text-sm text-gray-600 mb-3">
+              <span className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3 text-center text-sm text-gray-600 mb-3">
                 <span className="flex flex-col items-center border border-primary rounded px-5 py-2">
                   <span className="text-xs font-medium text-primary">
                     IN TRANSIT
@@ -290,7 +290,6 @@ function StockOperations({ onProcessTransaction }) {
                     {safetyLevel} Units
                   </span>
                 </span>
-                <span />
               </span>
             </div>
           ) : (
@@ -299,13 +298,13 @@ function StockOperations({ onProcessTransaction }) {
                 items insight
               </h1>
 
-              <span className="flex gap-2 mt-1 items-center p-3 bg-secondary-container rounded-md ">
+              <span className="flex flex-col sm:flex-row gap-2 mt-1 items-start sm:items-center p-3 bg-secondary-container rounded-md ">
                 <span className="p-3 bg-white border-primary rounded">
                   <PiStorefront
                     style={{ color: "#003b72", fontSize: "24px" }}
                   />
                 </span>
-                <span className="ml-3 text-sm font-medium text-primary">
+                <span className="sm:ml-3 text-sm font-medium text-primary">
                   <h2>Current Stock</h2>
                   <span className="text-lg font-bold text-primary">
                     {currentStock} Units
@@ -313,13 +312,13 @@ function StockOperations({ onProcessTransaction }) {
                 </span>
               </span>
 
-              <span className="flex gap-2 mt-1 items-center p-3 bg-secondary-container rounded-md">
+              <span className="flex flex-col sm:flex-row gap-2 mt-1 items-start sm:items-center p-3 bg-secondary-container rounded-md">
                 <span className="p-3 bg-white border-primary rounded">
                   <IoBarChartSharp
                     style={{ color: "#003b72", fontSize: "24px" }}
                   />
                 </span>
-                <span className="ml-3 text-sm font-medium text-primary">
+                <span className="sm:ml-3 text-sm font-medium text-primary">
                   <h2>projected Stock</h2>
                   <span className="text-lg font-bold text-primary">
                     {projected} Units
@@ -327,7 +326,7 @@ function StockOperations({ onProcessTransaction }) {
                 </span>
               </span>
 
-              <span className="flex justify-between mt-3 py-2 px-4 gap-2 text-center text-sm text-gray-600 mb-3">
+              <span className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3 text-center text-sm text-gray-600 mb-3">
                 <span className="flex flex-col items-center border border-primary rounded px-5 py-2">
                   <span className="text-xs font-medium text-primary">
                     IN TRANSIT
@@ -344,7 +343,6 @@ function StockOperations({ onProcessTransaction }) {
                     {safetyLevel} Units
                   </span>
                 </span>
-                <span />
               </span>
             </div>
           )}

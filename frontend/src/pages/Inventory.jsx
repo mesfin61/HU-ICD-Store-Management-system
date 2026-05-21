@@ -2,11 +2,27 @@ import React from "react";
 import { useLocation } from "react-router-dom";
 import InventoryStats from "../components/inventory/InventoryStats";
 import ItemLists from "../components/inventory/ItemLists";
+import { dedupeStoredInventoryItems } from "../components/inventory/inventoryStorage";
+import { useEffect } from "react";
 
 function Inventory() {
   const location = useLocation();
   const savedItemName = location.state?.savedItemName;
   const savedItemCode = location.state?.savedItemCode;
+
+  useEffect(() => {
+    try {
+      const res = dedupeStoredInventoryItems();
+      if (res && res.fixed) {
+        console.info(
+          "[Inventory] dedupeStoredInventoryItems fixed duplicates",
+          res.items.length,
+        );
+      }
+    } catch (err) {
+      console.error("[Inventory] dedupe call failed", err);
+    }
+  }, []);
 
   return (
     <div className="flex flex-col gap-3">

@@ -28,12 +28,12 @@ function StockCategory() {
   const chartData = data.length > 0 ? data : fallbackData;
 
   return (
-    <div className="flex flex-col p-4 bg-white rounded-lg shadow-lg ">
+    <div className="flex flex-col p-4 bg-white rounded-lg shadow-lg w-full">
       <h2 className="text-slate-900 font-semibold">Stock by Category</h2>
 
       <div
-        style={{ width: "100%", height: 220 }}
-        className=" flex overflow-hidden"
+        style={{ width: "100%", height: "clamp(200px, 32vw, 260px)" }}
+        className="flex overflow-hidden"
       >
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -43,8 +43,8 @@ function StockCategory() {
               nameKey="category"
               cx="50%"
               cy="40%"
-              innerRadius={56}
-              outerRadius={67}
+              innerRadius={42}
+              outerRadius={58}
               paddingAngle={3}
             >
               {chartData.map((entry, index) => (

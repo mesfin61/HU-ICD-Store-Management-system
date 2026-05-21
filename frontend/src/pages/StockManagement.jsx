@@ -10,7 +10,7 @@ export default function Stock() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 px-4 py-4 md:px-6 md:py-5">
       <StockOperations onProcessTransaction={handleProcessTransaction} />
       <RecentMovements movements={movements} />
     </div>

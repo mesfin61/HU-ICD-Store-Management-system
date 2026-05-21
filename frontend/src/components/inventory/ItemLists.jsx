@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { getStoredInventoryItems } from "./inventoryStorage";
+import { getStoredInventoryItems, deriveStatus } from "./inventoryStorage";
 
 function ItemLists() {
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -31,7 +31,7 @@ function ItemLists() {
 
   return (
     <div className="flex flex-col rounded border-black shadow bg-white">
-      <div className="flex gap-2 bg-secondary-container p-2 border-b-2 border-b-gray-600">
+      <div className="flex flex-col md:flex-row gap-2 bg-secondary-container p-2 border-b-2 border-b-gray-600">
         <select
           value={categoryFilter}
           onChange={(event) => setCategoryFilter(event.target.value)}
@@ -74,45 +74,104 @@ function ItemLists() {
         </select>
       </div>
 
-      <table className="w-full min-w-[720px] table-auto text-sm">
-        <thead>
-          <tr className="bg-secondary-container text-left text-xs tracking-wider text-primary font-medium">
-            <th className="p-3">Code</th>
-            <th className="p-3">Item Name</th>
-            <th className="p-3">Category</th>
-            <th className="p-3">Qty</th>
-            <th className="p-3">Unit</th>
-            <th className="p-3">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item) => (
-            <tr
-              key={item.id}
-              className="border-b last:border-b-0 hover:bg-gray-50"
-            >
-              <td className="p-3 font-medium text-primary">{item.itemCode}</td>
-              <td className="p-3">{item.itemName}</td>
-              <td className="p-3">{item.category}</td>
-              <td className="p-3">{item.initialQty}</td>
-              <td className="p-3">{item.unit}</td>
-              <td className="p-3">
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                    item.status === "In Stock"
-                      ? "bg-emerald-100 text-emerald-700"
-                      : item.status === "Low Stock"
-                        ? "bg-amber-100 text-amber-700"
-                        : "bg-red-100 text-red-700"
-                  }`}
+      {/* Table for md+ screens */}
+      <div className="hidden md:block">
+        <div className="overflow-x-auto">
+          <table className="w-full table-auto text-sm">
+            <thead>
+              <tr className="bg-secondary-container text-left text-xs tracking-wider text-primary font-medium">
+                <th className="p-3">Code</th>
+                <th className="p-3">Item Name</th>
+                <th className="p-3">Category</th>
+                <th className="p-3">Qty</th>
+                <th className="p-3">Unit</th>
+                <th className="p-3">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item) => (
+                <tr
+                  key={item.id}
+                  className="border-b last:border-b-0 hover:bg-gray-50"
                 >
-                  {item.status}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                  <td className="p-3 font-medium text-primary">
+                    {item.itemCode}
+                  </td>
+                  <td className="p-3">{item.itemName}</td>
+                  <td className="p-3">{item.category}</td>
+                  <td className="p-3">{item.initialQty}</td>
+                  <td className="p-3">{item.unit}</td>
+                  <td className="p-3">
+                    {(() => {
+                      const status = deriveStatus(
+                        item.initialQty,
+                        item.minStock,
+                      );
+                      return (
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            status === "In Stock"
+                              ? "bg-emerald-100 text-emerald-700"
+                              : status === "Low Stock"
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {status}
+                        </span>
+                      );
+                    })()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Card list for small screens */}
+      <div className="block md:hidden p-2">
+        <div className="space-y-3">
+          {items.map((item) => {
+            const status = deriveStatus(item.initialQty, item.minStock);
+            return (
+              <div
+                key={item.id}
+                className="rounded-md border bg-white p-3 shadow-sm"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="min-w-0">
+                    <div className="text-sm text-primary font-medium truncate">
+                      {item.itemName}
+                    </div>
+                    <div className="text-xs text-slate-500 truncate">
+                      {item.itemCode} • {item.category}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-semibold text-primary">
+                      {item.initialQty} {item.unit}
+                    </div>
+                    <div className="mt-1">
+                      <span
+                        className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                          status === "In Stock"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : status === "Low Stock"
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
