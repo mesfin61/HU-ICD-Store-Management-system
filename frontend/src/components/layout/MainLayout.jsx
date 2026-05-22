@@ -9,7 +9,7 @@ export default function MainLayout() {
       <SideBar />
       <div className="flex-1 ml-64">
         <HeaderBar />
-        <main className="p-6">
+        <main className="p-2">
           <Outlet />
         </main>
       </div>

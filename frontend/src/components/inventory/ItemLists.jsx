@@ -74,7 +74,6 @@ function ItemLists() {
         </select>
       </div>
 
-      {/* Table for md+ screens */}
       <div className="hidden md:block">
         <div className="overflow-x-auto">
           <table className="w-full table-auto text-sm">
