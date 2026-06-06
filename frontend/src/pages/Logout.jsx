@@ -5,7 +5,7 @@ export default function Logout() {
   const nav = useNavigate();
   useEffect(() => {
     // placeholder: perform logout then redirect
-    nav("/");
+    nav("/login");
   }, []);
   return null;
 }

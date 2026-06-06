@@ -1,8 +1,47 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import {
+  FaBoxOpen,
+  FaChartBar,
+  FaCog,
+  FaSignOutAlt,
+  FaTachometerAlt,
+  FaExchangeAlt,
+  FaClipboardList,
+  FaUsers,
+} from "react-icons/fa";
+
+function NavItem({
+  to,
+  end = false,
+  icon: Icon,
+  children,
+  isReportsRoute = false,
+}) {
+  return (
+    <NavLink
+      to={to}
+      end={end}
+      className={({ isActive }) =>
+        `flex items-center gap-3 px-3 py-2 rounded-md ${
+          isActive || isReportsRoute
+            ? "bg-blue-700 text-white"
+            : "text-slate-200 hover:bg-slate-800"
+        }`
+      }
+    >
+      <Icon className="h-4 w-4 shrink-0 text-current" />
+      <span>{children}</span>
+    </NavLink>
+  );
+}
 
 function SideBar() {
+  const location = useLocation();
+  const isReportsSection =
+    location.pathname === "/reports" ||
+    location.pathname === "/generate-report";
+
   return (
     <aside className="w-64 h-screen bg-slate-900 text-white flex flex-col fixed left-0 top-0 z-20">
       <div className="p-6">
@@ -17,79 +56,28 @@ function SideBar() {
         </div>
 
         <nav className="space-y-1">
-          <NavLink
-            to="/"
-            end
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-md ${
-                isActive
-                  ? "bg-blue-700 text-white"
-                  : "text-slate-200 hover:bg-slate-800"
-              }`
-            }
-          >
+          <NavItem to="/" end icon={FaTachometerAlt}>
             Dashboard
-          </NavLink>
-          <NavLink
-            to="/inventory"
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-md ${
-                isActive
-                  ? "bg-blue-700 text-white"
-                  : "text-slate-200 hover:bg-slate-800"
-              }`
-            }
-          >
+          </NavItem>
+          <NavItem to="/inventory" icon={FaBoxOpen}>
             Inventory
-          </NavLink>
-          <NavLink
-            to="/stock"
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-md ${
-                isActive
-                  ? "bg-blue-700 text-white"
-                  : "text-slate-200 hover:bg-slate-800"
-              }`
-            }
-          >
+          </NavItem>
+          <NavItem to="/stock" icon={FaExchangeAlt}>
             Stock Movement
-          </NavLink>
-          <NavLink
-            to="/requests"
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-md ${
-                isActive
-                  ? "bg-blue-700 text-white"
-                  : "text-slate-200 hover:bg-slate-800"
-              }`
-            }
-          >
+          </NavItem>
+          <NavItem to="/requests" icon={FaClipboardList}>
             Requests
-          </NavLink>
-          <NavLink
+          </NavItem>
+          <NavItem
             to="/reports"
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-md ${
-                isActive
-                  ? "bg-blue-700 text-white"
-                  : "text-slate-200 hover:bg-slate-800"
-              }`
-            }
+            icon={FaChartBar}
+            isReportsRoute={isReportsSection}
           >
             Reports
-          </NavLink>
-          <NavLink
-            to="/users"
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-md ${
-                isActive
-                  ? "bg-blue-700 text-white"
-                  : "text-slate-200 hover:bg-slate-800"
-              }`
-            }
-          >
+          </NavItem>
+          <NavItem to="/users" icon={FaUsers}>
             User Management
-          </NavLink>
+          </NavItem>
         </nav>
       </div>
 
@@ -98,18 +86,28 @@ function SideBar() {
           <NavLink
             to="/settings"
             className={({ isActive }) =>
-              `block px-3 py-2 rounded-md ${isActive ? "bg-slate-800 text-white" : "text-slate-200 hover:bg-slate-800"}`
+              `flex items-center gap-3 rounded-md px-3 py-2 ${
+                isActive
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-200 hover:bg-slate-800"
+              }`
             }
           >
-            Settings
+            <FaCog className="h-4 w-4 shrink-0 text-current" />
+            <span>Settings</span>
           </NavLink>
           <NavLink
             to="/logout"
             className={({ isActive }) =>
-              `block mt-2 px-3 py-2 rounded-md ${isActive ? "bg-slate-800 text-white" : "text-slate-200 hover:bg-slate-800"}`
+              `mt-2 flex items-center gap-3 rounded-md px-3 py-2 ${
+                isActive
+                  ? "bg-slate-800 text-red-600"
+                  : "text-red-600 hover:bg-slate-800"
+              }`
             }
           >
-            Logout
+            <FaSignOutAlt className="h-4 w-4 shrink-0 text-current" />
+            <span>Logout</span>
           </NavLink>
         </div>
       </div>

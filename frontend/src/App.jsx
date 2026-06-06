@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 
 import "./App.css";
 import MainLayout from "./components/layout/MainLayout";
+import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
 import Stock from "./pages/StockManagement";
@@ -13,10 +14,12 @@ import Settings from "./pages/Settings";
 import Logout from "./pages/Logout";
 import AddItem from "./components/inventory/AddItem";
 import NewRequest from "./components/request/NewRequest";
+import GenerateReportModal from "./components/reports/GenerateReportModal";
 
 function App() {
   return (
     <Routes>
+      <Route path="/login" element={<Login />} />
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="inventory" element={<Inventory />} />
@@ -28,6 +31,7 @@ function App() {
         <Route path="users" element={<Users />} />
         <Route path="settings" element={<Settings />} />
         <Route path="logout" element={<Logout />} />
+        <Route path="/generate-report" element={<GenerateReportModal />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
