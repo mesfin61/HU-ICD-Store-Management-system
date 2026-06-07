@@ -10,49 +10,7 @@ import {
   FaExclamationTriangle,
   FaChevronRight,
 } from "react-icons/fa";
-
-const users = [
-  {
-    name: "Abebe Kebede",
-    email: "abebe.k@haramaya.edu.et",
-    department: "Network Infrastructure",
-    role: "Administrator",
-    status: "Active",
-    lastLogin: "10 mins ago",
-    accent: "bg-sky-500",
-    roleTone: "blue",
-  },
-  {
-    name: "Martha Tilahun",
-    email: "martha.t@haramaya.edu.et",
-    department: "Central Store",
-    role: "Store Manager",
-    status: "Active",
-    lastLogin: "Yesterday, 4:20 PM",
-    accent: "bg-emerald-500",
-    roleTone: "green",
-  },
-  {
-    name: "Daniel Solomon",
-    email: "daniel.s@haramaya.edu.et",
-    department: "Maintenance Unit",
-    role: "Store Officer",
-    status: "Inactive",
-    lastLogin: "2 weeks ago",
-    accent: "bg-amber-500",
-    roleTone: "orange",
-  },
-  {
-    name: "Hirut Bekele",
-    email: "hirut.b@haramaya.edu.et",
-    department: "Directorate Admin",
-    role: "Staff",
-    status: "Active",
-    lastLogin: "05 Oct 2024",
-    accent: "bg-violet-500",
-    roleTone: "slate",
-  },
-];
+import { getStoredUsers, getUserSummary } from "./userStorage";
 
 const roleDefinitions = [
   {
@@ -191,12 +149,13 @@ function RoleDefinitionCard({ title, description, tone, Icon, bullets }) {
   );
 }
 
-function SecurityAuditCard() {
+function SecurityAuditCard({ disabledCount }) {
   return (
     <div className="rounded-xl bg-[#0b4a8b] p-4 text-white shadow-sm">
       <div className="mb-3 text-base font-semibold">Security Audit</div>
       <p className="text-sm font-medium text-blue-100">
-        You have 3 users who haven't enabled Two-Factor Authentication.
+        You have {disabledCount} users who haven't enabled Two-Factor
+        Authentication.
       </p>
 
       <button
@@ -210,6 +169,9 @@ function SecurityAuditCard() {
 }
 
 function ActiveSystemUsers() {
+  const users = getStoredUsers();
+  const summary = getUserSummary(users);
+
   return (
     <section className="w-full">
       <div className="grid gap-3 xl:grid-cols-[minmax(0,2.1fr)_minmax(290px,0.9fr)]">
@@ -240,10 +202,13 @@ function ActiveSystemUsers() {
                   >
                     <td className="px-4 py-4 sm:px-5">
                       <div className="flex items-center gap-3">
-                        <Avatar name={user.name} accent={user.accent} />
+                        <Avatar
+                          name={user.fullName || user.email}
+                          accent={user.avatarColor}
+                        />
                         <div className="min-w-0">
                           <div className="font-semibold text-slate-900">
-                            {user.name}
+                            {user.fullName}
                           </div>
                           <div className="truncate text-xs text-slate-500">
                             {user.email}
@@ -323,7 +288,40 @@ function ActiveSystemUsers() {
             </div>
           </div>
 
-          <SecurityAuditCard />
+          <div className="space-y-3">
+            <SecurityAuditCard disabledCount={summary.twoFactorDisabled} />
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Live Summary
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-lg bg-slate-50 p-3">
+                  <div className="text-xs text-slate-500">Total Users</div>
+                  <div className="mt-1 text-lg font-semibold text-slate-900">
+                    {summary.totalUsers}
+                  </div>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-3">
+                  <div className="text-xs text-slate-500">Active Users</div>
+                  <div className="mt-1 text-lg font-semibold text-slate-900">
+                    {summary.activeUsers}
+                  </div>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-3">
+                  <div className="text-xs text-slate-500">2FA Disabled</div>
+                  <div className="mt-1 text-lg font-semibold text-slate-900">
+                    {summary.twoFactorDisabled}
+                  </div>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-3">
+                  <div className="text-xs text-slate-500">Admins</div>
+                  <div className="mt-1 text-lg font-semibold text-slate-900">
+                    {summary.adminUsers}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>

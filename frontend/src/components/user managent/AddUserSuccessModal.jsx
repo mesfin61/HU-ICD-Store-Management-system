@@ -1,22 +1,32 @@
 import React, { useEffect, useState } from "react";
 import {
   FaTimes,
-  FaUser,
-  FaEnvelope,
-  FaBriefcase,
-  FaShieldAlt,
   FaCheck,
+  FaEnvelope,
+  FaBuilding,
+  FaBox,
+  FaExchangeAlt,
+  FaCheckSquare,
+  FaChartBar,
+  FaUserPlus,
+  FaEdit,
 } from "react-icons/fa";
+
+const PERMISSION_CONFIG = [
+  { key: "viewInventory", label: "View Inventory", icon: FaBox },
+  { key: "manageStock", label: "Manage Stock", icon: FaExchangeAlt },
+  { key: "approveRequests", label: "Approve Requests", icon: FaCheckSquare },
+  { key: "generateReports", label: "Generate Reports", icon: FaChartBar },
+];
 
 export default function AddUserSuccessModal({
   data = {},
   onConfirm,
   onSave,
-  onEditInForm,
+  onEditInForm, // "Add Another User" — reuses original prop
   onClose,
 }) {
   const [local, setLocal] = useState({ ...data });
-  const [isEditing, setIsEditing] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -30,12 +40,24 @@ export default function AddUserSuccessModal({
   }, []);
 
   useEffect(() => {
-    // trigger entrance animation
     const t = setTimeout(() => setMounted(true), 10);
     return () => clearTimeout(t);
   }, []);
 
   if (!data) return null;
+
+  // "Edit Profile" opens the form pre-filled with current data
+  const handleEditProfile = () => {
+    if (onSave) onSave(local); // persist any in-memory changes
+    if (onEditInForm) onEditInForm(local); // hand back to parent form
+    onClose && onClose();
+  };
+
+  // "Add Another User" clears the form and closes the modal
+  const handleAddAnother = () => {
+    if (onEditInForm) onEditInForm(null); // null signals "reset form"
+    onClose && onClose();
+  };
 
   const wrapperClass = `relative w-full max-w-md rounded-xl bg-white p-6 shadow-xl z-[10000] border border-slate-100 transition-all duration-300 ease-out transform ${
     mounted
@@ -51,153 +73,100 @@ export default function AddUserSuccessModal({
       />
 
       <div className={wrapperClass}>
-        <div className="flex items-center justify-between">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-5">
           <div className="flex items-center gap-3">
-            <div
-              className="h-10 w-10 flex items-center justify-center rounded-full bg-emerald-50 text-emerald-600 transform transition-all duration-300"
-              style={{ transform: mounted ? "scale(1)" : "scale(0.9)" }}
-            >
+            <div className="h-10 w-10 flex items-center justify-center rounded-full bg-green-50 text-green-700">
               <FaCheck className="text-lg" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold">User Added</h3>
+              <h3 className="text-base font-semibold text-slate-900">
+                User Added Successfully
+              </h3>
               <p className="text-xs text-slate-500">
-                User has been created successfully
+                The new administrator profile has been indexed in the directory.
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600"
+            className="text-slate-400 hover:text-slate-600 mt-1"
           >
             <FaTimes />
           </button>
         </div>
 
-        <div className="mt-4 grid gap-4">
-          <div className="flex items-center gap-4">
-            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-50">
-              {local.photo ? (
-                <img
-                  src={local.photo}
-                  alt="profile"
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="h-full w-full bg-slate-200" />
-              )}
-            </div>
-
-            <div className="flex-1">
-              {!isEditing ? (
-                <>
-                  <div className="flex items-center gap-2">
-                    <FaUser className="text-slate-400" />
-                    <div className="text-sm font-semibold text-slate-900">
-                      {local.fullName}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <FaEnvelope className="text-slate-400" />
-                    <div className="text-xs text-slate-500">{local.email}</div>
-                  </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <FaBriefcase className="text-slate-400" />
-                    <div className="mt-1 text-xs text-slate-600">
-                      {local.role} • {local.department}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="grid gap-2">
-                  <input
-                    value={local.fullName || ""}
-                    onChange={(e) =>
-                      setLocal({ ...local, fullName: e.target.value })
-                    }
-                    className="rounded border border-slate-200 px-2 py-1 text-sm"
-                  />
-                  <input
-                    value={local.email || ""}
-                    onChange={(e) =>
-                      setLocal({ ...local, email: e.target.value })
-                    }
-                    className="rounded border border-slate-200 px-2 py-1 text-sm"
-                  />
-                  <input
-                    value={local.role || ""}
-                    onChange={(e) =>
-                      setLocal({ ...local, role: e.target.value })
-                    }
-                    className="rounded border border-slate-200 px-2 py-1 text-sm"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-md border border-slate-100 bg-slate-50 p-3 text-sm text-slate-700">
-            <div className="mb-1 text-xs font-semibold text-slate-500">
-              Permissions
-            </div>
-            <div className="grid gap-1 text-xs">
-              {(local.permissions && Object.keys(local.permissions))?.map(
-                (k) => (
-                  <div key={k} className="flex items-center gap-2">
-                    <span
-                      className={`h-2 w-2 rounded-full ${local.permissions[k] ? "bg-emerald-500" : "bg-slate-300"}`}
-                    />
-                    <span className="capitalize">
-                      {k.replace(/([A-Z])/g, " $1")}
-                    </span>
-                  </div>
-                ),
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-2">
-            {!isEditing ? (
-              <>
-                <button
-                  onClick={() => onEditInForm && onEditInForm(local)}
-                  className="rounded border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700"
-                >
-                  Edit in Form
-                </button>
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="rounded border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => onConfirm && onConfirm(local)}
-                  className="rounded bg-[#0b4a8b] px-4 py-1 text-sm font-semibold text-white"
-                >
-                  Confirm
-                </button>
-              </>
+        {/* User Card */}
+        <div className="border border-slate-200 rounded-lg p-3 flex items-center gap-4 mb-4">
+          <div className="h-14 w-14 shrink-0 rounded-full bg-slate-200 overflow-hidden">
+            {local.photo ? (
+              <img
+                src={local.photo}
+                alt="profile"
+                className="h-full w-full object-cover"
+              />
             ) : (
-              <>
-                <button
-                  onClick={() => setIsEditing(false)}
-                  className="rounded border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    if (onSave) onSave(local);
-                    setIsEditing(false);
-                  }}
-                  className="rounded bg-[#0b4a8b] px-4 py-1 text-sm font-semibold text-white"
-                >
-                  Save
-                </button>
-              </>
+              <div className="h-full w-full bg-slate-300" />
             )}
           </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-900 mb-0.5">
+              {local.fullName}
+            </p>
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-0.5">
+              <FaEnvelope className="text-slate-400 text-[11px]" />
+              <span>{local.email}</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+              <FaBuilding className="text-slate-400 text-[11px]" />
+              <span>{local.department}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Permissions */}
+        <div className="mb-5">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              Permissions Granted
+            </span>
+            <span className="text-[11px] font-semibold bg-[#0b4a8b] text-white px-2.5 py-0.5 rounded">
+              Admin Access
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {PERMISSION_CONFIG.map(({ key, label, icon: Icon }) => (
+              <div
+                key={key}
+                className="flex items-center gap-2 border border-slate-200 rounded-md px-3 py-2.5 text-sm text-slate-700"
+              >
+                <Icon className="text-slate-400 text-sm shrink-0" />
+                <span>{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleAddAnother}
+            className="flex-1 flex items-center justify-center gap-1.5 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 bg-white hover:bg-slate-50"
+          >
+            <FaUserPlus className="text-xs" /> Add Another User
+          </button>
+          <button
+            onClick={handleEditProfile}
+            className="flex-1 flex items-center justify-center gap-1.5 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 bg-white hover:bg-slate-50"
+          >
+            <FaEdit className="text-xs" /> Edit Profile
+          </button>
+          <button
+            onClick={() => onConfirm && onConfirm(local)}
+            className="flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold bg-[#0b4a8b] text-white hover:bg-[#093d75]"
+          >
+            <FaCheck className="text-xs" /> Confirm & Close
+          </button>
         </div>
       </div>
     </div>

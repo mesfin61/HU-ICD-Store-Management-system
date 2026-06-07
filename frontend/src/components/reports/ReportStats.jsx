@@ -6,6 +6,15 @@ import {
   FaExchangeAlt,
   FaMoneyBillWave,
 } from "react-icons/fa";
+import {
+  getInventorySummary,
+  getStoredInventoryItems,
+} from "../inventory/inventoryStorage";
+import { getStoredRequestItems } from "../request/requestStorage";
+import {
+  getStockMovementSummary,
+  getStoredStockMovements,
+} from "../stock-management/stockMovementStorage";
 
 const iconMap = {
   money: FaMoneyBillWave,
@@ -21,41 +30,53 @@ const StatIcon = ({ type }) => {
 };
 
 function ReportStats() {
+  const inventorySummary = getInventorySummary(getStoredInventoryItems());
+  const requestSummary = getStoredRequestItems().reduce(
+    (summary, request) => {
+      summary.totalRequests += 1;
+      summary.pendingRequests += request.status === "Pending" ? 1 : 0;
+      summary.approvedRequests += request.status === "Approved" ? 1 : 0;
+      return summary;
+    },
+    { totalRequests: 0, pendingRequests: 0, approvedRequests: 0 },
+  );
+  const movementSummary = getStockMovementSummary(getStoredStockMovements());
+
   const stats = [
     {
       id: 1,
-      title: "TOTAL PROCUREMENT VALUE",
-      value: "ETB 1.24M",
-      percent: "+12.5%",
+      title: "TOTAL ITEMS TRACKED",
+      value: inventorySummary.totalItems.toString(),
+      percent: `${inventorySummary.activeCategories} categories`,
       pctColor: "bg-green-100 text-green-700",
-      subtitle: "Current fiscal quarter",
+      subtitle: "Inventory records currently stored",
       icon: "money",
     },
     {
       id: 2,
-      title: "CONSUMPTION RATE",
-      value: "84.2%",
-      percent: "+4.2%",
+      title: "REQUEST PIPELINE",
+      value: requestSummary.totalRequests.toString(),
+      percent: `${requestSummary.pendingRequests} pending`,
       pctColor: "bg-green-100 text-green-700",
-      subtitle: "Avg. monthly utilization",
+      subtitle: "Total requests captured in the system",
       icon: "chart",
     },
     {
       id: 3,
-      title: "STOCK TURNOVER",
-      value: "4.2x",
-      tag: "STABLE",
+      title: "STOCK MOVEMENTS",
+      value: movementSummary.totalMovements.toString(),
+      tag: `${movementSummary.totalInbound} in / ${movementSummary.totalOutbound} out`,
       tagColor: "bg-gray-100 text-gray-700",
-      subtitle: "Annual frequency",
+      subtitle: "Recorded stock transactions",
       icon: "turnover",
     },
     {
       id: 4,
-      title: "WASTE/DAMAGE RATE",
-      value: "1.14%",
-      percent: "-0.8%",
+      title: "LOW STOCK ITEMS",
+      value: inventorySummary.lowStockItems.toString(),
+      percent: `${inventorySummary.outStockItems} out`,
       pctColor: "bg-red-100 text-red-700",
-      subtitle: "Reported technical loss",
+      subtitle: "Items that require replenishment",
       icon: "warning",
     },
   ];

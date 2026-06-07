@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { FaCamera, FaTimes, FaShieldAlt } from "react-icons/fa";
 import AddUserSuccessModal from "./AddUserSuccessModal";
+import { addStoredUser, buildUserRecord } from "./userStorage";
 
 function Checkbox({ label, name, checked, onChange }) {
   return (
@@ -22,7 +23,7 @@ function Checkbox({ label, name, checked, onChange }) {
   );
 }
 
-export default function AddUserModal({ isOpen, onClose }) {
+export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
   const [photo, setPhoto] = useState(null);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -41,10 +42,18 @@ export default function AddUserModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  function handleFile(e) {
+  async function handleFile(e) {
     const f = e.target.files?.[0];
     if (!f) return;
-    setPhoto(URL.createObjectURL(f));
+
+    const fileDataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(new Error("Failed to read selected file"));
+      reader.readAsDataURL(f);
+    });
+
+    setPhoto(fileDataUrl);
   }
 
   function togglePerm(key) {
@@ -53,9 +62,20 @@ export default function AddUserModal({ isOpen, onClose }) {
 
   async function handleCreate() {
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 900));
+    const user = buildUserRecord({
+      photo,
+      fullName,
+      email,
+      department,
+      role,
+      permissions,
+      twoFactorEnabled: false,
+    });
+    addStoredUser(user);
+    if (typeof onUserCreated === "function") {
+      onUserCreated(user);
+    }
     setSubmitting(false);
-    const user = { photo, fullName, email, department, role, permissions };
     setCreatedUser(user);
     setShowSuccess(true);
   }

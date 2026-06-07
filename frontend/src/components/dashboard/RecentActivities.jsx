@@ -1,36 +1,79 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { getStoredInventoryItems } from "../inventory/inventoryStorage";
+import { getStoredRequestItems } from "../request/requestStorage";
+import { getStoredStockMovements } from "../stock-management/stockMovementStorage";
 
-const activities = [
-  {
-    activity: "New Stock Recieved",
-    category: "Computing Device",
-    performedBy: "Ahmed Mohammed",
-    Date: "oct 24, 2025 - 09:15 AM",
-    status: "success",
-  },
-  {
-    activity: "Request Approved",
-    category: "Pheripherals",
-    performedBy: "Sara Ali",
-    Date: "oct 23, 2025 - 02:30 PM",
-    status: "approved",
-  },
-  {
-    activity: "Stock Out of Stock",
-    category: "Consumables",
-    performedBy: "Mohammed Hassan",
-    Date: "oct 22, 2025 - 11:45 AM",
-    status: "warning",
-  },
-];
+function formatActivityDate(value) {
+  if (!value) return "Recently";
+
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return value;
+  }
+
+  return parsedDate.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function buildActivities() {
+  const inventoryActivities = getStoredInventoryItems().map((item) => ({
+    activity: "Inventory item added",
+    category: item.category,
+    performedBy: item.vendor || "Inventory team",
+    date: item.createdAt,
+    status:
+      item.status === "Low Stock" || item.status === "Out of Stock"
+        ? "warning"
+        : "success",
+  }));
+
+  const requestActivities = getStoredRequestItems().map((request) => ({
+    activity: `Request ${request.status.toLowerCase()}`,
+    category: request.itemCategory,
+    performedBy: request.requester,
+    date: request.createdAt || request.date,
+    status:
+      request.status === "Approved"
+        ? "approved"
+        : request.status === "Pending"
+          ? "pending"
+          : "warning",
+  }));
+
+  const movementActivities = getStoredStockMovements().map((movement) => ({
+    activity: movement.movementType,
+    category: movement.category,
+    performedBy: movement.source || "System",
+    date: movement.createdAt || movement.date,
+    status: movement.movementType === "Stock-In" ? "success" : "warning",
+  }));
+
+  return [...movementActivities, ...requestActivities, ...inventoryActivities]
+    .sort((left, right) => new Date(right.date || 0) - new Date(left.date || 0))
+    .slice(0, 6)
+    .map((entry) => ({
+      ...entry,
+      Date: formatActivityDate(entry.date),
+    }));
+}
 
 function RecentActivities() {
+  const activities = buildActivities();
+
   return (
     <div className="flex flex-col mb-2 bg-white shadow-lg rounded-lg gap-2">
       <div className="flex flex-col sm:flex-row justify-between sm:items-center px-3 pt-3 gap-2">
         <h2 className="font-bold text-primary">Recent Activity</h2>
-        <Link className="text-primary no-underline hover:underline font-bold">
+        <Link
+          to="/reports"
+          className="text-primary no-underline hover:underline font-bold"
+        >
           View All Activities
         </Link>
       </div>
@@ -73,7 +116,9 @@ function RecentActivities() {
                           ? "bg-green-100 text-green-800"
                           : activity.status === "approved"
                             ? "bg-blue-100 text-blue-800"
-                            : "bg-yellow-100 text-yellow-800"
+                            : activity.status === "pending"
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-yellow-100 text-yellow-800"
                       }`}
                     >
                       {activity.status}
@@ -106,7 +151,9 @@ function RecentActivities() {
                       ? "bg-green-100 text-green-800"
                       : activity.status === "approved"
                         ? "bg-blue-100 text-blue-800"
-                        : "bg-yellow-100 text-yellow-800"
+                        : activity.status === "pending"
+                          ? "bg-amber-100 text-amber-800"
+                          : "bg-yellow-100 text-yellow-800"
                   }`}
                 >
                   {activity.status}

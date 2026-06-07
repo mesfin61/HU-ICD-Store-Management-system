@@ -186,9 +186,7 @@ export default function ReportGeneratedModal({
                           {r.itemName}
                         </td>
                         <td className="px-3 py-2">{r.category}</td>
-                        <td className="px-3 py-2">
-                          {r.qty} {r.qty && r.qty + " Units"}
-                        </td>
+                        <td className="px-3 py-2">{r.qty}</td>
                         <td className="px-3 py-2">{r.date}</td>
                       </tr>
                     ))

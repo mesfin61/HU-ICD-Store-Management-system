@@ -7,9 +7,14 @@ import {
   getInventorySummary,
   getStoredInventoryItems,
 } from "../inventory/inventoryStorage";
+import {
+  addStoredStockMovement,
+  buildStockMovement,
+} from "./stockMovementStorage";
 
 function StockOperations({ onProcessTransaction }) {
   const summary = getInventorySummary(getStoredInventoryItems());
+  const inventoryItems = getStoredInventoryItems();
   const [success, setSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [mode, setMode] = useState("inbound");
@@ -25,12 +30,11 @@ function StockOperations({ onProcessTransaction }) {
   const inTransit = summary.outStockItems + summary.lowStockItems;
   const safetyLevel = Math.max(summary.lowStockItems, 5);
 
-  const selectedItemLabel = {
-    "": "Select an item from inventory...",
-    "item-1": "Item 1 - Laptop",
-    "item-2": "Item 2 - Monitor",
-    "item-3": "Item 3 - Router",
-  }[item];
+  const selectedItem = inventoryItems.find(
+    (inventoryItem) => inventoryItem.id === item,
+  );
+  const selectedItemLabel =
+    selectedItem?.itemName || "Select an item from inventory...";
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -51,18 +55,23 @@ function StockOperations({ onProcessTransaction }) {
 
     setErrorMessage("");
 
-    if (typeof onProcessTransaction === "function") {
-      onProcessTransaction({
-        id: crypto.randomUUID(),
-        movementType: mode === "inbound" ? "Stock-In" : "Stock-Out",
-        item: selectedItemLabel,
+    const movement = buildStockMovement(
+      {
+        mode,
+        itemId: item,
+        itemLabel: selectedItemLabel,
         quantity,
         date,
         source,
         reference,
         remarks,
-        status: mode === "inbound" ? "Received" : "Issued",
-      });
+      },
+      selectedItem,
+    );
+    const nextMovements = addStoredStockMovement(movement);
+
+    if (typeof onProcessTransaction === "function") {
+      onProcessTransaction(movement, nextMovements);
     }
 
     setSuccess(true);
@@ -146,19 +155,22 @@ function StockOperations({ onProcessTransaction }) {
                   value={item}
                   onChange={(e) => setItem(e.target.value)}
                   className="mt-1 block w-full border border-primary rounded-md p-2 text-primary font-medium"
+                  disabled={inventoryItems.length === 0}
                 >
                   <option className="text-primary font-medium" value="">
-                    Select an item from inventory...
+                    {inventoryItems.length > 0
+                      ? "Select an item from inventory..."
+                      : "No inventory items available"}
                   </option>
-                  <option className="text-primary font-medium" value="item-1">
-                    Item 1 - Laptop
-                  </option>
-                  <option className="text-primary font-medium" value="item-2">
-                    Item 2 - Monitor
-                  </option>
-                  <option className="text-primary font-medium" value="item-3">
-                    Item 3 - Router
-                  </option>
+                  {inventoryItems.map((inventoryItem) => (
+                    <option
+                      className="text-primary font-medium"
+                      key={inventoryItem.id}
+                      value={inventoryItem.id}
+                    >
+                      {inventoryItem.itemName}
+                    </option>
+                  ))}
                 </select>
               </div>
 

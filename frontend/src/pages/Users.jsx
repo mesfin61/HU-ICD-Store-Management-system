@@ -5,6 +5,12 @@ import { FaUserPlus } from "react-icons/fa";
 
 export default function Users() {
   const [open, setOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleUserCreated = () => {
+    setRefreshKey((current) => current + 1);
+  };
+
   return (
     <div className="flex flex-col gap-4 px-4 py-2">
       <div className="flex items-start justify-between gap-4">
@@ -26,8 +32,12 @@ export default function Users() {
         </button>
       </div>
 
-      <ActiveSystemUsers />
-      <AddUserModal isOpen={open} onClose={() => setOpen(false)} />
+      <ActiveSystemUsers refreshKey={refreshKey} />
+      <AddUserModal
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        onUserCreated={handleUserCreated}
+      />
     </div>
   );
 }

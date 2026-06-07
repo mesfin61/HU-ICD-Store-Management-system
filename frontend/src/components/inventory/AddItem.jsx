@@ -67,9 +67,9 @@ function AddItem() {
     });
   };
 
-  const previewItemName = form.itemName.trim() || "Cisco Catalyst 9200L";
-  const previewItemCode = form.itemCode.trim() || "ICT-2024-0882";
-  const previewVendor = form.vendor.trim() || "Cisco Systems";
+  const previewItemName = form.itemName.trim() || "New inventory item";
+  const previewItemCode = form.itemCode.trim() || "Auto-generated code";
+  const previewVendor = form.vendor.trim() || "Vendor not specified";
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 px-4 py-4">

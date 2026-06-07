@@ -1,9 +1,14 @@
 const REQUEST_STORAGE_KEY = "hu-icd-request-items";
 
 function canUseLocalStorage() {
-  return (
-    typeof window !== "undefined" && typeof window.localStorage !== "undefined"
-  );
+  try {
+    const testKey = "__storage_test__";
+    window.localStorage.setItem(testKey, "1");
+    window.localStorage.removeItem(testKey);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function getStoredRequestItems() {

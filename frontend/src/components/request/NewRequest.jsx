@@ -8,6 +8,7 @@ import {
 
 function NewRequest() {
   const navigate = useNavigate();
+  const [submitError, setSubmitError] = useState("");
   const [form, setForm] = useState({
     requester: "",
     department: "",
@@ -60,14 +61,15 @@ function NewRequest() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setSubmitError("");
 
-    if (!form.supportingDocumentUrl) {
-      return;
-    }
+    // if (!form.supportingDocumentUrl) {
+    //   setSubmitError("Please upload a supporting document before submitting.");
+    //   return;
+    // }
 
     const newRequest = buildRequestItem(form);
     const currentRequests = getStoredRequestItems();
-
     saveStoredRequestItems([newRequest, ...currentRequests]);
     navigate("/requests");
   };
@@ -212,7 +214,6 @@ function NewRequest() {
                   className="hidden"
                   accept=".pdf,.jpg,.jpeg,.png"
                   onChange={handleFileChange}
-                  required
                   id="request-upload"
                 />
                 <label htmlFor="request-upload" className="cursor-pointer">
@@ -232,7 +233,10 @@ function NewRequest() {
             </label>
           </div>
 
-          <div className="mt-6 flex justify-center">
+          <div className="mt-6 flex flex-col items-center gap-2">
+            {submitError && (
+              <p className="text-sm text-red-600">{submitError}</p>
+            )}
             <button
               type="submit"
               className="rounded-md bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"

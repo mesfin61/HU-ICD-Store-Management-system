@@ -2,30 +2,21 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaCalendarAlt, FaDownload, FaFilePdf, FaTimes } from "react-icons/fa";
 import ReportGeneratedModal from "./ReportGeneratedModal";
+import { getStoredInventoryItems } from "../inventory/inventoryStorage";
 
 const fieldClass =
   "w-full h-9 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
 
-const previewRows = [
-  {
-    itemName: "Dell Latitude 5420",
-    category: "Computing",
-    qty: "15",
-    date: "2024-05-10",
-  },
-  {
-    itemName: "Cisco 9200L Switch",
-    category: "Networking",
-    qty: "04",
-    date: "2024-05-12",
-  },
-  {
-    itemName: "Logitech MX Master 3S",
-    category: "Accessories",
-    qty: "22",
-    date: "2024-05-14",
-  },
-];
+function buildPreviewRows() {
+  return getStoredInventoryItems()
+    .slice(0, 3)
+    .map((item) => ({
+      itemName: item.itemName,
+      category: item.category,
+      qty: item.initialQty,
+      date: item.createdAt ? item.createdAt.slice(0, 10) : "",
+    }));
+}
 
 function formatDateInput(value) {
   const digits = value.replace(/\D/g, "").slice(0, 8);
@@ -108,6 +99,7 @@ function OutputFormatButton({ active, children, onClick }) {
 
 function GenerateReportModal({ isOpen = true, onClose }) {
   const navigate = useNavigate();
+  const previewRows = buildPreviewRows();
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const [formValues, setFormValues] = useState({
     reportType: "",
@@ -128,19 +120,17 @@ function GenerateReportModal({ isOpen = true, onClose }) {
   }, []);
 
   const handleClose = (navState) => {
-    if (successTimerRef.current) {
-      clearTimeout(successTimerRef.current);
-      successTimerRef.current = null;
-    }
+    const isEvent =
+      navState &&
+      typeof navState === "object" &&
+      ("nativeEvent" in navState || "preventDefault" in navState);
 
-    setShowSuccessBanner(false);
+    const safeState = isEvent ? {} : navState;
 
-    if (onClose) {
-      onClose(navState);
-      return;
-    }
-
-    navigate("/reports", { replace: true, state: navState || {} });
+    navigate("/reports", {
+      replace: true,
+      state: safeState,
+    });
   };
 
   const handleGenerate = () => {

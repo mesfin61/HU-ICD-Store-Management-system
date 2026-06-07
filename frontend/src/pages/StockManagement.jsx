@@ -1,11 +1,17 @@
 import React, { useState } from "react";
 import StockOperations from "../components/stock-management/StockOperations";
 import RecentMovements from "../components/stock-management/RecentMovements";
+import { getStoredStockMovements } from "../components/stock-management/stockMovementStorage";
 
 export default function Stock() {
-  const [movements, setMovements] = useState([]);
+  const [movements, setMovements] = useState(() => getStoredStockMovements());
 
-  const handleProcessTransaction = (movement) => {
+  const handleProcessTransaction = (movement, nextMovements) => {
+    if (Array.isArray(nextMovements)) {
+      setMovements(nextMovements);
+      return;
+    }
+
     setMovements((currentMovements) => [movement, ...currentMovements]);
   };
 

@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import { FiLock, FiMail, FiShield, FiArrowRight } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+import {
+  getStoredUsers,
+  setStoredCurrentUser,
+} from "../components/user managent/userStorage";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -20,6 +24,30 @@ export default function Login() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    const normalizedEmail = credentials.email.trim().toLowerCase();
+    const matchedUser = getStoredUsers().find(
+      (user) => user.email.toLowerCase() === normalizedEmail,
+    );
+
+    setStoredCurrentUser(
+      matchedUser || {
+        fullName: normalizedEmail
+          ? normalizedEmail.split("@")[0].replace(/[._-]+/g, " ")
+          : "Admin User",
+        email: normalizedEmail,
+        role: "System Administrator",
+        initials: normalizedEmail
+          ? normalizedEmail
+              .split("@")[0]
+              .split(/[._-]/)
+              .map((part) => part[0])
+              .slice(0, 2)
+              .join("")
+              .toUpperCase()
+          : "AU",
+      },
+      credentials.remember,
+    );
     navigate("/");
   };
 
@@ -166,8 +194,7 @@ export default function Login() {
               </button>
 
               <p className="mt-5 text-center text-xs leading-5 text-slate-500">
-                Demo access screen only. Hook this form to the backend when the
-                auth API is ready.
+                Your session will be remembered when the checkbox is enabled.
               </p>
             </form>
           </section>
