@@ -1,4 +1,5 @@
 import React from "react";
+import PageTransition from "../animated_motion/PageTransition";
 import {
   getInventorySummary,
   getStoredInventoryItems,
@@ -13,11 +14,12 @@ export default function Settings() {
   const inventorySummary = getInventorySummary(getStoredInventoryItems());
 
   return (
-    <div className="flex flex-col gap-4 px-4 py-4">
-      <div>
-        <h2 className="text-2xl font-semibold mb-2 text-primary">Settings</h2>
-        <p className="text-secondary font-semibold">
-          Application settings and preferences for{" "}
+    <PageTransition>
+      <div className="flex flex-col gap-4 px-4 py-4">
+        <div>
+          <h2 className="text-2xl font-semibold mb-2 text-primary">Settings</h2>
+          <p className="text-secondary font-semibold">
+            Application settings and preferences for{" "}
           {getDisplayUserName(currentUser)}.
         </p>
       </div>
@@ -57,5 +59,6 @@ export default function Settings() {
         </div>
       </div>
     </div>
+  </PageTransition>
   );
 }

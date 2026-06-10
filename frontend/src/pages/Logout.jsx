@@ -1,12 +1,20 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { clearStoredCurrentUser } from "../components/user managent/userStorage";
+import PageTransition from "../animated_motion/PageTransition";
 
 export default function Logout() {
-  const nav = useNavigate();
+  const navigate = useNavigate();
   useEffect(() => {
-    clearStoredCurrentUser();
-    nav("/login", { replace: true });
-  }, [nav]);
-  return null;
+    const token = localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login", { replace: true });
+  }, [navigate]);
+
+  return (
+    <PageTransition>
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <p className="text-lg text-gray-700">Logging out...</p>
+      </div>
+    </PageTransition>
+  );
 }
