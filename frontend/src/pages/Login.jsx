@@ -19,6 +19,12 @@ export default function Login() {
     remember: false,
   });
 
+  const token = localStorage.getItem("token");
+
+  if (token) {
+    return <Navigate to="/" replace />;
+  }
+
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
     setCredentials((current) => ({
@@ -34,12 +40,6 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem("token");
-
-      if (token) {
-        return <Navigate to="/" replace />;
-      }
-
       const response = await axios.post(
         `${API_URL}/api/auth/login`,
         { email: credentials.email, password: credentials.password },

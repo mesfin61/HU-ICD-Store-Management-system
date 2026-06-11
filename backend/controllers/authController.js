@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const { user } = require("../models");
+const { findByEmail, findById } = require("../models/user");
 
 function signToken(foundUser) {
   return jwt.sign(
@@ -116,6 +117,8 @@ const getMe = async (req, res) => {
         id: foundUser.id,
         fullName: foundUser.full_name,
         email: foundUser.email,
+        phoneNumber: foundUser.phone_number,
+        officeLocation: foundUser.office_location,
         role: foundUser.role_name,
         isActive: foundUser.is_active,
         createdAt: foundUser.created_at,
@@ -360,6 +363,50 @@ const resetPassword = async (req, res) => {
   }
 };
 
+const updateProfile = async (req, res) => {
+  const { fullName, email, phoneNumber, officeLocation } = req.body;
+
+  if (!fullName || !email || !phoneNumber || !officeLocation) {
+    return res.status(400).json({
+      success: false,
+      message: "all fields are required.",
+    });
+  }
+
+  try {
+    const { id } = req.user;
+    const foundUser = await findById(id);
+
+    if (!foundUser) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found." });
+    }
+
+    if (email && email.trim().toLowerCase() !== foundUser.email) {
+      const emailTaken = await user.findByEmail(email.trim().toLowerCase());
+      if (emailTaken) {
+        return res.status(400).json({
+          success: false,
+          message: "Email is already in use by another user.",
+        });
+      }
+    }
+
+    const updated = await user.updateProfile(id, {
+      fullName: fullName ?? foundUser.full_name,
+      email: email ? email.trim().toLowerCase() : foundUser.email,
+      phoneNumber: phoneNumber ?? foundUser.phone_number,
+      officeLocation: officeLocation ?? foundUser.office_location,
+    });
+
+    res.status(200).json({ success: true, data: updated });
+  } catch (err) {
+    console.error("[Auth] updateProfile error:", err);
+    res.status(500).json({ success: false, message: "Server error." });
+  }
+};
+
 module.exports = {
   login,
   logout,
@@ -368,4 +415,5 @@ module.exports = {
   forgotPassword,
   verifyResetOtp,
   resetPassword,
+  updateProfile,
 };

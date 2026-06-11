@@ -1,15 +1,10 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { FiBell } from "react-icons/fi";
-import {
-  getDisplayUserName,
-  getStoredCurrentUser,
-  getUserInitials,
-} from "../user managent/userStorage";
+import { useUser } from "../../context/AuthContext";
 
 function HeaderBar() {
-  const currentUser = getStoredCurrentUser();
-
+  const { user, loading } = useUser();
   return (
     <header className="h-16 px-6 w-full sticky top-0 z-40 bg-white border-b border-gray-200 flex items-center">
       <div className="flex-1 flex flex-col justify-center"></div>
@@ -20,19 +15,24 @@ function HeaderBar() {
         >
           <FiBell className="text-lg" />
         </Link>
-        <Link to="/profile" className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm">
-            {getUserInitials(currentUser)}
-          </div>
-          <div className="hidden md:block text-sm text-gray-700">
-            <div className="font-semibold">
-              {getDisplayUserName(currentUser)}
+        {loading ? (
+          <div className="w-9 h-9 rounded-full bg-gray-300 animate-pulse"></div>
+        ) : (
+          <Link to="/profile" className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm uppercase">
+              {user?.fullName
+                ?.split(" ")
+                .map((name) => name.charAt(0))
+                .join("")}
             </div>
-            <div className="text-xs text-gray-400 uppercase">
-              {currentUser?.role || "System Administrator"}
+            <div className="hidden md:block text-sm text-gray-700">
+              <div className="font-semibold">{user?.fullName}</div>
+              <div className="text-xs text-gray-400 uppercase">
+                {user?.role}
+              </div>
             </div>
-          </div>
-        </Link>
+          </Link>
+        )}
       </div>
     </header>
   );
