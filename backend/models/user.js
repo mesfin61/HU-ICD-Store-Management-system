@@ -54,6 +54,71 @@ const user = {
     return result.rows[0] || null;
   },
 
+  async saveResetOtp(userId, otp, expiresAt) {
+    const result = await pool.query(
+      `
+      UPDATE users
+      SET reset_otp = $1,
+          reset_otp_expires = $2,
+          updated_at = NOW()
+      WHERE id = $3
+      RETURNING id, email, reset_otp, reset_otp_expires
+      `,
+      [otp, expiresAt, userId],
+    );
+
+    return result.rows[0] || null;
+  },
+
+  async findByEmailWithOtp(email) {
+    const result = await pool.query(
+      `
+      SELECT id,
+             full_name,
+             email,
+             password_hash,
+             reset_otp,
+             reset_otp_expires
+      FROM users
+      WHERE email = $1
+      `,
+      [email],
+    );
+
+    return result.rows[0] || null;
+  },
+
+  async clearResetOtp(userId) {
+    const result = await pool.query(
+      `
+      UPDATE users
+      SET reset_otp = NULL,
+          reset_otp_expires = NULL,
+          updated_at = NOW()
+      WHERE id = $1
+      RETURNING id
+      `,
+      [userId],
+    );
+
+    return result.rows[0] || null;
+  },
+
+  async updatePassword(id, passwordHash) {
+    const result = await pool.query(
+      `
+      UPDATE users
+      SET password_hash = $1,
+          updated_at = NOW()
+      WHERE id = $2
+      RETURNING id, email
+      `,
+      [passwordHash, id],
+    );
+
+    return result.rows[0] || null;
+  },
+
   async deactivate(id) {
     const result = await pool.query(
       `UPDATE users SET is_active = false, updated_at = NOW()

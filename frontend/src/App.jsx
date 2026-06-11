@@ -4,6 +4,7 @@ import { AnimatePresence } from "motion/react";
 import "./App.css";
 import MainLayout from "./components/layout/MainLayout";
 import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
 import Stock from "./pages/StockManagement";
@@ -23,6 +24,7 @@ function App() {
     <AnimatePresence>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="forgot-password" element={<ForgotPassword />} />
         <Route
           path="/"
           element={

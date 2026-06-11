@@ -90,7 +90,6 @@ export default function Login() {
             }}
           />
 
-          {/* faint diagonal text watermark */}
           <div
             className="pointer-events-none absolute inset-0 flex items-center justify-center select-none"
             style={{ transform: "rotate(-30deg)" }}
@@ -224,6 +223,7 @@ export default function Login() {
                 </label>
                 <button
                   type="button"
+                  onClick={() => navigate("/forgot-password")}
                   className="font-semibold text-blue-700 hover:text-blue-900 transition"
                 >
                   Forgot Password?

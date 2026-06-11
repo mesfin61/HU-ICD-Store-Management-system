@@ -1,4 +1,6 @@
+require("dotenv").config();
 const bcrypt = require("bcryptjs");
+const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const { user } = require("../models");
 
@@ -60,6 +62,15 @@ const login = async (req, res) => {
       return res.status(403).json({
         success: false,
         message: "Your account is inactive. Contact the administrator.",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, foundUser.password_hash);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password.",
       });
     }
 
@@ -168,4 +179,143 @@ const changePassword = async (req, res) => {
   }
 };
 
-module.exports = { login, logout, getMe, changePassword };
+const ForgoPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required.",
+      });
+    }
+
+    const foundUser = await user.findByEmail(email.trim().toLowerCase());
+
+    if (!foundUser) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "This email is not registered. Contact the administrator if you believe this is an error.",
+      });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Expires in 10 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    // Save OTP in database
+    await user.saveResetOtp(foundUser.id, otp, expiresAt);
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: foundUser.email,
+      subject: "Password Reset OTP",
+      html: `
+        <div style="font-family: Arial, sans-serif">
+          <h2>Password Reset Request</h2>
+
+          <p>Hello ${foundUser.full_name},</p>
+
+          <p>Your password reset verification code is:</p>
+
+          <div style="
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 8px;
+            color: #1141a0;
+            margin: 20px 0;
+          ">
+            ${otp}
+          </div>
+
+          <p>This code expires in 10 minutes.</p>
+
+          <p>If you did not request a password reset, please ignore this email.</p>
+        </div>
+      `,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP sent successfully.",
+    });
+  } catch (err) {
+    console.error("[Auth] forgotPassword error:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error.",
+    });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    const foundUser = await user.findByEmailWithOtp(email.trim().toLowerCase());
+
+    if (!foundUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    if (foundUser.reset_otp !== otp.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP.",
+      });
+    }
+
+    if (
+      !foundUser.reset_otp_expires ||
+      new Date() > new Date(foundUser.reset_otp_expires)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired.",
+      });
+    }
+
+    const salt = await bcrypt.genSalt(12);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    await user.updatePassword(foundUser.id, passwordHash);
+
+    await user.clearResetOtp(foundUser.id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successfully.",
+    });
+  } catch (err) {
+    console.error("[Auth] resetPassword error:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error.",
+    });
+  }
+};
+
+module.exports = {
+  login,
+  logout,
+  getMe,
+  changePassword,
+  ForgoPassword,
+  resetPassword,
+};
