@@ -179,7 +179,7 @@ const changePassword = async (req, res) => {
   }
 };
 
-const ForgoPassword = async (req, res) => {
+const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -203,10 +203,8 @@ const ForgoPassword = async (req, res) => {
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Expires in 10 minutes
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Save OTP in database
     await user.saveResetOtp(foundUser.id, otp, expiresAt);
 
     const transporter = nodemailer.createTransport({
@@ -260,9 +258,16 @@ const ForgoPassword = async (req, res) => {
   }
 };
 
-const resetPassword = async (req, res) => {
+const verifyResetOtp = async (req, res) => {
+  const { email, otp } = req.body;
+
   try {
-    const { email, otp, newPassword } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and OTP are required.",
+      });
+    }
 
     const foundUser = await user.findByEmailWithOtp(email.trim().toLowerCase());
 
@@ -273,10 +278,54 @@ const resetPassword = async (req, res) => {
       });
     }
 
-    if (foundUser.reset_otp !== otp.trim()) {
+    if (!foundUser.reset_otp) {
+      return res.status(400).json({
+        success: false,
+        message: "No OTP requested.",
+      });
+    }
+
+    if (
+      foundUser.reset_otp_expires &&
+      foundUser.reset_otp_expires < Date.now()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired.",
+      });
+    }
+
+    if (foundUser.reset_otp !== otp) {
       return res.status(400).json({
         success: false,
         message: "Invalid OTP.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP verified successfully.",
+    });
+  } catch (err) {
+    console.error("[Auth] verifyResetOtp error:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error.",
+    });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    const foundUser = await user.findByEmailWithOtp(email.trim().toLowerCase());
+
+    if (!foundUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
       });
     }
 
@@ -316,6 +365,7 @@ module.exports = {
   logout,
   getMe,
   changePassword,
-  ForgoPassword,
+  forgotPassword,
+  verifyResetOtp,
   resetPassword,
 };
