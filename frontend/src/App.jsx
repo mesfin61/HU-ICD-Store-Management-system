@@ -13,6 +13,7 @@ import Reports from "./pages/Reports";
 import Users from "./pages/Users";
 import Settings from "./pages/Settings";
 import Notify from "./pages/Notify";
+import Profile from "./pages/Profile";
 import Logout from "./pages/Logout";
 import AddItem from "./components/inventory/AddItem";
 import ProtectedRoute from "./route/ProtectedRoute";
@@ -43,7 +44,7 @@ function App() {
           <Route path="users" element={<Users />} />
           <Route path="settings" element={<Settings />} />
           <Route path="notifications" element={<Notify />} />
-          <Route path="profile" element={<Settings />} />
+          <Route path="profile" element={<Profile />} />
           <Route path="logout" element={<Logout />} />
           <Route path="generate-report" element={<GenerateReportModal />} />
         </Route>

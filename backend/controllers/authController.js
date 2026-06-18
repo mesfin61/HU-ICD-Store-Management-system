@@ -119,6 +119,7 @@ const getMe = async (req, res) => {
         email: foundUser.email,
         phoneNumber: foundUser.phone_number,
         officeLocation: foundUser.office_location,
+        profilePicture: foundUser.profile_picture,
         role: foundUser.role_name,
         isActive: foundUser.is_active,
         createdAt: foundUser.created_at,
@@ -407,6 +408,34 @@ const updateProfile = async (req, res) => {
   }
 };
 
+const updateProfilePicture = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No image uploaded",
+      });
+    }
+
+    const updatedUser = await user.updateProfilePicture(
+      req.user.id,
+      `/uploads/profiles/${req.file.filename}`,
+    );
+
+    res.status(200).json({
+      success: true,
+      data: updatedUser,
+    });
+  } catch (err) {
+    console.error("[Auth] updateProfilePicture error:", err);
+
+    res.status(500).json({
+      success: false,
+      message: "Server error.",
+    });
+  }
+};
+
 module.exports = {
   login,
   logout,
@@ -416,4 +445,5 @@ module.exports = {
   verifyResetOtp,
   resetPassword,
   updateProfile,
+  updateProfilePicture,
 };

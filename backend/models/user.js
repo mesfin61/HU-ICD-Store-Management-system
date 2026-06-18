@@ -11,7 +11,7 @@ const user = {
 
   async findById(id) {
     const result = await pool.query(
-      "SELECT u.id, u.full_name, u.email, u.phone_number, u.office_location, r.name AS role_name, u.is_active, u.created_at, u.updated_at FROM users u JOIN roles r ON r.id = u.role_id WHERE u.id = $1",
+      "SELECT u.id, u.full_name, u.email, u.phone_number, u.office_location, u.profile_picture, r.name AS role_name, u.is_active, u.created_at, u.updated_at FROM users u JOIN roles r ON r.id = u.role_id WHERE u.id = $1",
       [id],
     );
     return result.rows[0] || null;
@@ -19,7 +19,7 @@ const user = {
 
   async findAll() {
     const result = await pool.query(
-      `SELECT u.id, u.full_name, u.email, u.phone_number, u.office_location, u.role_id, r.name AS role_name,
+      `SELECT u.id, u.full_name, u.email, u.phone_number, u.office_location, u.profile_picture, u.role_id, r.name AS role_name,
               u.is_active, u.created_at
        FROM users u
        JOIN roles r       ON r.id = u.role_id
@@ -73,6 +73,21 @@ const user = {
       updated_at
     `,
       [fullName, email, phoneNumber, officeLocation, id],
+    );
+
+    return result.rows[0] || null;
+  },
+
+  async updateProfilePicture(id, profilePicture) {
+    const result = await pool.query(
+      `
+      UPDATE users
+      SET profile_picture = $1,
+          updated_at = NOW()
+      WHERE id = $2
+      RETURNING id, profile_picture
+      `,
+      [profilePicture, id],
     );
 
     return result.rows[0] || null;

@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import API_URL from "../../config/api";
 import { FiBell } from "react-icons/fi";
 import { useUser } from "../../context/AuthContext";
 
@@ -19,11 +20,12 @@ function HeaderBar() {
           <div className="w-9 h-9 rounded-full bg-gray-300 animate-pulse"></div>
         ) : (
           <Link to="/profile" className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm uppercase">
-              {user?.fullName
-                ?.split(" ")
-                .map((name) => name.charAt(0))
-                .join("")}
+            <div className="w-9 h-9 rounded-full overflow-hidden bg-blue-600 flex items-center justify-center">
+              <img
+                src={`${API_URL}/${user.profilePicture.replace(/^\/+/, "")}`}
+                alt="profile"
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="hidden md:block text-sm text-gray-700">
               <div className="font-semibold">{user?.fullName}</div>

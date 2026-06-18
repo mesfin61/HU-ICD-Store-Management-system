@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import API_URL from "../config/api";
+import {
+  updateProfile,
+  uploadProfilePicture,
+} from "../services/profileService";
 import { FiMapPin, FiMail, FiPhone, FiCalendar } from "react-icons/fi";
-import { MdOutlineVerifiedUser } from "react-icons/md";
+import { MdOutlineVerifiedUser, MdModeEdit } from "react-icons/md";
 import { useUser } from "../context/AuthContext";
 import PageTransition from "../animated_motion/PageTransition";
 
@@ -69,17 +72,7 @@ export default function Profile() {
       setError(false);
       setMessage("");
 
-      const token = localStorage.getItem("token");
-
-      const response = await axios.patch(`${API_URL}/api/auth/profile`, data, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      setMessage("Profile updated successfully");
-      setEdit(false);
-      const updatedUser = response.data.data;
+      const updatedUser = await updateProfile(data);
 
       setUser((prev) => ({
         ...prev,
@@ -88,9 +81,58 @@ export default function Profile() {
         phoneNumber: updatedUser.phone_number,
         officeLocation: updatedUser.office_location,
       }));
+
+      setMessage("Profile updated successfully");
+      setEdit(false);
     } catch (err) {
       setError(true);
       setMessage(err.response?.data?.message || "Failed to update profile");
+    }
+  };
+
+  const handleImageUpload = async (e) => {
+    try {
+      const file = e.target.files[0];
+
+      if (!file) return;
+
+      const allowedExtensions = [".jpg", ".jpeg", ".png", ".webp"];
+
+      const extension = file.name
+        .substring(file.name.lastIndexOf("."))
+        .toLowerCase();
+
+      if (!allowedExtensions.includes(extension)) {
+        setError(true);
+        setMessage(
+          "Only JPG, JPEG, PNG, and WEBP images are allowed. Please convert HEIC images before uploading.",
+        );
+        return;
+      }
+
+      const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+
+      if (file.size > MAX_SIZE) {
+        setError(true);
+        setMessage("Image size must be less than 5 MB.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("profilePicture", file);
+
+      const updatedUser = await uploadProfilePicture(formData);
+
+      setUser((prev) => ({
+        ...prev,
+        profilePicture: updatedUser.profile_picture,
+      }));
+
+      setError(false);
+      setMessage("Profile picture updated successfully");
+    } catch (err) {
+      setError(true);
+      setMessage(err.response?.data?.message || "Failed to upload image");
     }
   };
 
@@ -105,8 +147,30 @@ export default function Profile() {
             <div className="px-6 pb-6">
               <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-12">
                 <div className="flex items-end gap-4">
-                  <div className="w-24 h-24 rounded-xl border-4 border-white bg-blue-600 text-white flex items-center justify-center text-3xl font-bold shadow-md uppercase">
-                    {initials}
+                  <div className="relative rounded-full overflow-hidden bg-blue-600 flex items-center justify-center">
+                    {user?.profilePicture ? (
+                      <img
+                        src={`${API_URL}/${user.profilePicture.replace(/^\/+/, "")}`}
+                        alt="Profile"
+                        className="w-24 h-24 rounded-full object-cover border-4 border-white"
+                      />
+                    ) : (
+                      <div className="w-24 h-24 rounded-full border-4 border-white bg-blue-600 text-white flex items-center justify-center text-3xl font-bold">
+                        {initials}
+                      </div>
+                    )}
+
+                    {edit && (
+                      <label className="absolute bottom-2 right-4 cursor-pointer text-black hover:text-gray-800 bg-white rounded">
+                        <MdModeEdit className="text-2xl" />
+                        <input
+                          type="file"
+                          accept=".jpg,.jpeg,.png,.webp"
+                          hidden
+                          onChange={handleImageUpload}
+                        />
+                      </label>
+                    )}
                   </div>
 
                   <div className="pb-2">
