@@ -1,23 +1,26 @@
 const bcrypt = require("bcryptjs");
-const { user } = require("../models");
+const { user, role, department } = require("../models");
 
-function initialsFromEmail(email) {
-  return email
-    .split("@")[0]
-    .split(/[._-]/)
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
+const SUPER_ADMIN = "Super Admin";
+const ADMIN = "admin";
+const USER = "user";
 
 const getAllUsers = async (req, res) => {
   try {
     const users = await user.findAll();
-    res.status(200).json({ success: true, count: users.length, data: users });
+
+    res.status(200).json({
+      success: true,
+      count: users.length,
+      data: users,
+    });
   } catch (error) {
     console.error("[User] getAllUsers error:", error.message);
-    res.status(500).json({ success: false, message: "Server error." });
+
+    res.status(500).json({
+      success: false,
+      message: "Server error.",
+    });
   }
 };
 
@@ -26,26 +29,35 @@ const getUserById = async (req, res) => {
     const foundUser = await user.findById(req.params.id);
 
     if (!foundUser) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found." });
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
     }
 
-    res.status(200).json({ success: true, data: foundUser });
+    res.status(200).json({
+      success: true,
+      data: foundUser,
+    });
   } catch (error) {
     console.error("[User] getUserById error:", error.message);
-    res.status(500).json({ success: false, message: "Server error." });
+
+    res.status(500).json({
+      success: false,
+      message: "Server error.",
+    });
   }
 };
 
 const createUser = async (req, res) => {
   try {
-    const { fullName, email, password, roleId } = req.body;
+    const { fullName, email, password, departmentId, roleId } = req.body;
 
     if (!fullName || !email || !password || !roleId) {
-      return res
-        .status(400)
-        .json({ success: false, message: "All fields are required!!" });
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required.",
+      });
     }
 
     if (password.length < 8) {
@@ -55,64 +67,277 @@ const createUser = async (req, res) => {
       });
     }
 
-    const existingUser = await user.findByEmail(email);
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const existingUser = await user.findByEmail(normalizedEmail);
+
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: "user already exists with this email",
+        message: "A user already exists with this email.",
+      });
+    }
+
+    const requestedRole = await role.findById(roleId);
+
+    if (!requestedRole) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid role.",
+      });
+    }
+
+    if (!departmentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Department is required.",
+      });
+    }
+
+    const requestedDepartment =
+    await department.findById(departmentId);
+
+    if (!requestedDepartment) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid department.",
+      });
+    }
+
+    if (!requestedDepartment.is_active) {
+      return res.status(400).json({
+        success: false,
+        message: "The selected department is inactive.",
+      });
+    }
+
+    /*
+     * ADMIN RULE:
+     *
+     * Admins may create ordinary users only.
+     */
+    if (req.user.role_name === ADMIN && requestedRole.name !== USER) {
+      return res.status(403).json({
+        success: false,
+        message: "Admins can only create standard users.",
       });
     }
 
     const salt = await bcrypt.genSalt(12);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    const NewUser = await user.create({
+    const newUser = await user.create({
       fullName: fullName.trim(),
-      email: email.trim().toLowerCase(),
+      email: normalizedEmail,
       passwordHash,
-      roleId,
+      roleId: requestedRole.id,
+      departmentId: requestedDepartment.id,
     });
 
-    res.status(201).json({ success: true, data: NewUser });
+    res.status(201).json({
+      success: true,
+      data: newUser,
+    });
   } catch (error) {
     console.error("[User] createUser error:", error.message);
-    res.status(500).json({ success: false, message: "Server error." });
+
+    res.status(500).json({
+      success: false,
+      message: "Server error.",
+    });
   }
 };
 
 const updateUser = async (req, res) => {
   try {
-    const { fullName, email, roleId, isActive } = req.body;
-
+    const { fullName, email, roleId, departmentId, isActive } = req.body;
     const { id } = req.params;
+
     const existingUser = await user.findById(id);
+
     if (!existingUser) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found." });
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
     }
 
-    if (email && email.trim().toLowerCase() !== existingUser.email) {
-      const emailTaken = await user.findByEmail(email.trim().toLowerCase());
-      if (emailTaken) {
+    /*
+     * Never allow a user to modify their own
+     * privileged role or account status.
+     */
+    if (
+      id === req.user.id &&
+      (roleId !== undefined || isActive !== undefined)
+    ) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "You cannot change your own role or account status.",
+      });
+    }
+
+    /*
+     * Admins can only modify standard users.
+     */
+    if (req.user.role_name === ADMIN) {
+      if (existingUser.role_name !== USER) {
+        return res.status(403).json({
+          success: false,
+          message: "Admins can only modify standard users.",
+        });
+      }
+
+      /*
+       * Admins cannot assign privileged roles.
+       */
+      if (roleId !== undefined) {
+        const requestedRole = await role.findById(roleId);
+
+        if (!requestedRole) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid role.",
+          });
+        }
+
+        if (requestedRole.name !== USER) {
+          return res.status(403).json({
+            success: false,
+            message:
+              "Admins cannot promote users to privileged roles.",
+          });
+        }
+      }
+    }
+
+    /*
+     * Determine final values before sending the
+     * operation to the transactional model method.
+     */
+    const finalFullName =
+      fullName ?? existingUser.full_name;
+
+    const finalEmail =
+      email
+        ? email.trim().toLowerCase()
+        : existingUser.email;
+
+    const finalRoleId =
+      roleId ?? existingUser.role_id;
+
+    const finalIsActive =
+      isActive !== undefined
+        ? isActive
+        : existingUser.is_active;
+
+    /*
+     * Check email uniqueness.
+     */
+    if (finalEmail !== existingUser.email) {
+      const emailTaken =
+        await user.findByEmail(finalEmail);
+
+      if (emailTaken && emailTaken.id !== id) {
         return res.status(400).json({
           success: false,
-          message: "Email is already in use by another user.",
+          message:
+            "Email is already in use by another user.",
         });
       }
     }
 
-    const updated = await user.update(id, {
-      fullName: fullName ?? existingUser.full_name,
-      email: email ? email.trim().toLowerCase() : existingUser.email,
-      roleId: roleId ?? existingUser.role_id,
-      isActive: isActive !== undefined ? isActive : existingUser.is_active,
-    });
+      const finalDepartmentId =
+        departmentId !== undefined
+          ? departmentId
+          : existingUser.department_id;
+      
+      if (departmentId !== undefined) {
+        const requestedDepartment =
+          await department.findById(departmentId);
 
-    res.status(200).json({ success: true, data: updated });
+      if (!requestedDepartment) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid department.",
+        });
+      }
+
+      if (!requestedDepartment.is_active) {
+        return res.status(400).json({
+          success: false,
+          message: "The selected department is inactive.",
+        });
+      }
+}    
+
+
+
+    /*
+     * The database transaction now owns all
+     * Super Admin integrity decisions.
+     */
+    const result =
+      await user.updateWithSuperAdminGuard({
+        id,
+        actingUserId: req.user.id,
+        fullName: finalFullName.trim(),
+        email: finalEmail,
+        roleId: finalRoleId,
+        isActive: finalIsActive,
+        departmentId: finalDepartmentId,
+      });
+
+    if (!result.success) {
+      switch (result.reason) {
+        case "NOT_FOUND":
+          return res.status(404).json({
+            success: false,
+            message: "User not found.",
+          });
+
+        case "INVALID_ROLE":
+          return res.status(400).json({
+            success: false,
+            message: "Invalid role.",
+          });
+
+        case "LAST_SUPER_ADMIN":
+          return res.status(400).json({
+            success: false,
+            message:
+              "The system must always have at least one active Super Admin.",
+          });
+
+        case "SELF_PRIVILEGE_CHANGE":
+          return res.status(403).json({
+            success: false,
+            message:
+              "You cannot change your own role or account status.",
+          });
+
+        default:
+          return res.status(400).json({
+            success: false,
+            message: "User update was rejected.",
+          });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: result.user,
+    });
   } catch (error) {
-    console.error("[User] updateUser error:", error.message);
-    res.status(500).json({ success: false, message: "Server error." });
+    console.error(
+      "[User] updateUser error:",
+      error.message,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error.",
+    });
   }
 };
 
@@ -120,61 +345,102 @@ const deactivateUser = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Prevent admin from deactivating their own account
-    if (id === req.user.id) {
-      return res.status(400).json({
+    const foundUser = await user.findById(id);
+
+    if (!foundUser) {
+      return res.status(404).json({
         success: false,
-        message: "You cannot deactivate your own account.",
+        message: "User not found.",
       });
     }
 
-    const foundUser = await user.findById(id);
-    if (!foundUser) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found." });
+    /*
+     * Admins can only deactivate standard users.
+     */
+    if (
+      req.user.role_name === ADMIN &&
+      foundUser.role_name !== USER
+    ) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Admins can only deactivate standard users.",
+      });
     }
 
-    const result = await user.deactivate(id);
+    const result =
+      await user.deactivateWithSuperAdminGuard({
+        id,
+        actingUserId: req.user.id,
+      });
 
-    res.status(200).json({
+    if (!result.success) {
+      switch (result.reason) {
+        case "SELF_DEACTIVATION":
+          return res.status(400).json({
+            success: false,
+            message:
+              "You cannot deactivate your own account.",
+          });
+
+        case "ALREADY_INACTIVE":
+          return res.status(400).json({
+            success: false,
+            message: "User is already inactive.",
+          });
+
+        case "LAST_SUPER_ADMIN":
+          return res.status(400).json({
+            success: false,
+            message:
+              "The last active Super Admin cannot be deactivated.",
+          });
+
+        case "NOT_FOUND":
+          return res.status(404).json({
+            success: false,
+            message: "User not found.",
+          });
+
+        default:
+          return res.status(400).json({
+            success: false,
+            message: "Deactivation was rejected.",
+          });
+      }
+    }
+
+    return res.status(200).json({
       success: true,
       message: "User deactivated successfully.",
-      data: result,
+      data: result.user,
     });
-  } catch (err) {
-    console.error("[User] deactivateUser error:", err.message);
-    res.status(500).json({ success: false, message: "Server error." });
+  } catch (error) {
+    console.error(
+      "[User] deactivateUser error:",
+      error.message,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error.",
+    });
   }
 };
-
 const deleteUser = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    if (id === req.user.id) {
-      return res.status(400).json({
-        success: false,
-        message: "You cannot delete your own account.",
-      });
-    }
-
-    const foundUser = await user.findById(id);
-    if (!foundUser) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found." });
-    }
-
-    await user.delete(id);
-
-    res
-      .status(200)
-      .json({ success: true, message: "User deleted successfully." });
-  } catch (err) {
-    console.error("[User] deleteUser error:", err.message);
-    res.status(500).json({ success: false, message: "Server error." });
-  }
+  /*
+   * Hard deletion of users is intentionally disabled.
+   *
+   * Users are referenced by requests, assets and
+   * inventory transactions. Deactivation preserves
+   * historical records and is the correct lifecycle
+   * operation.
+   */
+  return res.status(405).json({
+    success: false,
+    message:
+      "User deletion is disabled. Deactivate the user instead.",
+  });
 };
 
 module.exports = {

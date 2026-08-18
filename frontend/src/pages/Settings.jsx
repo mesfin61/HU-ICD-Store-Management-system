@@ -7,7 +7,7 @@ import {
 import {
   getStoredCurrentUser,
   getDisplayUserName,
-} from "../components/user managent/userStorage";
+} from "../components/user management/userStorage";
 
 export default function Settings() {
   const currentUser = getStoredCurrentUser();

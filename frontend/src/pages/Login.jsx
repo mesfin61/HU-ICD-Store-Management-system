@@ -5,10 +5,12 @@ import PageTransition from "../animated_motion/PageTransition";
 import { FiArrowRight, FiEye, FiEyeOff } from "react-icons/fi";
 import { MdOutlineInventory2, MdOutlineShield } from "react-icons/md";
 import { HiOutlineBuildingLibrary } from "react-icons/hi2";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useUser } from "../context/AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { user, setUser } = useUser();
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,11 +21,6 @@ export default function Login() {
     remember: false,
   });
 
-  const token = localStorage.getItem("token");
-
-  if (token) {
-    return <Navigate to="/" replace />;
-  }
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
@@ -47,20 +44,15 @@ export default function Login() {
       );
 
       if (response.data.success) {
-        const token = response.data.token;
-        console.log("Login successful, token:", token);
-        const user = response.data.user;
-        console.log("User data:", user);
-
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
+        setUser(response.data.user);
 
         setMessage("Login successful!");
-
         setError(false);
 
         navigate("/");
       }
+
+
     } catch (error) {
       setError(true);
       setMessage(

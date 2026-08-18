@@ -20,7 +20,7 @@ function sendTokenResponse(res, foundUser, statusCode = 200) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    maxAge: 24 * 60 * 60 * 1000,
   };
 
   res
@@ -28,12 +28,11 @@ function sendTokenResponse(res, foundUser, statusCode = 200) {
     .cookie("token", token, cookieOptions)
     .json({
       success: true,
-      token,
       user: {
         id: foundUser.id,
         fullName: foundUser.full_name,
         email: foundUser.email,
-        role: foundUser.role_name, // ← role_name from JOIN
+        role: foundUser.role_name,
         isActive: foundUser.is_active,
       },
     });

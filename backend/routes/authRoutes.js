@@ -10,7 +10,7 @@ const {
   updateProfile,
   updateProfilePicture,
 } = require("../controllers/authController");
-const { protect } = require("../middleware/authMiddleware");
+const { protect } = require("../middleware/AuthMiddleware");
 const { uploadProfilePicture } = require("../middleware/uploadMiddleware");
 
 const router = express.Router();

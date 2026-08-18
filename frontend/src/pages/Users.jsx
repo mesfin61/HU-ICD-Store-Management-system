@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import ActiveSystemUsers from "../components/user managent/ActiveSystemUsers";
-import AddUserModal from "../components/user managent/AddUserModal";
+import ActiveSystemUsers from "../components/user management/ActiveSystemUsers";
+import AddUserModal from "../components/user management/AddUserModal";
 import PageTransition from "../animated_motion/PageTransition";
 import { FaUserPlus } from "react-icons/fa";
 
