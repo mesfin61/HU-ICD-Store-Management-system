@@ -1,6 +1,12 @@
 const jwt = require("jsonwebtoken");
 const { user } = require("../models");
 
+const ROLES = Object.freeze({
+  ADMINISTRATOR: "Administrator",
+  STORE_MANAGER: "Store Manager",
+  STAFF: "Staff",
+});
+
 const protect = async (req, res, next) => {
   try {
     let token;
@@ -31,8 +37,7 @@ const protect = async (req, res, next) => {
     if (!foundUser) {
       return res.status(401).json({
         success: false,
-        message:
-          "User belonging to this token no longer exists.",
+        message: "User belonging to this token no longer exists.",
       });
     }
 
@@ -44,7 +49,6 @@ const protect = async (req, res, next) => {
     }
 
     /*
-     * IMPORTANT:
      * Authorization uses the current database record,
      * not the role stored inside the JWT.
      */
@@ -55,16 +59,14 @@ const protect = async (req, res, next) => {
     if (err.name === "TokenExpiredError") {
       return res.status(401).json({
         success: false,
-        message:
-          "Session expired. Please log in again.",
+        message: "Session expired. Please log in again.",
       });
     }
 
     if (err.name === "JsonWebTokenError") {
       return res.status(401).json({
         success: false,
-        message:
-          "Invalid token. Please log in again.",
+        message: "Invalid token. Please log in again.",
       });
     }
 
@@ -92,8 +94,7 @@ const restrictTo = (...roles) => {
     if (!roles.includes(req.user.role_name)) {
       return res.status(403).json({
         success: false,
-        message:
-          `Access denied. Required role: ${roles.join(" or ")}.`,
+        message: "Access denied.",
       });
     }
 
@@ -104,4 +105,5 @@ const restrictTo = (...roles) => {
 module.exports = {
   protect,
   restrictTo,
+  ROLES,
 };

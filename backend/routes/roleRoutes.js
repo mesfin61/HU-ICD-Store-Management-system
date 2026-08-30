@@ -15,7 +15,7 @@ const router = express.Router();
 router.use(protect);
 
 router.use(
-  restrictTo("Super Admin", "admin"),
+  restrictTo("Administrator"),
 );
 
 router.get("/", getAllRoles);

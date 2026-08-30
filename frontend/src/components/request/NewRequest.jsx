@@ -1,77 +1,149 @@
-import React, { useState } from "react";
+import React, {
+  useEffect,
+  useState,
+} from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  buildRequestItem,
-  getStoredRequestItems,
-  saveStoredRequestItems,
-} from "./requestStorage";
+import { createRequest } from "../../services/requestService";
+import { getInventoryItems } from "../../services/inventoryService";
 
 function NewRequest() {
   const navigate = useNavigate();
-  const [submitError, setSubmitError] = useState("");
+
+  const [inventoryItems, setInventoryItems] =
+    useState([]);
+
+  const [inventoryLoading, setInventoryLoading] =
+    useState(true);
+
+  const [submitError, setSubmitError] =
+    useState("");
+
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
+
   const [form, setForm] = useState({
-    requester: "",
-    department: "",
-    itemCategory: "",
-    itemName: "",
-    quantity: "",
-    priorityLevel: "",
     purpose: "",
-    neededByDate: "",
-    supportingDocumentName: "",
-    supportingDocumentUrl: "",
-    supportingDocumentType: "",
+    itemId: "",
+    quantity: "",
   });
 
+  useEffect(() => {
+    let mounted = true;
+
+    const loadInventory = async () => {
+      try {
+        setInventoryLoading(true);
+        setSubmitError("");
+
+        const data =
+          await getInventoryItems();
+
+        if (mounted) {
+          setInventoryItems(
+            Array.isArray(data) ? data : [],
+          );
+        }
+      } catch (error) {
+        console.error(
+          "[Request] load inventory:",
+          error,
+        );
+
+        if (mounted) {
+          setSubmitError(
+            error.response?.data?.message ||
+              "Failed to load inventory.",
+          );
+        }
+      } finally {
+        if (mounted) {
+          setInventoryLoading(false);
+        }
+      }
+    };
+
+    loadInventory();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const handleChange = (event) => {
-    const { name, value } = event.target;
-    setForm((currentForm) => ({
-      ...currentForm,
-      [name]: value,
-    }));
-  };
+    const {
+      name,
+      value,
+    } = event.target;
 
-  const handleFileChange = async (event) => {
-    const selectedFile = event.target.files?.[0];
-
-    if (!selectedFile) {
-      setForm((currentForm) => ({
-        ...currentForm,
-        supportingDocumentName: "",
-        supportingDocumentUrl: "",
-        supportingDocumentType: "",
-      }));
-      return;
-    }
-
-    const fileDataUrl = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result || ""));
-      reader.onerror = () => reject(new Error("Failed to read selected file"));
-      reader.readAsDataURL(selectedFile);
-    });
-
-    setForm((currentForm) => ({
-      ...currentForm,
-      supportingDocumentName: selectedFile.name,
-      supportingDocumentUrl: fileDataUrl,
-      supportingDocumentType: selectedFile.type,
+    setForm((current) => ({
+      ...current,
+      [name]:
+        name === "quantity"
+          ? value === ""
+            ? ""
+            : Number(value)
+          : value,
     }));
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
     setSubmitError("");
 
-    // if (!form.supportingDocumentUrl) {
-    //   setSubmitError("Please upload a supporting document before submitting.");
-    //   return;
-    // }
+    if (!form.purpose.trim()) {
+      setSubmitError(
+        "A reason for the request is required.",
+      );
+      return;
+    }
 
-    const newRequest = buildRequestItem(form);
-    const currentRequests = getStoredRequestItems();
-    saveStoredRequestItems([newRequest, ...currentRequests]);
-    navigate("/requests");
+    if (!form.itemId) {
+      setSubmitError(
+        "Please select an inventory item.",
+      );
+      return;
+    }
+
+    if (
+      !Number.isInteger(form.quantity) ||
+      form.quantity <= 0
+    ) {
+      setSubmitError(
+        "Quantity must be a positive whole number.",
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await createRequest({
+        purpose:
+          form.purpose.trim(),
+
+        items: [
+          {
+            itemId: form.itemId,
+            quantity: form.quantity,
+          },
+        ],
+      });
+
+      navigate("/requests");
+    } catch (error) {
+      console.error(
+        "[Request] create request:",
+        error,
+      );
+
+      setSubmitError(
+        error.response?.data?.message ||
+          "Failed to submit request.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -79,169 +151,155 @@ function NewRequest() {
       <div className="flex min-h-[calc(100vh-3rem)] items-center justify-center">
         <form
           onSubmit={handleSubmit}
-          className="w-full max-w-4xl rounded-2xl bg-white p-6 shadow-lg border border-gray-200"
+          className="w-full max-w-3xl rounded-2xl border border-gray-200 bg-white p-6 shadow-lg"
         >
           <div className="mb-6 text-center">
             <h1 className="text-2xl font-semibold text-primary">
               New Supply Request
             </h1>
+
             <p className="mt-1 text-sm text-slate-500">
-              Submit a new request for ICT equipment or consumables
+              Submit a request for inventory from the
+              store.
             </p>
           </div>
 
+          {submitError && (
+            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              {submitError}
+            </div>
+          )}
+
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="flex flex-col gap-2">
+            <label className="flex flex-col gap-2 md:col-span-2">
               <span className="text-sm font-semibold uppercase text-primary">
-                Requester Name
+                Inventory Item
               </span>
-              <input
-                type="text"
-                name="requester"
-                value={form.requester}
-                onChange={handleChange}
-                required
-                className="rounded-lg border border-gray-300 bg-slate-50 px-4 py-3 text-primary outline-none transition focus:border-blue-500"
-              />
-            </label>
 
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-semibold uppercase text-primary">
-                Department
-              </span>
-              <input
-                type="text"
-                name="department"
-                value={form.department}
+              <select
+                name="itemId"
+                value={form.itemId}
                 onChange={handleChange}
                 required
+                disabled={
+                  inventoryLoading ||
+                  isSubmitting
+                }
                 className="rounded-lg border border-gray-300 bg-slate-50 px-4 py-3 text-primary outline-none transition focus:border-blue-500"
-              />
-            </label>
+              >
+                <option value="">
+                  {inventoryLoading
+                    ? "Loading inventory..."
+                    : "Select an item"}
+                </option>
 
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-semibold uppercase text-primary">
-                Item Category
-              </span>
-              <input
-                type="text"
-                name="itemCategory"
-                value={form.itemCategory}
-                onChange={handleChange}
-                required
-                className="rounded-lg border border-gray-300 bg-slate-50 px-4 py-3 text-primary outline-none transition focus:border-blue-500"
-              />
-            </label>
-
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-semibold uppercase text-primary">
-                Equipment Name
-              </span>
-              <input
-                type="text"
-                name="itemName"
-                value={form.itemName}
-                onChange={handleChange}
-                required
-                className="rounded-lg border border-gray-300 bg-slate-50 px-4 py-3 text-primary outline-none transition focus:border-blue-500"
-              />
+                {inventoryItems.map(
+                  (item) => (
+                    <option
+                      key={item.id}
+                      value={item.id}
+                    >
+                      {item.item_code} —{" "}
+                      {item.name} (
+                      {item.current_stock}{" "}
+                      {item.unit} available)
+                    </option>
+                  ),
+                )}
+              </select>
             </label>
 
             <label className="flex flex-col gap-2">
               <span className="text-sm font-semibold uppercase text-primary">
                 Quantity
               </span>
+
               <input
                 type="number"
                 name="quantity"
                 value={form.quantity}
                 onChange={handleChange}
-                required
                 min="1"
+                step="1"
+                required
+                disabled={isSubmitting}
                 className="rounded-lg border border-gray-300 bg-slate-50 px-4 py-3 text-primary outline-none transition focus:border-blue-500"
               />
             </label>
 
-            <label className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2">
               <span className="text-sm font-semibold uppercase text-primary">
-                Priority Level
+                Availability
               </span>
-              <input
-                type="text"
-                name="priorityLevel"
-                value={form.priorityLevel}
-                onChange={handleChange}
-                required
-                className="rounded-lg border border-gray-300 bg-slate-50 px-4 py-3 text-primary outline-none transition focus:border-blue-500"
-              />
-            </label>
+
+              <div className="flex h-full items-center rounded-lg border border-gray-200 bg-slate-50 px-4 py-3">
+                {(() => {
+                  const item =
+                    inventoryItems.find(
+                      (entry) =>
+                        entry.id ===
+                        form.itemId,
+                    );
+
+                  if (!item) {
+                    return (
+                      <span className="text-sm text-slate-500">
+                        Select an item
+                      </span>
+                    );
+                  }
+
+                  return (
+                    <span className="text-sm font-semibold text-primary">
+                      {item.current_stock}{" "}
+                      {item.unit} available
+                    </span>
+                  );
+                })()}
+              </div>
+            </div>
 
             <label className="flex flex-col gap-2 md:col-span-2">
               <span className="text-sm font-semibold uppercase text-primary">
                 Request Purpose
               </span>
+
               <textarea
                 name="purpose"
                 value={form.purpose}
                 onChange={handleChange}
                 required
-                rows={4}
+                rows={5}
+                disabled={isSubmitting}
+                placeholder="Explain why the inventory is needed."
                 className="rounded-lg border border-gray-300 bg-slate-50 px-4 py-3 text-primary outline-none transition focus:border-blue-500"
               />
-            </label>
-
-            <label className="flex flex-col gap-2 md:col-span-2">
-              <span className="text-sm font-semibold uppercase text-primary">
-                Needed By Date
-              </span>
-              <input
-                type="date"
-                name="neededByDate"
-                value={form.neededByDate}
-                onChange={handleChange}
-                required
-                className="rounded-lg border border-gray-300 bg-slate-50 px-4 py-3 text-primary outline-none transition focus:border-blue-500"
-              />
-            </label>
-
-            <label className="flex flex-col gap-2 md:col-span-2">
-              <span className="text-sm font-semibold uppercase text-primary">
-                Supporting Documents (Approval Letters/Justification)
-              </span>
-              <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-5 text-center">
-                <input
-                  type="file"
-                  className="hidden"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={handleFileChange}
-                  id="request-upload"
-                />
-                <label htmlFor="request-upload" className="cursor-pointer">
-                  <div className="text-sm font-semibold text-primary">
-                    Click to upload or drag and drop
-                  </div>
-                  <div className="mt-1 text-xs text-gray-500">
-                    PDF, JPG or PNG up to 10MB
-                  </div>
-                  {form.supportingDocumentName ? (
-                    <div className="mt-3 text-xs font-medium text-primary">
-                      Selected file: {form.supportingDocumentName}
-                    </div>
-                  ) : null}
-                </label>
-              </div>
             </label>
           </div>
 
-          <div className="mt-6 flex flex-col items-center gap-2">
-            {submitError && (
-              <p className="text-sm text-red-600">{submitError}</p>
-            )}
+          <div className="mt-6 flex justify-end gap-3 border-t pt-4">
+            <button
+              type="button"
+              onClick={() =>
+                navigate("/requests")
+              }
+              disabled={isSubmitting}
+              className="rounded-md border border-primary px-6 py-3 text-sm font-semibold text-primary disabled:opacity-50"
+            >
+              Cancel
+            </button>
+
             <button
               type="submit"
-              className="rounded-md bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+              disabled={
+                inventoryLoading ||
+                isSubmitting
+              }
+              className="rounded-md bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Submit Request
+              {isSubmitting
+                ? "Submitting..."
+                : "Submit Request"}
             </button>
           </div>
         </form>

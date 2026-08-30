@@ -1,15 +1,16 @@
 const bcrypt = require("bcryptjs");
 const { user, role, department } = require("../models");
 
-const SUPER_ADMIN = "Super Admin";
-const ADMIN = "admin";
-const USER = "user";
+const {
+  ROLES,
+} = require("../middleware/AuthMiddleware");
+
 
 const getAllUsers = async (req, res) => {
   try {
     const users = await user.findAll();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       count: users.length,
       data: users,
@@ -17,12 +18,13 @@ const getAllUsers = async (req, res) => {
   } catch (error) {
     console.error("[User] getAllUsers error:", error.message);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Server error.",
     });
   }
 };
+
 
 const getUserById = async (req, res) => {
   try {
@@ -35,23 +37,42 @@ const getUserById = async (req, res) => {
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: foundUser,
     });
   } catch (error) {
     console.error("[User] getUserById error:", error.message);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Server error.",
     });
   }
 };
 
+
 const createUser = async (req, res) => {
   try {
-    const { fullName, email, password, departmentId, roleId } = req.body;
+    const {
+      fullName,
+      email,
+      password,
+      departmentId,
+      roleId,
+    } = req.body;
+
+    /*
+     * This controller is Administrator-only.
+     * The route should also enforce this restriction.
+     * This second check is intentional defense in depth.
+     */
+    if (req.user.role_name !== ROLES.ADMINISTRATOR) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied.",
+      });
+    }
 
     if (!fullName || !email || !password || !roleId) {
       return res.status(400).json({
@@ -67,9 +88,17 @@ const createUser = async (req, res) => {
       });
     }
 
+    if (!departmentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Department is required.",
+      });
+    }
+
     const normalizedEmail = email.trim().toLowerCase();
 
-    const existingUser = await user.findByEmail(normalizedEmail);
+    const existingUser =
+      await user.findByEmail(normalizedEmail);
 
     if (existingUser) {
       return res.status(400).json({
@@ -87,15 +116,20 @@ const createUser = async (req, res) => {
       });
     }
 
-    if (!departmentId) {
+    /*
+     * Only the three application roles are valid.
+     */
+    const validRoles = Object.values(ROLES);
+
+    if (!validRoles.includes(requestedRole.name)) {
       return res.status(400).json({
         success: false,
-        message: "Department is required.",
+        message: "Invalid role.",
       });
     }
 
     const requestedDepartment =
-    await department.findById(departmentId);
+      await department.findById(departmentId);
 
     if (!requestedDepartment) {
       return res.status(400).json({
@@ -111,20 +145,9 @@ const createUser = async (req, res) => {
       });
     }
 
-    /*
-     * ADMIN RULE:
-     *
-     * Admins may create ordinary users only.
-     */
-    if (req.user.role_name === ADMIN && requestedRole.name !== USER) {
-      return res.status(403).json({
-        success: false,
-        message: "Admins can only create standard users.",
-      });
-    }
-
     const salt = await bcrypt.genSalt(12);
-    const passwordHash = await bcrypt.hash(password, salt);
+    const passwordHash =
+      await bcrypt.hash(password, salt);
 
     const newUser = await user.create({
       fullName: fullName.trim(),
@@ -134,24 +157,42 @@ const createUser = async (req, res) => {
       departmentId: requestedDepartment.id,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: newUser,
     });
   } catch (error) {
     console.error("[User] createUser error:", error.message);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Server error.",
     });
   }
 };
 
+
 const updateUser = async (req, res) => {
   try {
-    const { fullName, email, roleId, departmentId, isActive } = req.body;
+    const {
+      fullName,
+      email,
+      roleId,
+      departmentId,
+      isActive,
+    } = req.body;
+
     const { id } = req.params;
+
+    /*
+     * Defense in depth.
+     */
+    if (req.user.role_name !== ROLES.ADMINISTRATOR) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied.",
+      });
+    }
 
     const existingUser = await user.findById(id);
 
@@ -163,8 +204,8 @@ const updateUser = async (req, res) => {
     }
 
     /*
-     * Never allow a user to modify their own
-     * privileged role or account status.
+     * An Administrator cannot modify their own
+     * role or activation state.
      */
     if (
       id === req.user.id &&
@@ -178,61 +219,58 @@ const updateUser = async (req, res) => {
     }
 
     /*
-     * Admins can only modify standard users.
+     * Validate requested role before calculating
+     * the final user state.
      */
-    if (req.user.role_name === ADMIN) {
-      if (existingUser.role_name !== USER) {
-        return res.status(403).json({
+    let finalRoleId = existingUser.role_id;
+
+    if (roleId !== undefined) {
+      const requestedRole = await role.findById(roleId);
+
+      if (!requestedRole) {
+        return res.status(400).json({
           success: false,
-          message: "Admins can only modify standard users.",
+          message: "Invalid role.",
         });
       }
 
-      /*
-       * Admins cannot assign privileged roles.
-       */
-      if (roleId !== undefined) {
-        const requestedRole = await role.findById(roleId);
-
-        if (!requestedRole) {
-          return res.status(400).json({
-            success: false,
-            message: "Invalid role.",
-          });
-        }
-
-        if (requestedRole.name !== USER) {
-          return res.status(403).json({
-            success: false,
-            message:
-              "Admins cannot promote users to privileged roles.",
-          });
-        }
+      if (
+        !Object.values(ROLES).includes(requestedRole.name)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid role.",
+        });
       }
+
+      finalRoleId = requestedRole.id;
     }
 
     /*
-     * Determine final values before sending the
-     * operation to the transactional model method.
+     * Determine final values.
      */
     const finalFullName =
-      fullName ?? existingUser.full_name;
+      fullName !== undefined
+        ? fullName.trim()
+        : existingUser.full_name;
 
     const finalEmail =
-      email
+      email !== undefined
         ? email.trim().toLowerCase()
         : existingUser.email;
-
-    const finalRoleId =
-      roleId ?? existingUser.role_id;
 
     const finalIsActive =
       isActive !== undefined
         ? isActive
         : existingUser.is_active;
 
+    const finalDepartmentId =
+      departmentId !== undefined
+        ? departmentId
+        : existingUser.department_id;
+
     /*
-     * Check email uniqueness.
+     * Validate email uniqueness.
      */
     if (finalEmail !== existingUser.email) {
       const emailTaken =
@@ -247,14 +285,12 @@ const updateUser = async (req, res) => {
       }
     }
 
-      const finalDepartmentId =
-        departmentId !== undefined
-          ? departmentId
-          : existingUser.department_id;
-      
-      if (departmentId !== undefined) {
-        const requestedDepartment =
-          await department.findById(departmentId);
+    /*
+     * Department must be valid and active.
+     */
+    if (departmentId !== undefined) {
+      const requestedDepartment =
+        await department.findById(departmentId);
 
       if (!requestedDepartment) {
         return res.status(400).json({
@@ -266,22 +302,24 @@ const updateUser = async (req, res) => {
       if (!requestedDepartment.is_active) {
         return res.status(400).json({
           success: false,
-          message: "The selected department is inactive.",
+          message:
+            "The selected department is inactive.",
         });
       }
-}    
-
-
+    }
 
     /*
-     * The database transaction now owns all
-     * Super Admin integrity decisions.
+     * Delegate integrity-sensitive changes to the model.
+     *
+     * IMPORTANT:
+     * The model method must enforce the Administrator
+     * protection rules transactionally.
      */
     const result =
-      await user.updateWithSuperAdminGuard({
+      await user.updateWithAdministratorGuard({
         id,
         actingUserId: req.user.id,
-        fullName: finalFullName.trim(),
+        fullName: finalFullName,
         email: finalEmail,
         roleId: finalRoleId,
         isActive: finalIsActive,
@@ -302,11 +340,11 @@ const updateUser = async (req, res) => {
             message: "Invalid role.",
           });
 
-        case "LAST_SUPER_ADMIN":
+        case "LAST_ADMINISTRATOR":
           return res.status(400).json({
             success: false,
             message:
-              "The system must always have at least one active Super Admin.",
+              "The system must always have at least one active Administrator.",
           });
 
         case "SELF_PRIVILEGE_CHANGE":
@@ -341,9 +379,20 @@ const updateUser = async (req, res) => {
   }
 };
 
+
 const deactivateUser = async (req, res) => {
   try {
     const { id } = req.params;
+
+    /*
+     * Defense in depth.
+     */
+    if (req.user.role_name !== ROLES.ADMINISTRATOR) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied.",
+      });
+    }
 
     const foundUser = await user.findById(id);
 
@@ -354,22 +403,8 @@ const deactivateUser = async (req, res) => {
       });
     }
 
-    /*
-     * Admins can only deactivate standard users.
-     */
-    if (
-      req.user.role_name === ADMIN &&
-      foundUser.role_name !== USER
-    ) {
-      return res.status(403).json({
-        success: false,
-        message:
-          "Admins can only deactivate standard users.",
-      });
-    }
-
     const result =
-      await user.deactivateWithSuperAdminGuard({
+      await user.deactivateWithAdministratorGuard({
         id,
         actingUserId: req.user.id,
       });
@@ -389,11 +424,11 @@ const deactivateUser = async (req, res) => {
             message: "User is already inactive.",
           });
 
-        case "LAST_SUPER_ADMIN":
+        case "LAST_ADMINISTRATOR":
           return res.status(400).json({
             success: false,
             message:
-              "The last active Super Admin cannot be deactivated.",
+              "The last active Administrator cannot be deactivated.",
           });
 
         case "NOT_FOUND":
@@ -427,14 +462,11 @@ const deactivateUser = async (req, res) => {
     });
   }
 };
+
+
 const deleteUser = async (req, res) => {
   /*
-   * Hard deletion of users is intentionally disabled.
-   *
-   * Users are referenced by requests, assets and
-   * inventory transactions. Deactivation preserves
-   * historical records and is the correct lifecycle
-   * operation.
+   * Hard deletion remains disabled.
    */
   return res.status(405).json({
     success: false,
@@ -442,6 +474,7 @@ const deleteUser = async (req, res) => {
       "User deletion is disabled. Deactivate the user instead.",
   });
 };
+
 
 module.exports = {
   getAllUsers,

@@ -1,8 +1,18 @@
 import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
-import { AnimatePresence } from "motion/react";
+import {
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+
+import {
+  AnimatePresence,
+} from "motion/react";
+
 import "./App.css";
+
 import MainLayout from "./components/layout/MainLayout";
+
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
@@ -15,17 +25,45 @@ import Settings from "./pages/Settings";
 import Notify from "./pages/Notify";
 import Profile from "./pages/Profile";
 import Logout from "./pages/Logout";
+
 import AddItem from "./components/inventory/AddItem";
-import ProtectedRoute from "./route/ProtectedRoute";
 import NewRequest from "./components/request/NewRequest";
 import GenerateReportModal from "./components/reports/GenerateReportModal";
+
+import IssuedInventory from "./pages/IssuedInventory";
+import AuditLogs from "./pages/AuditLogs";
+import MyActivity from "./pages/MyActivity";
+import Messages from "./pages/Messages";
+
+import ProtectedRoute from "./route/ProtectedRoute";
+
+import RoleProtectedRoute, {
+  ROLES,
+} from "./route/RoleProtectedRoute";
 
 function App() {
   return (
     <AnimatePresence>
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="forgot-password" element={<ForgotPassword />} />
+
+        {/* =================================================
+            PUBLIC ROUTES
+            ================================================= */}
+
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        <Route
+          path="/forgot-password"
+          element={<ForgotPassword />}
+        />
+
+        {/* =================================================
+            PROTECTED APPLICATION
+            ================================================= */}
+
         <Route
           path="/"
           element={
@@ -34,21 +72,336 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Dashboard />} />
-          <Route path="inventory" element={<Inventory />} />
-          <Route path="inventory/add-new-item" element={<AddItem />} />
-          <Route path="stock" element={<Stock />} />
-          <Route path="requests" element={<Requests />} />
-          <Route path="requests/new-request" element={<NewRequest />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="users" element={<Users />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="notifications" element={<Notify />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="logout" element={<Logout />} />
-          <Route path="generate-report" element={<GenerateReportModal />} />
+
+        <Route
+            path="audit-logs"
+            element={
+              <RoleProtectedRoute
+                allowedRoles={[
+                  ROLES.ADMINISTRATOR,
+                ]}
+              >
+                <AuditLogs />
+              </RoleProtectedRoute>
+            }
+          />
+
+          <Route
+            path="my-activity"
+            element={
+              <RoleProtectedRoute
+                allowedRoles={[
+                  ROLES.ADMINISTRATOR,
+                  ROLES.STORE_MANAGER,
+                  ROLES.STAFF,
+                ]}
+              >
+                <MyActivity />
+              </RoleProtectedRoute>
+            }
+          />  
+
+          {/* =================================================
+              DASHBOARD
+              ALL ROLES
+              ================================================= */}
+
+          <Route
+            index
+            element={
+              <RoleProtectedRoute
+                allowedRoles={[
+                  ROLES.ADMINISTRATOR,
+                  ROLES.STORE_MANAGER,
+                  ROLES.STAFF,
+                ]}
+              >
+                <Dashboard />
+              </RoleProtectedRoute>
+            }
+          />
+
+          {/* =================================================
+              INVENTORY
+              ALL ROLES
+              ================================================= */}
+
+          <Route
+            path="inventory"
+            element={
+              <RoleProtectedRoute
+                allowedRoles={[
+                  ROLES.ADMINISTRATOR,
+                  ROLES.STORE_MANAGER,
+                  ROLES.STAFF,
+                ]}
+              >
+                <Inventory />
+              </RoleProtectedRoute>
+            }
+          />
+
+          {/* =================================================
+              ADD INVENTORY ITEM
+              ADMINISTRATOR + STORE MANAGER
+              ================================================= */}
+
+          <Route
+            path="inventory/add-new-item"
+            element={
+              <RoleProtectedRoute
+                allowedRoles={[
+                  ROLES.ADMINISTRATOR,
+                  ROLES.STORE_MANAGER,
+                ]}
+              >
+                <AddItem />
+              </RoleProtectedRoute>
+            }
+          />
+
+          {/* =================================================
+              STOCK MOVEMENT
+              ADMINISTRATOR + STORE MANAGER
+              ================================================= */}
+
+          <Route
+            path="stock"
+            element={
+              <RoleProtectedRoute
+                allowedRoles={[
+                  ROLES.ADMINISTRATOR,
+                  ROLES.STORE_MANAGER,
+                ]}
+              >
+                <Stock />
+              </RoleProtectedRoute>
+            }
+          />
+
+          {/* =================================================
+              REQUESTS
+              ALL ROLES
+              ================================================= */}
+
+          <Route
+            path="requests"
+            element={
+              <RoleProtectedRoute
+                allowedRoles={[
+                  ROLES.ADMINISTRATOR,
+                  ROLES.STORE_MANAGER,
+                  ROLES.STAFF,
+                ]}
+              >
+                <Requests />
+              </RoleProtectedRoute>
+            }
+          />
+
+          {/* =================================================
+              NEW REQUEST
+              STAFF ONLY
+              ================================================= */}
+
+          <Route
+            path="requests/new-request"
+            element={
+              <RoleProtectedRoute
+                allowedRoles={[
+                  ROLES.STAFF,
+                ]}
+              >
+                <NewRequest />
+              </RoleProtectedRoute>
+            }
+          />
+
+          {/* =================================================
+              ISSUED INVENTORY
+              STORE MANAGER ONLY
+              ================================================= */}
+
+          <Route
+            path="issued-inventory"
+            element={
+              <RoleProtectedRoute
+                allowedRoles={[
+                  ROLES.STORE_MANAGER,
+                ]}
+              >
+                <IssuedInventory />
+              </RoleProtectedRoute>
+            }
+          />
+
+          {/* =================================================
+              REPORTS
+              ADMINISTRATOR + STORE MANAGER
+              ================================================= */}
+
+          <Route
+            path="reports"
+            element={
+              <RoleProtectedRoute
+                allowedRoles={[
+                  ROLES.ADMINISTRATOR,
+                  ROLES.STORE_MANAGER,
+                ]}
+              >
+                <Reports />
+              </RoleProtectedRoute>
+            }
+          />
+
+          {/* =================================================
+              USER MANAGEMENT
+              ADMINISTRATOR ONLY
+              ================================================= */}
+
+          <Route
+            path="users"
+            element={
+              <RoleProtectedRoute
+                allowedRoles={[
+                  ROLES.ADMINISTRATOR,
+                ]}
+              >
+                <Users />
+              </RoleProtectedRoute>
+            }
+          />
+
+            <Route
+            path="messages"
+            element={
+              <RoleProtectedRoute
+                allowedRoles={[
+                  ROLES.ADMINISTRATOR,
+                  ROLES.STORE_MANAGER,
+                  ROLES.STAFF,
+                ]}
+              >
+                <Messages />
+              </RoleProtectedRoute>
+            }
+          />
+
+          {/* =================================================
+              SETTINGS
+              ALL ROLES
+              ================================================= */}
+
+          <Route
+            path="settings"
+            element={
+              <RoleProtectedRoute
+                allowedRoles={[
+                  ROLES.ADMINISTRATOR,
+                  ROLES.STORE_MANAGER,
+                  ROLES.STAFF,
+                ]}
+              >
+                <Settings />
+              </RoleProtectedRoute>
+            }
+          />
+
+          {/* =================================================
+              NOTIFICATIONS
+              ALL ROLES
+              ================================================= */}
+
+          <Route
+            path="notifications"
+            element={
+              <RoleProtectedRoute
+                allowedRoles={[
+                  ROLES.ADMINISTRATOR,
+                  ROLES.STORE_MANAGER,
+                  ROLES.STAFF,
+                ]}
+              >
+                <Notify />
+              </RoleProtectedRoute>
+            }
+          />
+
+          {/* =================================================
+              PROFILE
+              ALL ROLES
+              ================================================= */}
+
+          <Route
+            path="profile"
+            element={
+              <RoleProtectedRoute
+                allowedRoles={[
+                  ROLES.ADMINISTRATOR,
+                  ROLES.STORE_MANAGER,
+                  ROLES.STAFF,
+                ]}
+              >
+                <Profile />
+              </RoleProtectedRoute>
+            }
+          />
+
+          {/* =================================================
+              LOGOUT
+              ALL ROLES
+              ================================================= */}
+
+          <Route
+            path="logout"
+            element={
+              <RoleProtectedRoute
+                allowedRoles={[
+                  ROLES.ADMINISTRATOR,
+                  ROLES.STORE_MANAGER,
+                  ROLES.STAFF,
+                ]}
+              >
+                <Logout />
+              </RoleProtectedRoute>
+            }
+          />
+
+          {/* =================================================
+              GENERATE REPORT
+              ADMINISTRATOR + STORE MANAGER
+              ================================================= */}
+
+          <Route
+            path="generate-report"
+            element={
+              <RoleProtectedRoute
+                allowedRoles={[
+                  ROLES.ADMINISTRATOR,
+                  ROLES.STORE_MANAGER,
+                ]}
+              >
+                <GenerateReportModal />
+              </RoleProtectedRoute>
+            }
+          />
+
         </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
+
+        {/* =================================================
+            FALLBACK
+            ================================================= */}
+
+        <Route
+          path="*"
+          element={
+            <Navigate
+              to="/"
+              replace
+            />
+          }
+        />
+
       </Routes>
     </AnimatePresence>
   );

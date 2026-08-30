@@ -11,10 +11,10 @@ CREATE TABLE roles (
 );
 
 INSERT INTO roles (id, name, description) VALUES
-    (1, 'Super Admin', 'Full system access'),
-    (2, 'Admin', 'Administrative and inventory management access'),
-    (3, 'User', 'Standard system user');
-
+    (1, 'Administrator', 'Full system administration and authorization access'),
+    (2, 'Store Manager', 'Store inventory and item issuance management access'),
+    (3, 'Staff', 'Standard staff request and inventory access');
+    
 SELECT setval(
     'roles_id_seq',
     (SELECT MAX(id) FROM roles)
@@ -209,6 +209,7 @@ CREATE TABLE inventory_transactions (
         CHECK (
             transaction_type IN (
                 'RECEIPT',
+                'RESERVATION',
                 'ISSUE',
                 'RETURN',
                 'ADJUSTMENT_IN',
@@ -297,6 +298,7 @@ CREATE TABLE request_items (
 
     quantity_requested INTEGER NOT NULL,
     quantity_approved INTEGER NOT NULL DEFAULT 0,
+    quantity_issued INTEGER NOT NULL DEFAULT 0,
 
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -317,6 +319,11 @@ CREATE TABLE request_items (
             quantity_approved >= 0
             AND quantity_approved <= quantity_requested
         ),
+     CONSTRAINT chk_quantity_issued
+        CHECK (
+            quantity_issued >= 0
+            AND quantity_issued <= quantity_approved
+        ),    
 
     CONSTRAINT uq_request_item
         UNIQUE (request_id, item_id)
@@ -338,7 +345,7 @@ CREATE TABLE inventory_reservations (
 
     quantity INTEGER NOT NULL,
 
-    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    status VARCHAR(20) NOT NULL DEFAULT 'RESERVED',
 
     reserved_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     released_at TIMESTAMP,
@@ -363,7 +370,7 @@ CREATE TABLE inventory_reservations (
     CONSTRAINT chk_reservation_status
         CHECK (
             status IN (
-                'ACTIVE',
+                'RESERVED',
                 'FULFILLED',
                 'RELEASED',
                 'CANCELLED'

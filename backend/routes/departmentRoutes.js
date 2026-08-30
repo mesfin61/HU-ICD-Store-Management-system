@@ -30,13 +30,13 @@ router.use(protect);
  */
 router.get(
   "/",
-  restrictTo("Super Admin", "admin"),
+  restrictTo("Administrator"),
   getAllDepartments,
 );
 
 router.get(
   "/:id",
-  restrictTo("Super Admin", "admin"),
+  restrictTo("Administrator"),
   getDepartmentById,
 );
 
@@ -47,25 +47,25 @@ router.get(
  */
 router.post(
   "/",
-  restrictTo("Super Admin"),
+  restrictTo("Administrator"),
   createDepartment,
 );
 
 router.patch(
   "/:id",
-  restrictTo("Super Admin"),
+  restrictTo("Administrator"),
   updateDepartment,
 );
 
 router.patch(
   "/:id/deactivate",
-  restrictTo("Super Admin"),
+  restrictTo("Administrator"),
   deactivateDepartment,
 );
 
 router.patch(
   "/:id/activate",
-  restrictTo("Super Admin"),
+  restrictTo("Administrator"),
   activateDepartment,
 );
 

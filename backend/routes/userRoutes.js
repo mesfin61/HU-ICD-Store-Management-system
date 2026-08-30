@@ -4,6 +4,7 @@ const router = express.Router();
 const {
   protect,
   restrictTo,
+  ROLES,
 } = require("../middleware/AuthMiddleware");
 
 const {
@@ -17,17 +18,27 @@ const {
 
 router.use(protect);
 
-router.use(restrictTo("Super Admin", "admin"));
+router.use(restrictTo(ROLES.ADMINISTRATOR));
 
-router.get("/", getAllUsers);
+router.get("/",
+  restrictTo("Administrator"),
+  getAllUsers);
 
-router.get("/:id", getUserById);
+router.get("/:id",
+  restrictTo("Administrator"),
+  getUserById);
 
-router.post("/", createUser);
+router.post("/",
+  restrictTo("Administrator"),
+  createUser);
 
-router.put("/:id", updateUser);
+router.put("/:id",
+  restrictTo("Administrator"),
+  updateUser);
 
-router.patch("/:id/deactivate", deactivateUser);
+router.patch("/:id/deactivate",
+  restrictTo("Administrator"),
+  deactivateUser);
 
 /*
  * Kept for API compatibility, but controller

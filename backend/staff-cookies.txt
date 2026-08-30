@@ -1,0 +1,1 @@
+token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImMzOTA1NzY5LWM1NjktNGM1Ny1hZWY1LWZkNThhNmExOTZiNSIsInJvbGUiOiJTdGFmZiIsImlhdCI6MTc4NzUxNzEzMywiZXhwIjoxNzg3NjAzNTMzfQ.ZNo6BBJc2l-VTj_dHCd-M9PeQQfQfJbmKWqyZ45SlZI; Max-Age=86400; Path=/; Expires=Mon, 24 Aug 2026 20:32:13 GMT; HttpOnly; SameSite=Strict

@@ -1,75 +1,178 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaCircleInfo } from "react-icons/fa6";
 import { FaClipboardCheck } from "react-icons/fa";
 import { MdOutlineSettingsSuggest } from "react-icons/md";
-import {
-  buildInventoryItem,
-  getStoredInventoryItems,
-  saveStoredInventoryItems,
-} from "./inventoryStorage";
+
+import { createInventoryItem } from "../../services/inventoryService";
+import { getCategories } from "../../services/categoryService";
 
 function AddItem() {
   const navigate = useNavigate();
+
   const [form, setForm] = useState({
     itemName: "",
     itemCode: "",
-    category: "Network",
+    categoryId: "",
     description: "",
     initialQty: 0,
-    unit: "Units",
+    unit: "pcs",
     minStock: 5,
     vendor: "",
-    modelNumber: "",
-    warranty: "",
   });
+
+  const [categories, setCategories] = useState([]);
+  const [categoryLoading, setCategoryLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadCategories = async () => {
+      try {
+        setCategoryLoading(true);
+        setErrorMessage("");
+
+        const data = await getCategories();
+
+        if (mounted) {
+          setCategories(Array.isArray(data) ? data : []);
+        }
+      } catch (error) {
+        console.error(
+          "[Inventory] load categories:",
+          error,
+        );
+
+        if (mounted) {
+          setErrorMessage(
+            error.response?.data?.message ||
+              "Failed to load inventory categories.",
+          );
+        }
+      } finally {
+        if (mounted) {
+          setCategoryLoading(false);
+        }
+      }
+    };
+
+    loadCategories();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setForm((current) => ({
       ...current,
       [name]:
-        name === "initialQty" || name === "minStock" ? Number(value) : value,
+        name === "initialQty" || name === "minStock"
+          ? Number(value)
+          : value,
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const newItem = buildInventoryItem(form);
-    const currentItems = getStoredInventoryItems();
 
-    // Ensure the itemCode/id is unique to avoid duplicate React keys
-    let uniqueItem = { ...newItem };
-    const originalId = uniqueItem.id;
-    let attempt = 0;
-    while (currentItems.some((it) => it.id === uniqueItem.id)) {
-      attempt += 1;
-      const suffix = `${Date.now().toString().slice(-6)}${attempt > 1 ? `-${attempt}` : ""}`;
-      const base =
-        (form.itemCode || form.itemName || "ITEM").toString().trim() || "ITEM";
-      const candidate = `${base}-${suffix}`;
-      uniqueItem.itemCode = candidate;
-      uniqueItem.id = candidate;
+    setErrorMessage("");
+
+    if (!form.itemName.trim()) {
+      setErrorMessage("Item name is required.");
+      return;
     }
 
-    if (uniqueItem.id !== originalId) {
-      console.info(
-        `[Inventory] AddItem: resolved id collision, original="${originalId}", new="${uniqueItem.id}"`,
+    if (!form.itemCode.trim()) {
+      setErrorMessage("Item code is required.");
+      return;
+    }
+
+    if (!form.categoryId) {
+      setErrorMessage("Please select a category.");
+      return;
+    }
+
+    if (
+      !Number.isInteger(form.initialQty) ||
+      form.initialQty < 0
+    ) {
+      setErrorMessage(
+        "Initial quantity must be a non-negative whole number.",
       );
+      return;
     }
 
-    saveStoredInventoryItems([...currentItems, uniqueItem]);
-    navigate("/inventory", {
-      state: {
-        savedItemName: uniqueItem.itemName,
-        savedItemCode: uniqueItem.itemCode,
-      },
-    });
+    if (
+      !Number.isInteger(form.minStock) ||
+      form.minStock < 0
+    ) {
+      setErrorMessage(
+        "Minimum stock must be a non-negative whole number.",
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const createdItem =
+        await createInventoryItem({
+          itemCode: form.itemCode,
+          name: form.itemName,
+          categoryId: form.categoryId,
+          description: form.description,
+          unit: form.unit,
+          minimumStock: form.minStock,
+          initialQuantity: form.initialQty,
+          isAsset: false,
+          vendor: form.vendor,
+          referenceNo: "",
+          remarks: "",
+        });
+
+      navigate("/inventory", {
+        state: {
+          savedItemName: createdItem.name,
+          savedItemCode: createdItem.item_code,
+        },
+      });
+    } catch (error) {
+      console.error(
+        "[Inventory] AddItem:",
+        error,
+      );
+
+      setErrorMessage(
+        error.response?.data?.message ||
+          "Failed to register inventory item.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const previewItemName = form.itemName.trim() || "New inventory item";
-  const previewItemCode = form.itemCode.trim() || "Auto-generated code";
-  const previewVendor = form.vendor.trim() || "Vendor not specified";
+  const selectedCategory =
+    categories.find(
+      (category) =>
+        category.id === form.categoryId,
+    )?.name || "No category selected";
+
+  const previewItemName =
+    form.itemName.trim() ||
+    "New inventory item";
+
+  const previewItemCode =
+    form.itemCode.trim() ||
+    "Enter item code";
+
+  const previewVendor =
+    form.vendor.trim() ||
+    "Vendor not specified";
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 px-4 py-4">
@@ -78,18 +181,27 @@ function AddItem() {
         className="w-full lg:w-2/3 rounded-lg bg-white p-6 shadow"
       >
         <div className="mb-6 mt-0 bg-secondary-container p-2">
-          <h2 className="text-2xl font-bold text-primary">Item Registration</h2>
+          <h2 className="text-2xl font-bold text-primary">
+            Item Registration
+          </h2>
+
           <p className="mt-1 text-sm text-slate-500">
-            Enter the technical specifications and stock details for the new
-            asset.
+            Register a new inventory item in the store database.
           </p>
         </div>
+
+        {errorMessage && (
+          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {errorMessage}
+          </div>
+        )}
 
         <section className="mb-6">
           <div className="mb-4 flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-50 text-primary">
               <FaCircleInfo />
             </div>
+
             <h3 className="text-lg font-bold text-primary">
               Basic Information
             </h3>
@@ -100,10 +212,12 @@ function AddItem() {
               <label className="block font-medium text-primary">
                 Item Name
               </label>
+
               <input
                 name="itemName"
                 value={form.itemName}
                 onChange={handleChange}
+                required
                 placeholder="Cisco Catalyst 9200L"
                 className="mt-1 block w-full rounded border px-3 py-2 text-primary bg-slate-50"
               />
@@ -113,27 +227,44 @@ function AddItem() {
               <label className="block font-medium text-primary">
                 Item Code
               </label>
+
               <input
                 name="itemCode"
                 value={form.itemCode}
                 onChange={handleChange}
+                required
                 placeholder="ICT-2024-0882"
                 className="mt-1 block w-full rounded border px-3 py-2 text-primary bg-slate-50"
               />
             </div>
 
             <div>
-              <label className="block font-medium text-primary">Category</label>
+              <label className="block font-medium text-primary">
+                Category
+              </label>
+
               <select
-                name="category"
-                value={form.category}
+                name="categoryId"
+                value={form.categoryId}
                 onChange={handleChange}
+                required
+                disabled={categoryLoading}
                 className="mt-1 block w-full rounded border px-3 py-2 text-primary bg-slate-50"
               >
-                <option>Network</option>
-                <option>Hardware</option>
-                <option>Software</option>
-                <option>Electrical</option>
+                <option value="">
+                  {categoryLoading
+                    ? "Loading categories..."
+                    : "Select a category"}
+                </option>
+
+                {categories.map((category) => (
+                  <option
+                    key={category.id}
+                    value={category.id}
+                  >
+                    {category.name}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -141,12 +272,13 @@ function AddItem() {
               <label className="block font-medium text-primary">
                 Description
               </label>
+
               <textarea
                 name="description"
                 value={form.description}
                 onChange={handleChange}
                 rows={4}
-                placeholder="Briefly describe the item purpose and location..."
+                placeholder="Briefly describe the item."
                 className="mt-1 block w-full rounded border px-3 py-2 text-primary bg-slate-50"
               />
             </div>
@@ -158,7 +290,10 @@ function AddItem() {
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50 text-primary">
               <FaClipboardCheck />
             </div>
-            <h3 className="font-bold text-primary">Stock Details</h3>
+
+            <h3 className="font-bold text-primary">
+              Stock Details
+            </h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -166,8 +301,11 @@ function AddItem() {
               <label className="block text-sm font-medium text-primary">
                 Initial Quantity
               </label>
+
               <input
                 type="number"
+                min="0"
+                step="1"
                 name="initialQty"
                 value={form.initialQty}
                 onChange={handleChange}
@@ -179,24 +317,28 @@ function AddItem() {
               <label className="block text-sm font-medium text-primary">
                 Unit
               </label>
+
               <select
                 name="unit"
                 value={form.unit}
                 onChange={handleChange}
                 className="mt-1 block w-full rounded border px-3 py-2 text-primary bg-slate-50"
               >
-                <option>Units</option>
-                <option>Boxes</option>
-                <option>Pieces</option>
+                <option value="pcs">Pieces</option>
+                <option value="boxes">Boxes</option>
+                <option value="units">Units</option>
               </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-primary">
-                Min. Stock Level
+                Minimum Stock Level
               </label>
+
               <input
                 type="number"
+                min="0"
+                step="1"
                 name="minStock"
                 value={form.minStock}
                 onChange={handleChange}
@@ -211,48 +353,24 @@ function AddItem() {
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-50 text-primary">
               <MdOutlineSettingsSuggest />
             </div>
-            <h3 className="font-bold text-primary">Specifications</h3>
+
+            <h3 className="font-bold text-primary">
+              Supplier Information
+            </h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-primary">
-                Vendor/Manufacturer
-              </label>
-              <input
-                name="vendor"
-                value={form.vendor}
-                onChange={handleChange}
-                placeholder="Cisco Systems"
-                className="mt-1 block w-full rounded border px-3 py-2 text-primary bg-slate-50"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-primary">
+              Vendor / Manufacturer
+            </label>
 
-            <div>
-              <label className="block text-sm font-medium text-primary">
-                Model Number
-              </label>
-              <input
-                name="modelNumber"
-                value={form.modelNumber}
-                onChange={handleChange}
-                placeholder="C9200L-24T-4G"
-                className="mt-1 block w-full rounded border px-3 py-2 text-primary bg-slate-50"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-primary">
-                Warranty Period
-              </label>
-              <input
-                name="warranty"
-                value={form.warranty}
-                onChange={handleChange}
-                placeholder="36 Months"
-                className="mt-1 block w-full rounded border px-3 py-2 text-primary bg-slate-50"
-              />
-            </div>
+            <input
+              name="vendor"
+              value={form.vendor}
+              onChange={handleChange}
+              placeholder="Cisco Systems"
+              className="mt-1 block w-full rounded border px-3 py-2 text-primary bg-slate-50"
+            />
           </div>
         </section>
 
@@ -260,15 +378,23 @@ function AddItem() {
           <button
             type="button"
             onClick={() => navigate("/inventory")}
-            className="rounded border border-primary px-6 py-2 text-primary"
+            disabled={isSubmitting}
+            className="rounded border border-primary px-6 py-2 text-primary disabled:opacity-50"
           >
             Cancel
           </button>
+
           <button
             type="submit"
-            className="rounded bg-primary font-bold px-6 py-2 text-white shadow"
+            disabled={
+              isSubmitting ||
+              categoryLoading
+            }
+            className="rounded bg-primary font-bold px-6 py-2 text-white shadow disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Save Item
+            {isSubmitting
+              ? "Saving..."
+              : "Save Item"}
           </button>
         </div>
       </form>
@@ -286,6 +412,7 @@ function AddItem() {
                   <h4 className="truncate text-xl font-bold text-primary">
                     {previewItemName}
                   </h4>
+
                   <div className="truncate text-xs text-primary">
                     {previewItemCode}
                   </div>
@@ -294,21 +421,44 @@ function AddItem() {
 
               <div className="mt-5 text-sm text-slate-600">
                 <div className="flex justify-between border-b pb-3">
-                  <span className="text-primary">Category</span>
+                  <span className="text-primary">
+                    Category
+                  </span>
+
                   <span className="font-semibold text-primary">
-                    {form.category}
+                    {selectedCategory}
                   </span>
                 </div>
+
                 <div className="mt-3 flex justify-between gap-4 border-b pb-3">
-                  <span className="text-primary">Manufacturer</span>
+                  <span className="text-primary">
+                    Manufacturer
+                  </span>
+
                   <span className="text-right font-semibold text-primary">
                     {previewVendor}
                   </span>
                 </div>
+
                 <div className="mt-3 flex justify-between border-b pb-3">
-                  <span className="text-primary">Stock Level</span>
+                  <span className="text-primary">
+                    Stock Level
+                  </span>
+
                   <span className="font-semibold text-primary">
-                    {form.initialQty} {form.unit}
+                    {form.initialQty}{" "}
+                    {form.unit}
+                  </span>
+                </div>
+
+                <div className="mt-3 flex justify-between">
+                  <span className="text-primary">
+                    Minimum Stock
+                  </span>
+
+                  <span className="font-semibold text-primary">
+                    {form.minStock}{" "}
+                    {form.unit}
                   </span>
                 </div>
               </div>
