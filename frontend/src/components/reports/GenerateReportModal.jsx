@@ -1,70 +1,72 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaCalendarAlt, FaDownload, FaFilePdf, FaTimes } from "react-icons/fa";
+import {
+  FaCalendarAlt,
+  FaDownload,
+  FaFilePdf,
+  FaTimes,
+} from "react-icons/fa";
 import ReportGeneratedModal from "./ReportGeneratedModal";
-import { getStoredInventoryItems } from "../inventory/inventoryStorage";
+import apiClient from "../../services/apiClient";
 
 const fieldClass =
-  "w-full h-9 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
+  "h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
 
-function buildPreviewRows() {
-  return getStoredInventoryItems()
-    .slice(0, 3)
-    .map((item) => ({
-      itemName: item.itemName,
-      category: item.category,
-      qty: item.initialQty,
-      date: item.createdAt ? item.createdAt.slice(0, 10) : "",
-    }));
+function formatPreviewDate(value) {
+  if (!value) return "";
+
+  const parsedDate = new Date(value);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return String(value).slice(0, 10);
+  }
+
+  return parsedDate.toISOString().slice(0, 10);
 }
 
-function formatDateInput(value) {
-  const digits = value.replace(/\D/g, "").slice(0, 8);
-  const monthDigits = digits.slice(0, 2);
-  const dayDigits = digits.slice(2, 4);
-  const yearDigits = digits.slice(4, 8);
-
-  let month = monthDigits;
-  if (monthDigits.length === 2) {
-    const parsedMonth = Number(monthDigits);
-    month = String(Math.min(Math.max(parsedMonth, 1), 12)).padStart(2, "0");
-  }
-
-  let day = dayDigits;
-  if (dayDigits.length === 2) {
-    const parsedDay = Number(dayDigits);
-    day = String(Math.min(Math.max(parsedDay, 1), 31)).padStart(2, "0");
-  }
-
-  const parts = [];
-
-  if (digits.length > 0) {
-    parts.push(month);
-  }
-
-  if (digits.length > 2) {
-    parts.push(day);
-  }
-
-  if (digits.length > 4) {
-    parts.push(yearDigits);
-  }
-
-  return parts.join("/");
-}
-
-function DateField({ label, placeholder, value, onChange, error }) {
+function DateField({
+  label,
+  placeholder,
+  value,
+  onChange,
+  error,
+}) {
   const handleChange = (event) => {
-    onChange(formatDateInput(event.target.value));
+    const digits = event.target.value
+      .replace(/\D/g, "")
+      .slice(0, 8);
+
+    const month = digits.slice(0, 2);
+    const day = digits.slice(2, 4);
+    const year = digits.slice(4, 8);
+
+    const parts = [];
+
+    if (digits.length > 0) {
+      parts.push(month);
+    }
+
+    if (digits.length > 2) {
+      parts.push(day);
+    }
+
+    if (digits.length > 4) {
+      parts.push(year);
+    }
+
+    onChange(parts.join("/"));
   };
 
   return (
     <div className="w-full">
       <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-        {label} <span className="text-rose-500">*</span>
+        {label}{" "}
+        <span className="text-rose-500">*</span>
       </label>
+
       <div className="relative">
-        <FaCalendarAlt className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
+        <FaCalendarAlt className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400" />
+
         <input
           type="text"
           placeholder={placeholder}
@@ -74,14 +76,24 @@ function DateField({ label, placeholder, value, onChange, error }) {
           value={value}
           onChange={handleChange}
         />
-        <FaCalendarAlt className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
+
+        <FaCalendarAlt className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400" />
       </div>
-      {error && <p className="mt-1 text-[11px] text-rose-600">{error}</p>}
+
+      {error && (
+        <p className="mt-1 text-[11px] text-rose-600">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
 
-function OutputFormatButton({ active, children, onClick }) {
+function OutputFormatButton({
+  active,
+  children,
+  onClick,
+}) {
   return (
     <button
       type="button"
@@ -97,19 +109,84 @@ function OutputFormatButton({ active, children, onClick }) {
   );
 }
 
-function GenerateReportModal({ isOpen = true, onClose }) {
+function GenerateReportModal({
+  isOpen = true,
+  onClose,
+}) {
   const navigate = useNavigate();
-  const previewRows = buildPreviewRows();
-  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
-  const [formValues, setFormValues] = useState({
-    reportType: "",
-    startDate: "",
-    endDate: "",
-    categoryFilter: "",
-    outputFormat: "",
-  });
-  const [formErrors, setFormErrors] = useState({});
+
+  const [inventory, setInventory] = useState([]);
+  const [loadingInventory, setLoadingInventory] =
+    useState(false);
+  const [inventoryError, setInventoryError] =
+    useState("");
+
+  const [showSuccessBanner, setShowSuccessBanner] =
+    useState(false);
+
+  const [formValues, setFormValues] =
+    useState({
+      reportType: "",
+      startDate: "",
+      endDate: "",
+      categoryFilter: "",
+      outputFormat: "",
+    });
+
+  const [formErrors, setFormErrors] =
+    useState({});
+
   const successTimerRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    let mounted = true;
+
+    async function loadInventoryPreview() {
+      try {
+        setLoadingInventory(true);
+        setInventoryError("");
+
+        const response = await apiClient.get(
+          "/api/inventory",
+        );
+
+        if (!mounted) return;
+
+        const items = Array.isArray(
+          response.data?.data,
+        )
+          ? response.data.data
+          : [];
+
+        setInventory(items);
+      } catch (loadError) {
+        console.error(
+          "[GenerateReportModal] Failed to load inventory preview:",
+          loadError,
+        );
+
+        if (mounted) {
+          setInventoryError(
+            loadError.response?.data?.message ||
+              loadError.message ||
+              "Failed to load inventory preview.",
+          );
+        }
+      } finally {
+        if (mounted) {
+          setLoadingInventory(false);
+        }
+      }
+    }
+
+    loadInventoryPreview();
+
+    return () => {
+      mounted = false;
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     return () => {
@@ -119,11 +196,49 @@ function GenerateReportModal({ isOpen = true, onClose }) {
     };
   }, []);
 
+  const previewRows = inventory
+    .slice(0, 3)
+    .map((item) => ({
+      itemName:
+        item.name ||
+        item.itemName ||
+        item.item_code ||
+        "Unknown Item",
+
+      category:
+        item.category_name ||
+        item.category ||
+        "Uncategorized",
+
+      qty: Number(item.current_stock) || 0,
+
+      date: formatPreviewDate(
+        item.created_at ||
+          item.createdAt,
+      ),
+    }));
+
+  const categories = [
+    ...new Set(
+      inventory
+        .map(
+          (item) =>
+            String(
+              item.category_name ||
+                item.category ||
+                "Uncategorized",
+            ).trim(),
+        )
+        .filter(Boolean),
+    ),
+  ];
+
   const handleClose = (navState) => {
     const isEvent =
       navState &&
       typeof navState === "object" &&
-      ("nativeEvent" in navState || "preventDefault" in navState);
+      ("nativeEvent" in navState ||
+        "preventDefault" in navState);
 
     const safeState = isEvent ? {} : navState;
 
@@ -137,27 +252,44 @@ function GenerateReportModal({ isOpen = true, onClose }) {
     const nextErrors = {};
 
     if (!formValues.reportType) {
-      nextErrors.reportType = "Report type is required.";
+      nextErrors.reportType =
+        "Report type is required.";
     }
 
     if (!formValues.startDate) {
-      nextErrors.startDate = "Start date is required.";
-    } else if (!/^\d{2}\/\d{2}\/\d{4}$/.test(formValues.startDate)) {
-      nextErrors.startDate = "Use the mm/dd/yyyy format.";
+      nextErrors.startDate =
+        "Start date is required.";
+    } else if (
+      !/^\d{2}\/\d{2}\/\d{4}$/.test(
+        formValues.startDate,
+      )
+    ) {
+      nextErrors.startDate =
+        "Use the mm/dd/yyyy format.";
     }
 
     if (!formValues.endDate) {
-      nextErrors.endDate = "End date is required.";
-    } else if (!/^\d{2}\/\d{2}\/\d{4}$/.test(formValues.endDate)) {
-      nextErrors.endDate = "Use the mm/dd/yyyy format.";
+      nextErrors.endDate =
+        "End date is required.";
+    } else if (
+      !/^\d{2}\/\d{2}\/\d{4}$/.test(
+        formValues.endDate,
+      )
+    ) {
+      nextErrors.endDate =
+        "Use the mm/dd/yyyy format.";
     }
 
-    if (!formValues.categoryFilter) {
-      nextErrors.categoryFilter = "Category filter is required.";
+    if (
+      !formValues.categoryFilter
+    ) {
+      nextErrors.categoryFilter =
+        "Category filter is required.";
     }
 
     if (!formValues.outputFormat) {
-      nextErrors.outputFormat = "Output format is required.";
+      nextErrors.outputFormat =
+        "Output format is required.";
     }
 
     setFormErrors(nextErrors);
@@ -166,21 +298,36 @@ function GenerateReportModal({ isOpen = true, onClose }) {
       return;
     }
 
-    // show the detailed generated report modal
     setShowSuccessBanner(true);
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
+
   if (showSuccessBanner) {
     return (
       <ReportGeneratedModal
         onClose={handleClose}
-        onGenerateAnother={() => setShowSuccessBanner(false)}
+        onGenerateAnother={() =>
+          setShowSuccessBanner(false)
+        }
         data={{
-          reportType: formValues.reportType || "Inventory Summary",
-          dateRange: `${formValues.startDate || "May 1, 2024"} - ${formValues.endDate || "May 30, 2024"}`,
-          category: formValues.categoryFilter || "All Categories",
-          format: (formValues.outputFormat || "PDF").toUpperCase(),
+          reportType:
+            formValues.reportType ||
+            "Inventory Summary",
+
+          dateRange: `${formValues.startDate} - ${formValues.endDate}`,
+
+          category:
+            formValues.categoryFilter ||
+            "All Categories",
+
+          format:
+            (
+              formValues.outputFormat ||
+              "PDF"
+            ).toUpperCase(),
         }}
         previewRows={previewRows}
       />
@@ -203,6 +350,7 @@ function GenerateReportModal({ isOpen = true, onClose }) {
           <h2 className="text-xl font-semibold text-blue-900">
             Generate Report
           </h2>
+
           <p className="mt-1 text-sm text-slate-500">
             Create and export inventory reports
           </p>
@@ -212,23 +360,39 @@ function GenerateReportModal({ isOpen = true, onClose }) {
           <div className="space-y-4">
             <div>
               <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                Report Type <span className="text-rose-500">*</span>
+                Report Type{" "}
+                <span className="text-rose-500">
+                  *
+                </span>
               </label>
+
               <select
                 className={fieldClass}
                 value={formValues.reportType}
                 onChange={(event) =>
-                  setFormValues((current) => ({
-                    ...current,
-                    reportType: event.target.value,
-                  }))
+                  setFormValues(
+                    (current) => ({
+                      ...current,
+                      reportType:
+                        event.target.value,
+                    }),
+                  )
                 }
               >
-                <option value="">Select report type</option>
-                <option>Inventory Summary</option>
-                <option>Procurement Summary</option>
-                <option>Consumption Summary</option>
+                <option value="">
+                  Select report type
+                </option>
+                <option>
+                  Inventory Summary
+                </option>
+                <option>
+                  Procurement Summary
+                </option>
+                <option>
+                  Consumption Summary
+                </option>
               </select>
+
               {formErrors.reportType && (
                 <p className="mt-1 text-[11px] text-rose-600">
                   {formErrors.reportType}
@@ -242,22 +406,27 @@ function GenerateReportModal({ isOpen = true, onClose }) {
                 placeholder="mm/dd/yyyy"
                 value={formValues.startDate}
                 onChange={(nextValue) =>
-                  setFormValues((current) => ({
-                    ...current,
-                    startDate: nextValue,
-                  }))
+                  setFormValues(
+                    (current) => ({
+                      ...current,
+                      startDate: nextValue,
+                    }),
+                  )
                 }
                 error={formErrors.startDate}
               />
+
               <DateField
                 label="End Date"
                 placeholder="mm/dd/yyyy"
                 value={formValues.endDate}
                 onChange={(nextValue) =>
-                  setFormValues((current) => ({
-                    ...current,
-                    endDate: nextValue,
-                  }))
+                  setFormValues(
+                    (current) => ({
+                      ...current,
+                      endDate: nextValue,
+                    }),
+                  )
                 }
                 error={formErrors.endDate}
               />
@@ -266,23 +435,41 @@ function GenerateReportModal({ isOpen = true, onClose }) {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                  Category Filter <span className="text-rose-500">*</span>
+                  Category Filter{" "}
+                  <span className="text-rose-500">
+                    *
+                  </span>
                 </label>
+
                 <select
                   className={fieldClass}
                   value={formValues.categoryFilter}
                   onChange={(event) =>
-                    setFormValues((current) => ({
-                      ...current,
-                      categoryFilter: event.target.value,
-                    }))
+                    setFormValues(
+                      (current) => ({
+                        ...current,
+                        categoryFilter:
+                          event.target.value,
+                      }),
+                    )
                   }
                 >
-                  <option value="">All Categories</option>
-                  <option>Computing</option>
-                  <option>Networking</option>
-                  <option>Accessories</option>
+                  <option value="">
+                    All Categories
+                  </option>
+
+                  {categories.map(
+                    (category) => (
+                      <option
+                        key={category}
+                        value={category}
+                      >
+                        {category}
+                      </option>
+                    ),
+                  )}
                 </select>
+
                 {formErrors.categoryFilter && (
                   <p className="mt-1 text-[11px] text-rose-600">
                     {formErrors.categoryFilter}
@@ -292,44 +479,71 @@ function GenerateReportModal({ isOpen = true, onClose }) {
 
               <div>
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                  Output Format <span className="text-rose-500">*</span>
+                  Output Format{" "}
+                  <span className="text-rose-500">
+                    *
+                  </span>
                 </label>
+
                 <div className="grid grid-cols-3 gap-2 rounded-md bg-slate-100 p-1">
                   <OutputFormatButton
-                    active={formValues.outputFormat === "pdf"}
+                    active={
+                      formValues.outputFormat ===
+                      "pdf"
+                    }
                     onClick={() =>
-                      setFormValues((current) => ({
-                        ...current,
-                        outputFormat: "pdf",
-                      }))
+                      setFormValues(
+                        (current) => ({
+                          ...current,
+                          outputFormat: "pdf",
+                        }),
+                      )
                     }
                   >
                     <FaFilePdf className="text-[11px]" />
                     PDF
                   </OutputFormatButton>
+
                   <OutputFormatButton
-                    active={formValues.outputFormat === "csv"}
+                    active={
+                      formValues.outputFormat ===
+                      "csv"
+                    }
                     onClick={() =>
-                      setFormValues((current) => ({
-                        ...current,
-                        outputFormat: "csv",
-                      }))
+                      setFormValues(
+                        (current) => ({
+                          ...current,
+                          outputFormat: "csv",
+                        }),
+                      )
                     }
                   >
-                    <span className="text-[11px] font-semibold">CSV</span>
+                    <span className="text-[11px] font-semibold">
+                      CSV
+                    </span>
                   </OutputFormatButton>
+
                   <OutputFormatButton
-                    active={formValues.outputFormat === "excel"}
+                    active={
+                      formValues.outputFormat ===
+                      "excel"
+                    }
                     onClick={() =>
-                      setFormValues((current) => ({
-                        ...current,
-                        outputFormat: "excel",
-                      }))
+                      setFormValues(
+                        (current) => ({
+                          ...current,
+                          outputFormat:
+                            "excel",
+                        }),
+                      )
                     }
                   >
-                    <span className="text-[11px] font-semibold">Excel</span>
+                    <span className="text-[11px] font-semibold">
+                      Excel
+                    </span>
                   </OutputFormatButton>
                 </div>
+
                 {formErrors.outputFormat && (
                   <p className="mt-1 text-[11px] text-rose-600">
                     {formErrors.outputFormat}
@@ -340,34 +554,88 @@ function GenerateReportModal({ isOpen = true, onClose }) {
 
             <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
               <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2 text-xs text-slate-500">
-                <span>Preview (First 3 Records)</span>
-                <span className="text-slate-400">◌</span>
+                <span>
+                  Preview (First 3 Records)
+                </span>
+
+                <span className="text-slate-400">
+                  Database
+                </span>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="min-w-full text-left text-xs">
                   <thead className="bg-white text-slate-500">
                     <tr className="border-b border-slate-200">
-                      <th className="px-4 py-2 font-semibold">Item Name</th>
-                      <th className="px-4 py-2 font-semibold">Category</th>
-                      <th className="px-4 py-2 font-semibold">Qty</th>
-                      <th className="px-4 py-2 font-semibold">Date</th>
+                      <th className="px-4 py-2 font-semibold">
+                        Item Name
+                      </th>
+                      <th className="px-4 py-2 font-semibold">
+                        Category
+                      </th>
+                      <th className="px-4 py-2 font-semibold">
+                        Qty
+                      </th>
+                      <th className="px-4 py-2 font-semibold">
+                        Date
+                      </th>
                     </tr>
                   </thead>
+
                   <tbody className="bg-white text-slate-700">
-                    {previewRows.map((row) => (
-                      <tr
-                        key={row.itemName}
-                        className="border-b border-slate-100 last:border-b-0"
-                      >
-                        <td className="px-4 py-2 font-medium text-slate-600">
-                          {row.itemName}
+                    {loadingInventory ? (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="px-4 py-6 text-center text-slate-500"
+                        >
+                          Loading inventory...
                         </td>
-                        <td className="px-4 py-2">{row.category}</td>
-                        <td className="px-4 py-2">{row.qty}</td>
-                        <td className="px-4 py-2">{row.date}</td>
                       </tr>
-                    ))}
+                    ) : inventoryError ? (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="px-4 py-6 text-center text-rose-600"
+                        >
+                          {inventoryError}
+                        </td>
+                      </tr>
+                    ) : previewRows.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="px-4 py-6 text-center text-slate-500"
+                        >
+                          No inventory records yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      previewRows.map(
+                        (row) => (
+                          <tr
+                            key={`${row.itemName}-${row.date}`}
+                            className="border-b border-slate-100 last:border-b-0"
+                          >
+                            <td className="px-4 py-2 font-medium text-slate-600">
+                              {row.itemName}
+                            </td>
+
+                            <td className="px-4 py-2">
+                              {row.category}
+                            </td>
+
+                            <td className="px-4 py-2">
+                              {row.qty}
+                            </td>
+
+                            <td className="px-4 py-2">
+                              {row.date}
+                            </td>
+                          </tr>
+                        ),
+                      )
+                    )}
                   </tbody>
                 </table>
               </div>

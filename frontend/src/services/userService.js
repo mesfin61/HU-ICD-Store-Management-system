@@ -1,29 +1,11 @@
-import API_URL from "../config/api";
-
-function getAuthHeaders() {
-  const token = localStorage.getItem("token");
-
-  return {
-    Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json",
-  };
-}
+import apiClient from "./apiClient";
 
 export async function getUsers() {
-  const response = await fetch(`${API_URL}/api/users`, {
-    method: "GET",
-    headers: getAuthHeaders(),
-  });
+  const response = await apiClient.get("/api/users");
 
-  const data = await response.json();
+  const users = response.data?.data;
 
-  if (!response.ok) {
-    throw new Error(
-      data.message || "Failed to retrieve users.",
-    );
-  }
-
-  return data.data;
+  return Array.isArray(users) ? users : [];
 }
 
 export async function createUser({
@@ -33,25 +15,13 @@ export async function createUser({
   departmentId,
   roleId,
 }) {
-  const response = await fetch(`${API_URL}/api/users`, {
-    method: "POST",
-    headers: getAuthHeaders(),
-    body: JSON.stringify({
-      fullName,
-      email,
-      password,
-      departmentId,
-      roleId,
-    }),
+  const response = await apiClient.post("/api/users", {
+    fullName,
+    email,
+    password,
+    departmentId,
+    roleId,
   });
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      data.message || "Failed to create user.",
-    );
-  }
-
-  return data.data;
+  return response.data?.data;
 }

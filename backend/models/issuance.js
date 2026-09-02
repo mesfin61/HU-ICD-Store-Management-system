@@ -960,6 +960,99 @@ async findOutstandingIssuedItems() {
       (Number(row.quantity_returned) || 0),
   }));
 },
+
+// =========================================================
+// GET MY OUTSTANDING ISSUED INVENTORY
+//
+// Staff use.
+//
+// Returns ONLY inventory issued to the authenticated user
+// that has not been fully returned.
+// =========================================================
+
+async findMyOutstandingIssuedItems(userId) {
+  if (!userId) {
+    throw new Error("USER_ID_REQUIRED");
+  }
+
+  const result = await pool.query(
+    `
+    SELECT
+      ii.id,
+      ii.request_id,
+      ii.request_item_id,
+      ii.item_id,
+
+      i.item_code,
+      i.name AS item_name,
+      i.unit,
+
+      d.name AS department_name,
+
+      ii.issued_to,
+      recipient.full_name AS issued_to_name,
+      recipient.email AS issued_to_email,
+
+      ii.issued_by,
+      issuer.full_name AS issued_by_name,
+
+      ii.quantity AS quantity_issued,
+      ii.issued_date,
+      ii.due_date,
+      ii.returned,
+
+      COALESCE(
+        (
+          SELECT
+            SUM(ir.quantity_returned)
+          FROM item_returns ir
+          WHERE ir.issued_item_id = ii.id
+        ),
+        0
+      ) AS quantity_returned
+
+    FROM issued_items ii
+
+    JOIN items i
+      ON i.id = ii.item_id
+
+    JOIN users recipient
+      ON recipient.id = ii.issued_to
+
+    JOIN users issuer
+      ON issuer.id = ii.issued_by
+
+    JOIN requests r
+      ON r.id = ii.request_id
+
+    JOIN departments d
+      ON d.id = r.department_id
+
+    WHERE
+      ii.returned = FALSE
+      AND ii.issued_to = $1
+
+    ORDER BY
+      ii.issued_date ASC,
+      ii.id ASC
+    `,
+    [userId],
+  );
+
+  return result.rows.map((row) => ({
+    ...row,
+
+    quantity_issued:
+      Number(row.quantity_issued) || 0,
+
+    quantity_returned:
+      Number(row.quantity_returned) || 0,
+
+    quantity_remaining:
+      (Number(row.quantity_issued) || 0) -
+      (Number(row.quantity_returned) || 0),
+  }));
+},
 };
 
 module.exports = issuance;

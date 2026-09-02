@@ -1,21 +1,11 @@
-import API_URL from "../config/api";
+import apiClient from "./apiClient";
 
 export async function getRoles() {
-  const token = localStorage.getItem("token");
+  const response = await apiClient.get("/api/roles");
 
-  const response = await fetch(`${API_URL}/api/roles`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  });
+  const roles = response.data?.data;
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to retrieve roles.");
-  }
-
-  return data.data;
+  return Array.isArray(roles)
+    ? roles
+    : [];
 }

@@ -1,30 +1,143 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import apiClient from "../../services/apiClient";
+
+const ROLES = {
+  ADMINISTRATOR: "Administrator",
+  STORE_MANAGER: "Store Manager",
+  STAFF: "Staff",
+};
 
 function QuickActions() {
+  const [role, setRole] =
+    useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    apiClient
+      .get("/api/auth/me")
+      .then((response) => {
+        if (mounted) {
+          setRole(
+            response.data?.user?.role ||
+              null,
+          );
+        }
+      })
+      .catch((error) => {
+        console.error(
+          "[QuickActions] Failed to load user:",
+          error,
+        );
+
+        if (mounted) {
+          setRole(null);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (!role) {
+    return null;
+  }
+
+  const actions = [];
+
+  if (
+    role === ROLES.STORE_MANAGER
+  ) {
+    actions.push({
+      label: "Stock Movement",
+      to: "/stock",
+    });
+
+    actions.push({
+      label: "Process Requests",
+      to: "/requests",
+    });
+
+    actions.push({
+      label: "Issued Inventory",
+      to: "/issued-inventory",
+    });
+  }
+
+  if (
+    role === ROLES.ADMINISTRATOR
+  ) {
+    actions.push({
+      label: "User Management",
+      to: "/users",
+    });
+
+    actions.push({
+      label: "Review Requests",
+      to: "/requests",
+    });
+
+    actions.push({
+      label: "Audit Log",
+      to: "/audit-logs",
+    });
+
+    actions.push({
+      label: "Reports",
+      to: "/reports",
+    });
+  }
+
+  if (
+    role === ROLES.STAFF
+  ) {
+    actions.push({
+      label: "New Request",
+      to: "/requests/new-request",
+    });
+
+    actions.push({
+      label: "My Requests",
+      to: "/requests",
+    });
+
+    actions.push({
+      label: "Messages",
+      to: "/messages",
+    });
+
+    actions.push({
+      label: "Notifications",
+      to: "/notifications",
+    });
+  }
+
   return (
-    <div className="flex flex-col gap-3 rounded-lg bg-white p-3 mt-1 shadow-lg w-full">
-      <Link
-        className="w-full text-center bg-white text-blue-800 py-2 px-4 rounded-lg border border-blue-800 hover:bg-blue-800 hover:text-white transition-colors duration-300 ease-in-out"
-        to="/stock"
-      >
-        New Stock-in
-      </Link>
+    <section className="rounded-lg border bg-white p-5 shadow-sm">
+      <div className="mb-4">
+        <h2 className="text-lg font-bold text-primary">
+          Quick Actions
+        </h2>
 
-      <Link
-        className="w-full text-center bg-white text-blue-800 py-2 px-4 rounded-lg border border-blue-800 hover:bg-blue-800 hover:text-white transition-colors duration-300 ease-in-out"
-        to="/requests"
-      >
-        Create Request
-      </Link>
+        <p className="text-sm text-slate-500">
+          Common tasks available to your role.
+        </p>
+      </div>
 
-      <Link
-        className="w-full text-center bg-white text-blue-800 py-2 px-4 rounded-lg border border-blue-800 hover:bg-blue-800 hover:text-white transition-colors duration-300 ease-in-out"
-        to="/reports"
-      >
-        Generate Report
-      </Link>
-    </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {actions.map((action) => (
+          <Link
+            key={action.to}
+            to={action.to}
+            className="rounded-md border border-blue-800 px-4 py-3 text-center text-sm font-semibold text-blue-800 transition hover:bg-blue-800 hover:text-white"
+          >
+            {action.label}
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
 

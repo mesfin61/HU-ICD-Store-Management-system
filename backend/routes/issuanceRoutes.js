@@ -9,6 +9,7 @@ const {
   issueInventory,
   getIssuancesByRequest,
   getOutstandingIssuedItems,
+  getMyOutstandingIssuedItems,
 } = require("../controllers/issuanceController");
 
 const router = express.Router();
@@ -55,6 +56,16 @@ router.get(
 // This does NOT subtract current_stock.
 // Reservation already did that.
 // =========================================================
+
+// =========================================================
+// STAFF: MY OUTSTANDING ISSUED INVENTORY
+// =========================================================
+
+router.get(
+  "/my-outstanding",
+  restrictTo("Staff"),
+  getMyOutstandingIssuedItems,
+);
 
 router.post(
   "/request/:requestId",

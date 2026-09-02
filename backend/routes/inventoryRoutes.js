@@ -15,6 +15,10 @@ const {
   writeOffStock,
 } = require("../controllers/inventoryController");
 
+const {
+  getInventoryMovementTrends,
+} = require("../controllers/inventoryTransactionController");
+
 const router = express.Router();
 
 // =========================================================
@@ -23,8 +27,6 @@ const router = express.Router();
 
 router.use(protect);
 
-
-
 // =========================================================
 // INVENTORY READ
 // Authenticated users
@@ -32,13 +34,39 @@ router.use(protect);
 
 router.get("/", getAllItems);
 
+// =========================================================
+// INVENTORY MOVEMENT READ
+// Authenticated users
+//
+// IMPORTANT:
+// This route MUST appear before "/:id".
+// Otherwise "transactions" could be interpreted as an item ID.
+// =========================================================
+
+router.get(
+  "/transactions/trends",
+  getInventoryMovementTrends,
+);
+
+// =========================================================
+// CREATE INVENTORY ITEM
+// Store Manager only
+// =========================================================
+
 router.post(
   "/",
   restrictTo("Store Manager"),
   createItem,
 );
 
-router.get("/:id", getItemById);
+// =========================================================
+// GET INVENTORY ITEM BY ID
+// =========================================================
+
+router.get(
+  "/:id",
+  getItemById,
+);
 
 // =========================================================
 // STOCK MANAGEMENT

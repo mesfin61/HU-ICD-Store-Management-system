@@ -1,4 +1,7 @@
 const bcrypt = require("bcryptjs");
+const {
+  sendWelcomeEmail,
+} = require("../utils/email");
 const { user, role, department } = require("../models");
 
 const {
@@ -157,19 +160,46 @@ const createUser = async (req, res) => {
       departmentId: requestedDepartment.id,
     });
 
+    let emailSent = true;
+
+    try {
+      await sendWelcomeEmail({
+        recipientEmail: newUser.email,
+        recipientName: newUser.full_name,
+        roleName: requestedRole.name,
+        initialPassword: password,
+      });
+    } catch (emailError) {
+      emailSent = false;
+
+      console.error(
+        "[User] Welcome email failed:",
+        emailError,
+      );
+    }
+
     return res.status(201).json({
       success: true,
+      message: emailSent
+        ? "User created successfully and welcome email sent."
+        : "User created successfully, but the welcome email could not be sent.",
+      emailSent,
       data: newUser,
     });
   } catch (error) {
-    console.error("[User] createUser error:", error.message);
+    console.error(
+      "[User] createUser error:",
+      error,
+    );
 
     return res.status(500).json({
       success: false,
-      message: "Server error.",
+      message:
+        "Server error.",
     });
   }
 };
+
 
 
 const updateUser = async (req, res) => {

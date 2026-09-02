@@ -1,6 +1,8 @@
 require("dotenv").config();
 const bcrypt = require("bcryptjs");
-const nodemailer = require("nodemailer");
+const {
+  sendPasswordResetEmail,
+} = require("../utils/email");
 const jwt = require("jsonwebtoken");
 const { user } = require("../models");
 const { findByEmail, findById } = require("../models/user");
@@ -65,19 +67,20 @@ const login = async (req, res) => {
       });
     }
 
+    if (!foundUser.password_hash) {
+      return res.status(401).json({
+        success: false,
+        message: "Account has no password set. Contact the administrator.",
+      });
+    }
+
+
     const isMatch = await bcrypt.compare(password, foundUser.password_hash);
 
     if (!isMatch) {
       return res.status(401).json({
         success: false,
         message: "Invalid email or password.",
-      });
-    }
-
-    if (!foundUser.password_hash) {
-      return res.status(401).json({
-        success: false,
-        message: "Account has no password set. Contact the administrator.",
       });
     }
 
@@ -210,42 +213,12 @@ const forgotPassword = async (req, res) => {
 
     await user.saveResetOtp(foundUser.id, otp, expiresAt);
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
+    await sendPasswordResetEmail({
+      recipientEmail: foundUser.email,
+      recipientName: foundUser.full_name,
+      otp,
     });
 
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: foundUser.email,
-      subject: "Password Reset OTP",
-      html: `
-        <div style="font-family: Arial, sans-serif">
-          <h2>Password Reset Request</h2>
-
-          <p>Hello ${foundUser.full_name},</p>
-
-          <p>Your password reset verification code is:</p>
-
-          <div style="
-            font-size: 32px;
-            font-weight: bold;
-            letter-spacing: 8px;
-            color: #1141a0;
-            margin: 20px 0;
-          ">
-            ${otp}
-          </div>
-
-          <p>This code expires in 10 minutes.</p>
-
-          <p>If you did not request a password reset, please ignore this email.</p>
-        </div>
-      `,
-    });
 
     return res.status(200).json({
       success: true,
@@ -321,44 +294,110 @@ const verifyResetOtp = async (req, res) => {
 
 const resetPassword = async (req, res) => {
   try {
-    const { email, newPassword } = req.body;
+    const {
+      email,
+      otp,
+      newPassword,
+    } = req.body;
 
-    const foundUser = await user.findByEmailWithOtp(email.trim().toLowerCase());
+    if (
+      !email ||
+      !otp ||
+      !newPassword
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Email, OTP, and new password are required.",
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "New password must be at least 8 characters.",
+      });
+    }
+
+    const foundUser =
+      await user.findByEmailWithOtp(
+        email.trim().toLowerCase(),
+      );
 
     if (!foundUser) {
       return res.status(404).json({
         success: false,
-        message: "User not found.",
+        message:
+          "User not found.",
+      });
+    }
+
+    if (!foundUser.reset_otp) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "No password reset request exists.",
       });
     }
 
     if (
       !foundUser.reset_otp_expires ||
-      new Date() > new Date(foundUser.reset_otp_expires)
+      new Date(
+        foundUser.reset_otp_expires,
+      ) <= new Date()
     ) {
       return res.status(400).json({
         success: false,
-        message: "OTP has expired.",
+        message:
+          "OTP has expired.",
       });
     }
 
-    const salt = await bcrypt.genSalt(12);
-    const passwordHash = await bcrypt.hash(newPassword, salt);
+    if (
+      String(foundUser.reset_otp) !==
+      String(otp).trim()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid OTP.",
+      });
+    }
 
-    await user.updatePassword(foundUser.id, passwordHash);
+    const salt =
+      await bcrypt.genSalt(12);
 
-    await user.clearResetOtp(foundUser.id);
+    const passwordHash =
+      await bcrypt.hash(
+        newPassword,
+        salt,
+      );
+
+    await user.updatePassword(
+      foundUser.id,
+      passwordHash,
+    );
+
+    await user.clearResetOtp(
+      foundUser.id,
+    );
 
     return res.status(200).json({
       success: true,
-      message: "Password reset successfully.",
+      message:
+        "Password reset successfully.",
     });
   } catch (err) {
-    console.error("[Auth] resetPassword error:", err);
+    console.error(
+      "[Auth] resetPassword error:",
+      err,
+    );
 
     return res.status(500).json({
       success: false,
-      message: "Server error.",
+      message:
+        "Server error.",
     });
   }
 };

@@ -34,4 +34,12 @@ export async function getOutstandingIssuedItems() {
   );
 
   return response.data.data;
-}  
+}
+
+export async function getMyOutstandingIssuedItems() {
+  const response = await apiClient.get(
+    "/api/issuance/my-outstanding",
+  );
+
+  return response.data.data;
+}

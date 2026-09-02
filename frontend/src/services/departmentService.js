@@ -1,23 +1,11 @@
-import API_URL from "../config/api";
+import apiClient from "./apiClient";
 
 export async function getDepartments() {
-  const token = localStorage.getItem("token");
+  const response = await apiClient.get("/api/departments");
 
-  const response = await fetch(`${API_URL}/api/departments`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  });
+  const departments = response.data?.data;
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      data.message || "Failed to retrieve departments."
-    );
-  }
-
-  return data.data;
+  return Array.isArray(departments)
+    ? departments
+    : [];
 }

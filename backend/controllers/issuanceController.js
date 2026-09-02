@@ -170,8 +170,51 @@ const getOutstandingIssuedItems =
     }
   };
 
+// =========================================================
+// STAFF: GET MY OUTSTANDING ISSUED INVENTORY
+// =========================================================
+
+const getMyOutstandingIssuedItems = 
+  async (req,res) => {
+    try {
+
+      const items =
+        await issuance.findMyOutstandingIssuedItems(
+        req.user.id,
+      );
+
+    return res.status(200).json({
+      success: true,
+      count: items.length,
+      data: items,
+    });
+  } catch (error) {
+    console.error(
+      "[Issuance] getMyOutstandingIssuedItems:",
+      error,
+    );
+
+    if (
+      error.message ===
+      "USER_ID_REQUIRED"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Authenticated user is required.",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error.",
+    });
+  }
+};
+
 module.exports = {
   issueInventory,
   getIssuancesByRequest,
   getOutstandingIssuedItems,
+  getMyOutstandingIssuedItems,
 };
