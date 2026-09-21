@@ -44,10 +44,7 @@ function StockCategory() {
           setInventory(items);
         }
       } catch (loadError) {
-        console.error(
-          "[StockCategory] Failed to load inventory:",
-          loadError,
-        );
+        console.error("[StockCategory] Failed to load inventory:", loadError);
 
         if (mounted) {
           setError(
@@ -78,8 +75,7 @@ function StockCategory() {
 
       const quantity = Number(item.current_stock) || 0;
 
-      accumulator[category] =
-        (accumulator[category] || 0) + quantity;
+      accumulator[category] = (accumulator[category] || 0) + quantity;
 
       return accumulator;
     }, {});
@@ -95,9 +91,7 @@ function StockCategory() {
   return (
     <div className="flex w-full flex-col rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
       <div>
-        <h2 className="font-semibold text-slate-900">
-          Stock by Category
-        </h2>
+        <h2 className="font-semibold text-slate-900">Stock by Category</h2>
 
         <p className="mt-1 text-sm text-slate-500">
           Current inventory quantity grouped by category.
@@ -139,10 +133,7 @@ function StockCategory() {
               </Pie>
 
               <Tooltip
-                formatter={(value) => [
-                  Number(value).toLocaleString(),
-                  "Units",
-                ]}
+                formatter={(value) => [Number(value).toLocaleString(), "Units"]}
               />
 
               <Legend

@@ -8,9 +8,9 @@ const inventoryReservationException = require("./inventoryReservationException")
 const issuance = require("./issuance");
 const itemReturn = require("./itemReturn");
 const notification = require("./notification");
+const auditLog = require("./auditLog");
 const category = require("./category");
 const message = require("./message");
-
 
 module.exports = {
   user,
@@ -24,5 +24,6 @@ module.exports = {
   issuance,
   itemReturn,
   notification,
+  auditLog,
   message,
 };

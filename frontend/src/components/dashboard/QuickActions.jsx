@@ -3,14 +3,14 @@ import { Link } from "react-router-dom";
 import apiClient from "../../services/apiClient";
 
 const ROLES = {
+  SUPER_ADMIN: "Super Admin",
   ADMINISTRATOR: "Administrator",
   STORE_MANAGER: "Store Manager",
   STAFF: "Staff",
 };
 
 function QuickActions() {
-  const [role, setRole] =
-    useState(null);
+  const [role, setRole] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -19,17 +19,16 @@ function QuickActions() {
       .get("/api/auth/me")
       .then((response) => {
         if (mounted) {
+          const currentRole = response.data?.user?.role || null;
           setRole(
-            response.data?.user?.role ||
-              null,
+            currentRole === ROLES.SUPER_ADMIN
+              ? ROLES.ADMINISTRATOR
+              : currentRole,
           );
         }
       })
       .catch((error) => {
-        console.error(
-          "[QuickActions] Failed to load user:",
-          error,
-        );
+        console.error("[QuickActions] Failed to load user:", error);
 
         if (mounted) {
           setRole(null);
@@ -47,9 +46,7 @@ function QuickActions() {
 
   const actions = [];
 
-  if (
-    role === ROLES.STORE_MANAGER
-  ) {
+  if (role === ROLES.STORE_MANAGER) {
     actions.push({
       label: "Stock Movement",
       to: "/stock",
@@ -66,9 +63,7 @@ function QuickActions() {
     });
   }
 
-  if (
-    role === ROLES.ADMINISTRATOR
-  ) {
+  if (role === ROLES.ADMINISTRATOR) {
     actions.push({
       label: "User Management",
       to: "/users",
@@ -90,9 +85,7 @@ function QuickActions() {
     });
   }
 
-  if (
-    role === ROLES.STAFF
-  ) {
+  if (role === ROLES.STAFF) {
     actions.push({
       label: "New Request",
       to: "/requests/new-request",
@@ -117,9 +110,7 @@ function QuickActions() {
   return (
     <section className="rounded-lg border bg-white p-5 shadow-sm">
       <div className="mb-4">
-        <h2 className="text-lg font-bold text-primary">
-          Quick Actions
-        </h2>
+        <h2 className="text-lg font-bold text-primary">Quick Actions</h2>
 
         <p className="text-sm text-slate-500">
           Common tasks available to your role.

@@ -4,9 +4,7 @@ function RecentMovements() {
   return (
     <div className="rounded-lg border bg-white p-4 shadow-sm sm:p-6">
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-primary">
-          Recent Movements
-        </h3>
+        <h3 className="text-lg font-semibold text-primary">Recent Movements</h3>
 
         <p className="text-sm text-slate-500">
           Inventory transactions will be loaded from the database here.

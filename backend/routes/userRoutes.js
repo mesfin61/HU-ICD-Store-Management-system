@@ -4,6 +4,7 @@ const router = express.Router();
 const {
   protect,
   restrictTo,
+  restrictToExact,
   ROLES,
 } = require("../middleware/AuthMiddleware");
 
@@ -12,6 +13,9 @@ const {
   getUserById,
   createUser,
   updateUser,
+  transferOwnership,
+  changePassword,
+  activateUser,
   deactivateUser,
   deleteUser,
 } = require("../controllers/userControllers");
@@ -20,25 +24,24 @@ router.use(protect);
 
 router.use(restrictTo(ROLES.ADMINISTRATOR));
 
-router.get("/",
-  restrictTo("Administrator"),
-  getAllUsers);
+router.get("/", restrictTo("Super Admin"), getAllUsers);
 
-router.get("/:id",
-  restrictTo("Administrator"),
-  getUserById);
+router.get("/:id", restrictTo("Super Admin"), getUserById);
 
-router.post("/",
-  restrictTo("Administrator"),
-  createUser);
+router.post("/", restrictTo("Super Admin"), createUser);
 
-router.put("/:id",
-  restrictTo("Administrator"),
-  updateUser);
+router.put("/:id", restrictTo("Super Admin"), updateUser);
 
-router.patch("/:id/deactivate",
-  restrictTo("Administrator"),
-  deactivateUser);
+router.patch(
+  "/:id/transfer-ownership",
+  restrictToExact(ROLES.SUPER_ADMIN),
+  transferOwnership,
+);
+
+router.patch("/:id/change-password", changePassword);
+
+router.patch("/:id/activate", restrictToExact(ROLES.SUPER_ADMIN), activateUser);
+router.patch("/:id/deactivate", restrictToExact(ROLES.SUPER_ADMIN), deactivateUser);
 
 /*
  * Kept for API compatibility, but controller

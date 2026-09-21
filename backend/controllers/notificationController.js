@@ -7,22 +7,13 @@ const notificationController = {
 
   async getMyNotifications(req, res) {
     try {
-      const {
-        limit = 50,
-        offset = 0,
-        unreadOnly = "false",
-      } = req.query;
+      const { limit = 50, offset = 0, unreadOnly = "false" } = req.query;
 
-      const notifications =
-        await notification.findByUserId(
-          req.user.id,
-          {
-            limit,
-            offset,
-            unreadOnly:
-              String(unreadOnly).toLowerCase() === "true",
-          },
-        );
+      const notifications = await notification.findByUserId(req.user.id, {
+        limit,
+        offset,
+        unreadOnly: String(unreadOnly).toLowerCase() === "true",
+      });
 
       return res.status(200).json({
         success: true,
@@ -30,10 +21,7 @@ const notificationController = {
         data: notifications,
       });
     } catch (error) {
-      console.error(
-        "[Notification] getMyNotifications:",
-        error,
-      );
+      console.error("[Notification] getMyNotifications:", error);
 
       return res.status(500).json({
         success: false,
@@ -48,10 +36,7 @@ const notificationController = {
 
   async getUnreadCount(req, res) {
     try {
-      const count =
-        await notification.countUnread(
-          req.user.id,
-        );
+      const count = await notification.countUnread(req.user.id);
 
       return res.status(200).json({
         success: true,
@@ -60,10 +45,7 @@ const notificationController = {
         },
       });
     } catch (error) {
-      console.error(
-        "[Notification] getUnreadCount:",
-        error,
-      );
+      console.error("[Notification] getUnreadCount:", error);
 
       return res.status(500).json({
         success: false,
@@ -78,11 +60,7 @@ const notificationController = {
 
   async getNotification(req, res) {
     try {
-      const found =
-        await notification.findById(
-          req.params.id,
-          req.user.id,
-        );
+      const found = await notification.findById(req.params.id, req.user.id);
 
       if (!found) {
         return res.status(404).json({
@@ -96,10 +74,7 @@ const notificationController = {
         data: found,
       });
     } catch (error) {
-      console.error(
-        "[Notification] getNotification:",
-        error,
-      );
+      console.error("[Notification] getNotification:", error);
 
       return res.status(500).json({
         success: false,
@@ -114,11 +89,7 @@ const notificationController = {
 
   async markAsRead(req, res) {
     try {
-      const updated =
-        await notification.markAsRead(
-          req.params.id,
-          req.user.id,
-        );
+      const updated = await notification.markAsRead(req.params.id, req.user.id);
 
       if (!updated) {
         return res.status(404).json({
@@ -133,10 +104,7 @@ const notificationController = {
         data: updated,
       });
     } catch (error) {
-      console.error(
-        "[Notification] markAsRead:",
-        error,
-      );
+      console.error("[Notification] markAsRead:", error);
 
       return res.status(500).json({
         success: false,
@@ -151,10 +119,7 @@ const notificationController = {
 
   async markAllAsRead(req, res) {
     try {
-      const count =
-        await notification.markAllAsRead(
-          req.user.id,
-        );
+      const count = await notification.markAllAsRead(req.user.id);
 
       return res.status(200).json({
         success: true,
@@ -164,10 +129,7 @@ const notificationController = {
         },
       });
     } catch (error) {
-      console.error(
-        "[Notification] markAllAsRead:",
-        error,
-      );
+      console.error("[Notification] markAllAsRead:", error);
 
       return res.status(500).json({
         success: false,
@@ -182,11 +144,7 @@ const notificationController = {
 
   async deleteNotification(req, res) {
     try {
-      const deleted =
-        await notification.deleteById(
-          req.params.id,
-          req.user.id,
-        );
+      const deleted = await notification.deleteById(req.params.id, req.user.id);
 
       if (!deleted) {
         return res.status(404).json({
@@ -200,10 +158,7 @@ const notificationController = {
         message: "Notification deleted.",
       });
     } catch (error) {
-      console.error(
-        "[Notification] deleteNotification:",
-        error,
-      );
+      console.error("[Notification] deleteNotification:", error);
 
       return res.status(500).json({
         success: false,

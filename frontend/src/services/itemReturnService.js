@@ -18,9 +18,7 @@ export async function returnInventory({
   return response.data.data;
 }
 
-export async function getReturnsByIssuedItem(
-  issuedItemId,
-) {
+export async function getReturnsByIssuedItem(issuedItemId) {
   const response = await apiClient.get(
     `/api/item-returns/issued-item/${issuedItemId}`,
   );

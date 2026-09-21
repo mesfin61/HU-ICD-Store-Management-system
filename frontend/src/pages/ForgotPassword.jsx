@@ -120,68 +120,57 @@ export default function ForgotPassword() {
   const handleResetPassword = async (e) => {
     e.preventDefault();
 
-  if (newPassword !== confirmPassword) {
-    setError(true);
-    setMessage("Passwords do not match.");
-    return;
-  }
+    if (newPassword !== confirmPassword) {
+      setError(true);
+      setMessage("Passwords do not match.");
+      return;
+    }
 
-  if (newPassword.length < 8) {
-    setError(true);
-    setMessage(
-      "Password must be at least 8 characters long.",
-    );
-    return;
-  }
+    if (newPassword.length < 8) {
+      setError(true);
+      setMessage("Password must be at least 8 characters long.");
+      return;
+    }
 
-  if (!email.trim()) {
-    setError(true);
-    setMessage(
-      "Email address is missing. Please restart the password reset process.",
-    );
-    return;
-  }
+    if (!email.trim()) {
+      setError(true);
+      setMessage(
+        "Email address is missing. Please restart the password reset process.",
+      );
+      return;
+    }
 
-  if (!otp.trim()) {
-    setError(true);
-    setMessage(
-      "Verification code is missing. Please restart the password reset process.",
-    );
-    return;
-  }
+    if (!otp.trim()) {
+      setError(true);
+      setMessage(
+        "Verification code is missing. Please restart the password reset process.",
+      );
+      return;
+    }
 
-  setLoading(true);
-  setMessage("");
-  setError(false);
+    setLoading(true);
+    setMessage("");
+    setError(false);
 
-  try {
-    const res = await axios.post(
-      `${API_URL}/api/auth/reset-password`,
-      {
+    try {
+      const res = await axios.post(`${API_URL}/api/auth/reset-password`, {
         email: email.trim().toLowerCase(),
         otp: otp.trim(),
         newPassword,
-      },
-    );
+      });
 
-    setMessage(
-      res.data.message ||
-        "Password reset successfully.",
-    );
+      setMessage(res.data.message || "Password reset successfully.");
 
-    setTimeout(() => {
-      navigate("/login");
-    }, 2000);
-  } catch (err) {
-    setError(true);
-    setMessage(
-      err.response?.data?.message ||
-        "Failed to reset password.",
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
+    } catch (err) {
+      setError(true);
+      setMessage(err.response?.data?.message || "Failed to reset password.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6">

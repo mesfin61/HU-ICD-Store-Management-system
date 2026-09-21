@@ -2,12 +2,12 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageTransition from "../animated_motion/PageTransition";
 import apiClient from "../services/apiClient";
+import { useUser } from "../context/AuthContext";
 
 export default function Logout() {
   const navigate = useNavigate();
-  const [message, setMessage] = useState(
-    "Logging out...",
-  );
+  const { setUser } = useUser();
+  const [message, setMessage] = useState("Logging out...");
 
   useEffect(() => {
     let mounted = true;
@@ -15,26 +15,17 @@ export default function Logout() {
     async function logout() {
       try {
         await apiClient.post("/api/auth/logout");
-
-        if (mounted) {
-          setMessage("Logged out successfully.");
-        }
       } catch (error) {
-        console.error(
-          "[Logout] Server logout failed:",
-          error,
-        );
+        console.error("[Logout] Server logout failed:", error);
 
         /*
          * We still redirect to login because a failed
          * logout request must not leave the user trapped
          * on the logout page.
          */
-        if (mounted) {
-          setMessage("Signing out...");
-        }
       } finally {
         if (mounted) {
+          setUser(null);
           navigate("/login", {
             replace: true,
           });
@@ -52,9 +43,7 @@ export default function Logout() {
   return (
     <PageTransition>
       <div className="flex min-h-screen items-center justify-center p-6">
-        <p className="text-lg text-gray-700">
-          {message}
-        </p>
+        <p className="text-lg text-gray-700">{message}</p>
       </div>
     </PageTransition>
   );

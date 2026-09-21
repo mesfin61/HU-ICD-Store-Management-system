@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  FaDownload,
   FaFilter,
   FaShieldAlt,
   FaUserShield,
@@ -9,9 +8,11 @@ import {
   FaChevronRight,
   FaSearch,
   FaSyncAlt,
+  FaTimes,
 } from "react-icons/fa";
 
-import { getUsers } from "../../services/userService";
+import { getUsers, setUserActiveState } from "../../services/userService";
+import { useUser } from "../../context/AuthContext";
 
 /*
  * Role presentation only.
@@ -35,8 +36,7 @@ const roleDefinitions = [
   },
   {
     title: "admin",
-    description:
-      "Administrative access for managing standard system users.",
+    description: "Administrative access for managing standard system users.",
     tone: "green",
     Icon: FaUserShield,
     bullets: [
@@ -71,58 +71,19 @@ const roleDefinitions = [
   },
 ];
 
-function Avatar({ name, profilePicture }) {
-  const safeName = name || "User";
-
-  const initials = safeName
-    .trim()
-    .split(/\s+/)
-    .map((part) => part[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-
-  if (profilePicture) {
-    return (
-      <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-slate-200 shadow-sm">
-        <img
-          src={profilePicture}
-          alt={safeName}
-          className="h-full w-full object-cover"
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0b4a8b] text-[11px] font-semibold text-white shadow-sm"
-      aria-hidden="true"
-    >
-      {initials || "U"}
-    </div>
-  );
-}
-
 function Pill({ children, role }) {
   const normalizedRole = String(role || "").toLowerCase();
 
-  let toneClass =
-    "border-slate-200 bg-slate-50 text-slate-600";
+  let toneClass = "border-slate-200 bg-slate-50 text-slate-600";
 
   if (normalizedRole === "super admin") {
-    toneClass =
-      "border-blue-200 bg-blue-50 text-blue-700";
+    toneClass = "border-blue-200 bg-blue-50 text-blue-700";
   } else if (normalizedRole === "admin") {
-    toneClass =
-      "border-purple-200 bg-purple-50 text-purple-700";
+    toneClass = "border-purple-200 bg-purple-50 text-purple-700";
   } else if (normalizedRole.includes("manager")) {
-    toneClass =
-      "border-emerald-200 bg-emerald-50 text-emerald-700";
+    toneClass = "border-emerald-200 bg-emerald-50 text-emerald-700";
   } else if (normalizedRole.includes("officer")) {
-    toneClass =
-      "border-orange-200 bg-orange-50 text-orange-700";
+    toneClass = "border-orange-200 bg-orange-50 text-orange-700";
   }
 
   return (
@@ -179,32 +140,13 @@ function UserActions({
         aria-label="Refresh users"
         title="Refresh users"
       >
-        <FaSyncAlt
-          className={`text-xs ${
-            refreshing ? "animate-spin" : ""
-          }`}
-        />
-      </button>
-
-      <button
-        type="button"
-        className="grid h-8 w-8 place-items-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50"
-        aria-label="Download users"
-        title="Download users"
-      >
-        <FaDownload className="text-xs" />
+        <FaSyncAlt className={`text-xs ${refreshing ? "animate-spin" : ""}`} />
       </button>
     </div>
   );
 }
 
-function RoleDefinitionCard({
-  title,
-  description,
-  tone,
-  Icon,
-  bullets,
-}) {
+function RoleDefinitionCard({ title, description, tone, Icon, bullets }) {
   const iconClass =
     tone === "blue"
       ? "bg-blue-50 text-blue-700 border-blue-100"
@@ -243,9 +185,7 @@ function RoleDefinitionCard({
         </span>
       </div>
 
-      <p className="mb-2 text-[11px] leading-5 text-slate-500">
-        {description}
-      </p>
+      <p className="mb-2 text-[11px] leading-5 text-slate-500">{description}</p>
 
       <ul className="space-y-1.5">
         {bullets.map((bullet) => (
@@ -262,12 +202,7 @@ function RoleDefinitionCard({
   );
 }
 
-function DatabaseStatusMessage({
-  loading,
-  error,
-  usersCount,
-  onRetry,
-}) {
+function DatabaseStatusMessage({ loading, error, usersCount, onRetry }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center gap-2 border-b border-slate-200 px-5 py-6 text-sm text-slate-500">
@@ -284,9 +219,7 @@ function DatabaseStatusMessage({
           Failed to load users
         </div>
 
-        <div className="mt-1 text-xs text-red-600">
-          {error}
-        </div>
+        <div className="mt-1 text-xs text-red-600">{error}</div>
 
         <button
           type="button"
@@ -316,13 +249,14 @@ function DatabaseStatusMessage({
   return null;
 }
 
-function ActiveSystemUsers({
-  refreshKey = 0,
-}) {
+function ActiveSystemUsers({ refreshKey = 0 }) {
+  const { user: currentUser } = useUser();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [updatingUserId, setUpdatingUserId] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -345,20 +279,12 @@ function ActiveSystemUsers({
 
       const databaseUsers = await getUsers();
 
-      setUsers(
-        Array.isArray(databaseUsers)
-          ? databaseUsers
-          : [],
-      );
+      setUsers(Array.isArray(databaseUsers) ? databaseUsers : []);
     } catch (loadError) {
-      console.error(
-        "[ActiveSystemUsers] Failed to load users:",
-        loadError,
-      );
+      console.error("[ActiveSystemUsers] Failed to load users:", loadError);
 
       setError(
-        loadError?.message ||
-          "Failed to retrieve users from the database.",
+        loadError?.message || "Failed to retrieve users from the database.",
       );
 
       /*
@@ -379,29 +305,53 @@ function ActiveSystemUsers({
     loadUsers();
   }, [refreshKey]);
 
+  const isSuperAdmin = currentUser?.role === "Super Admin";
+
+  async function handleUserStatusChange() {
+    if (!selectedUser) {
+      return;
+    }
+
+    const active = !Boolean(selectedUser.is_active);
+    const action = active ? "activate" : "deactivate";
+
+    try {
+      setUpdatingUserId(selectedUser.id);
+      await setUserActiveState(selectedUser.id, active);
+      setSelectedUser(null);
+      await loadUsers({ showLoading: false });
+    } catch (statusError) {
+      setError(
+        statusError.response?.data?.message ||
+          `Failed to ${action} the user.`,
+      );
+    } finally {
+      setUpdatingUserId(null);
+    }
+  }
+
+  function openUserStatusModal(targetUser) {
+    if (isSuperAdmin) {
+      setSelectedUser(targetUser);
+    }
+  }
+
   /*
    * Client-side filtering is only presentation logic.
    *
    * The underlying users always come from PostgreSQL.
    */
   const filteredUsers = useMemo(() => {
-    const normalizedSearch =
-      search.trim().toLowerCase();
+    const normalizedSearch = search.trim().toLowerCase();
 
     return users.filter((user) => {
       const isActive = Boolean(user.is_active);
 
-      if (
-        statusFilter === "active" &&
-        !isActive
-      ) {
+      if (statusFilter === "active" && !isActive) {
         return false;
       }
 
-      if (
-        statusFilter === "inactive" &&
-        isActive
-      ) {
+      if (statusFilter === "inactive" && isActive) {
         return false;
       }
 
@@ -419,9 +369,7 @@ function ActiveSystemUsers({
         .join(" ")
         .toLowerCase();
 
-      return searchableText.includes(
-        normalizedSearch,
-      );
+      return searchableText.includes(normalizedSearch);
     });
   }, [users, search, statusFilter]);
 
@@ -436,23 +384,16 @@ function ActiveSystemUsers({
   const summary = useMemo(() => {
     const totalUsers = users.length;
 
-    const activeUsers = users.filter(
-      (user) => Boolean(user.is_active),
-    ).length;
+    const activeUsers = users.filter((user) => Boolean(user.is_active)).length;
 
-    const inactiveUsers =
-      totalUsers - activeUsers;
+    const inactiveUsers = totalUsers - activeUsers;
 
     const superAdminUsers = users.filter(
-      (user) =>
-        String(user.role_name || "").toLowerCase() ===
-        "super admin",
+      (user) => String(user.role_name || "").toLowerCase() === "super admin",
     ).length;
 
     const adminUsers = users.filter(
-      (user) =>
-        String(user.role_name || "").toLowerCase() ===
-        "admin",
+      (user) => String(user.role_name || "").toLowerCase() === "admin",
     ).length;
 
     return {
@@ -485,9 +426,7 @@ function ActiveSystemUsers({
               onSearchChange={setSearch}
               statusFilter={statusFilter}
               onStatusChange={setStatusFilter}
-              onRefresh={() =>
-                loadUsers({ showLoading: false })
-              }
+              onRefresh={() => loadUsers({ showLoading: false })}
               refreshing={refreshing}
             />
           </div>
@@ -505,78 +444,62 @@ function ActiveSystemUsers({
                 <table className="min-w-full text-left">
                   <thead className="bg-[#f7f9ff] text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                     <tr>
-                      <th className="px-4 py-3 sm:px-5">
-                        User Details
-                      </th>
+                      <th className="px-4 py-3 sm:px-5">User Details</th>
 
-                      <th className="px-4 py-3">
-                        Department
-                      </th>
+                      <th className="px-4 py-3">Department</th>
 
-                      <th className="px-4 py-3">
-                        Role
-                      </th>
+                      <th className="px-4 py-3">Role</th>
 
-                      <th className="px-4 py-3">
-                        Status
-                      </th>
+                      <th className="px-4 py-3">Status</th>
 
-                      <th className="px-4 py-3">
-                        Created
-                      </th>
+                      <th className="px-4 py-3">Created</th>
+
+                      {isSuperAdmin && <th className="px-4 py-3" />}
                     </tr>
                   </thead>
 
                   <tbody className="divide-y divide-slate-100 bg-white">
                     {filteredUsers.map((user) => {
-                      const displayName =
-                        user.full_name ||
-                        "Unnamed User";
+                      const displayName = user.full_name || "Unnamed User";
 
-                      const displayEmail =
-                        user.email ||
-                        "No email";
+                      const displayEmail = user.email || "No email";
 
                       const displayDepartment =
-                        user.department_name ||
-                        "Unassigned";
+                        user.department_name || "Unassigned";
 
-                      const displayRole =
-                        user.role_name ||
-                        "Unknown";
+                      const displayRole = user.role_name || "Unknown";
 
-                      const active =
-                        Boolean(user.is_active);
+                      const active = Boolean(user.is_active);
 
-                      const createdDate =
-                        user.created_at
-                          ? new Date(
-                              user.created_at,
-                            ).toLocaleDateString()
-                          : "—";
+                      const createdDate = user.created_at
+                        ? new Date(user.created_at).toLocaleDateString()
+                        : "—";
 
                       return (
                         <tr
                           key={user.id}
-                          className="align-top text-sm text-slate-700 transition hover:bg-slate-50"
+                          onClick={() => openUserStatusModal(user)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              openUserStatusModal(user);
+                            }
+                          }}
+                          tabIndex={isSuperAdmin ? 0 : undefined}
+                          className={`align-top text-sm text-slate-700 transition ${
+                            isSuperAdmin
+                              ? "cursor-pointer hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
+                              : ""
+                          } ${active ? "" : "bg-red-50 hover:bg-red-100"}`}
                         >
                           <td className="px-4 py-4 sm:px-5">
-                            <div className="flex items-center gap-3">
-                              <Avatar
-                                name={displayName}
-                                profilePicture={
-                                  user.profile_picture
-                                }
-                              />
+                            <div className="min-w-0">
+                              <div className="font-semibold text-slate-900">
+                                {displayName}
+                              </div>
 
-                              <div className="min-w-0">
-                                <div className="font-semibold text-slate-900">
-                                  {displayName}
-                                </div>
-
-                                <div className="truncate text-xs text-slate-500">
-                                  {displayEmail}
-                                </div>
+                              <div className="truncate text-xs text-slate-500">
+                                {displayEmail}
                               </div>
                             </div>
                           </td>
@@ -586,31 +509,23 @@ function ActiveSystemUsers({
                           </td>
 
                           <td className="px-4 py-4">
-                            <Pill role={displayRole}>
-                              {displayRole}
-                            </Pill>
+                            <Pill role={displayRole}>{displayRole}</Pill>
                           </td>
 
                           <td className="px-4 py-4">
                             <div className="flex items-center gap-2 text-sm font-medium">
                               <span
                                 className={`h-2 w-2 rounded-full ${
-                                  active
-                                    ? "bg-emerald-500"
-                                    : "bg-slate-400"
+                                  active ? "bg-emerald-500" : "bg-slate-400"
                                 }`}
                               />
 
                               <span
                                 className={
-                                  active
-                                    ? "text-emerald-600"
-                                    : "text-slate-500"
+                                  active ? "text-emerald-600" : "text-slate-500"
                                 }
                               >
-                                {active
-                                  ? "Active"
-                                  : "Inactive"}
+                                {active ? "Active" : "Inactive"}
                               </span>
                             </div>
                           </td>
@@ -618,6 +533,12 @@ function ActiveSystemUsers({
                           <td className="px-4 py-4 text-slate-500">
                             {createdDate}
                           </td>
+
+                          {isSuperAdmin && (
+                            <td className="px-4 py-4 text-right text-slate-400">
+                              <FaChevronRight className="inline-block text-xs" />
+                            </td>
+                          )}
                         </tr>
                       );
                     })}
@@ -644,34 +565,6 @@ function ActiveSystemUsers({
 
         {/* Right-side information */}
         <div className="flex flex-col gap-3">
-          {/* Role definitions */}
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="mb-3 flex items-center gap-3">
-              <div className="grid h-9 w-9 place-items-center rounded-md bg-sky-50 text-sky-700">
-                <FaUserShield className="text-sm" />
-              </div>
-
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">
-                  Role Definitions
-                </h2>
-
-                <p className="text-[10px] text-slate-500">
-                  Informational only. Backend authorization is authoritative.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {roleDefinitions.map((role) => (
-                <RoleDefinitionCard
-                  key={role.title}
-                  {...role}
-                />
-              ))}
-            </div>
-          </div>
-
           {/* Live database summary */}
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -680,9 +573,7 @@ function ActiveSystemUsers({
 
             <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
               <div className="rounded-lg bg-slate-50 p-3">
-                <div className="text-xs text-slate-500">
-                  Total Users
-                </div>
+                <div className="text-xs text-slate-500">Total Users</div>
 
                 <div className="mt-1 text-lg font-semibold text-slate-900">
                   {summary.totalUsers}
@@ -690,9 +581,7 @@ function ActiveSystemUsers({
               </div>
 
               <div className="rounded-lg bg-slate-50 p-3">
-                <div className="text-xs text-slate-500">
-                  Active Users
-                </div>
+                <div className="text-xs text-slate-500">Active Users</div>
 
                 <div className="mt-1 text-lg font-semibold text-emerald-600">
                   {summary.activeUsers}
@@ -700,9 +589,7 @@ function ActiveSystemUsers({
               </div>
 
               <div className="rounded-lg bg-slate-50 p-3">
-                <div className="text-xs text-slate-500">
-                  Inactive Users
-                </div>
+                <div className="text-xs text-slate-500">Inactive Users</div>
 
                 <div className="mt-1 text-lg font-semibold text-slate-600">
                   {summary.inactiveUsers}
@@ -710,9 +597,7 @@ function ActiveSystemUsers({
               </div>
 
               <div className="rounded-lg bg-slate-50 p-3">
-                <div className="text-xs text-slate-500">
-                  Super Admins
-                </div>
+                <div className="text-xs text-slate-500">Super Admins</div>
 
                 <div className="mt-1 text-lg font-semibold text-blue-700">
                   {summary.superAdminUsers}
@@ -720,9 +605,7 @@ function ActiveSystemUsers({
               </div>
 
               <div className="rounded-lg bg-slate-50 p-3">
-                <div className="text-xs text-slate-500">
-                  Admins
-                </div>
+                <div className="text-xs text-slate-500">Admins</div>
 
                 <div className="mt-1 text-lg font-semibold text-purple-700">
                   {summary.adminUsers}
@@ -730,15 +613,106 @@ function ActiveSystemUsers({
               </div>
             </div>
 
-            <div className="mt-3 rounded-md border border-blue-100 bg-blue-50 px-3 py-2">
-              <p className="text-[10px] leading-4 text-blue-800">
-                User information shown here is retrieved directly
-                from PostgreSQL. No local user cache is used.
-              </p>
-            </div>
           </div>
         </div>
       </div>
+
+      {selectedUser && isSuperAdmin && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setSelectedUser(null);
+            }
+          }}
+        >
+          <div
+            className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="user-status-modal-title"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3
+                  id="user-status-modal-title"
+                  className="text-base font-semibold text-slate-900"
+                >
+                  {selectedUser.is_active ? "Deactivate user" : "Activate user"}
+                </h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Confirm the account status change for this user.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedUser(null)}
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Close user status dialog"
+              >
+                <FaTimes className="text-sm" />
+              </button>
+            </div>
+
+            <div
+              className={`mt-5 rounded-lg border px-4 py-3 ${
+                selectedUser.is_active
+                  ? "border-red-200 bg-red-50"
+                  : "border-emerald-200 bg-emerald-50"
+              }`}
+            >
+              <p className="font-semibold text-slate-900">
+                {selectedUser.full_name || "Unnamed User"}
+              </p>
+              <p className="mt-1 text-sm text-slate-600">
+                {selectedUser.email || "No email"}
+              </p>
+              <p
+                className={`mt-2 text-xs font-semibold ${
+                  selectedUser.is_active ? "text-red-700" : "text-emerald-700"
+                }`}
+              >
+                Current status: {selectedUser.is_active ? "Active" : "Inactive"}
+              </p>
+            </div>
+
+            {selectedUser.is_active && (
+              <p className="mt-4 text-sm leading-5 text-red-700">
+                This user will no longer be able to sign in until the account is
+                activated again.
+              </p>
+            )}
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedUser(null)}
+                className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleUserStatusChange}
+                disabled={updatingUserId === selectedUser.id}
+                className={`rounded-md px-3 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                  selectedUser.is_active
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-emerald-600 hover:bg-emerald-700"
+                }`}
+              >
+                {updatingUserId === selectedUser.id
+                  ? "Updating..."
+                  : selectedUser.is_active
+                    ? "Deactivate user"
+                    : "Activate user"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

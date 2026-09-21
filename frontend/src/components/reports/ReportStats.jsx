@@ -18,12 +18,7 @@ const iconMap = {
 function StatIcon({ type }) {
   const Icon = iconMap[type] ?? FaCheckCircle;
 
-  return (
-    <Icon
-      className="h-6 w-6 text-slate-700"
-      aria-hidden="true"
-    />
-  );
+  return <Icon className="h-6 w-6 text-slate-700" aria-hidden="true" />;
 }
 
 function ReportStats() {
@@ -41,15 +36,12 @@ function ReportStats() {
         setLoading(true);
         setError("");
 
-        const [
-          inventoryResponse,
-          requestsResponse,
-          movementResponse,
-        ] = await Promise.all([
-          apiClient.get("/api/inventory"),
-          apiClient.get("/api/requests"),
-          apiClient.get("/api/inventory/transactions/trends"),
-        ]);
+        const [inventoryResponse, requestsResponse, movementResponse] =
+          await Promise.all([
+            apiClient.get("/api/inventory"),
+            apiClient.get("/api/requests"),
+            apiClient.get("/api/inventory/transactions/trends"),
+          ]);
 
         if (!mounted) return;
 
@@ -61,9 +53,7 @@ function ReportStats() {
           ? requestsResponse.data.data
           : [];
 
-        const movementData = Array.isArray(
-          movementResponse.data?.data,
-        )
+        const movementData = Array.isArray(movementResponse.data?.data)
           ? movementResponse.data.data
           : [];
 
@@ -104,10 +94,7 @@ function ReportStats() {
       const currentStock = Number(item.current_stock) || 0;
       const minimumStock = Number(item.minimum_stock) || 0;
 
-      return (
-        currentStock > 0 &&
-        currentStock <= minimumStock
-      );
+      return currentStock > 0 && currentStock <= minimumStock;
     }).length;
 
     const outOfStockItems = inventory.filter((item) => {
@@ -117,47 +104,33 @@ function ReportStats() {
 
     const activeCategories = new Set(
       inventory
-        .map(
-          (item) =>
-            String(
-              item.category_name ||
-                item.category ||
-                "Uncategorized",
-            ).trim(),
+        .map((item) =>
+          String(item.category_name || item.category || "Uncategorized").trim(),
         )
         .filter(Boolean),
     ).size;
 
     const pendingRequests = requests.filter(
-      (request) =>
-        String(request.status || "").toUpperCase() === "PENDING",
+      (request) => String(request.status || "").toUpperCase() === "PENDING",
     ).length;
 
     const approvedRequests = requests.filter((request) => {
-      const status = String(
-        request.status || "",
-      ).toUpperCase();
+      const status = String(request.status || "").toUpperCase();
 
-      return (
-        status === "APPROVED" ||
-        status === "PARTIALLY_APPROVED"
-      );
+      return status === "APPROVED" || status === "PARTIALLY_APPROVED";
     }).length;
 
     const totalInbound = movements.reduce(
-      (total, movement) =>
-        total + (Number(movement.inbound) || 0),
+      (total, movement) => total + (Number(movement.inbound) || 0),
       0,
     );
 
     const totalOutbound = movements.reduce(
-      (total, movement) =>
-        total + (Number(movement.outbound) || 0),
+      (total, movement) => total + (Number(movement.outbound) || 0),
       0,
     );
 
-    const totalMovements =
-      totalInbound + totalOutbound;
+    const totalMovements = totalInbound + totalOutbound;
 
     return {
       totalItems,
@@ -177,61 +150,39 @@ function ReportStats() {
     {
       id: 1,
       title: "TOTAL ITEMS TRACKED",
-      value: loading
-        ? "—"
-        : summary.totalItems.toString(),
-      percent: loading
-        ? ""
-        : `${summary.activeCategories} categories`,
-      pctColor:
-        "bg-green-100 text-green-700",
-      subtitle:
-        "Active inventory records",
+      value: loading ? "—" : summary.totalItems.toString(),
+      percent: loading ? "" : `${summary.activeCategories} categories`,
+      pctColor: "bg-green-100 text-green-700",
+      subtitle: "Active inventory records",
       icon: "money",
     },
     {
       id: 2,
       title: "REQUEST PIPELINE",
-      value: loading
-        ? "—"
-        : summary.totalRequests.toString(),
-      percent: loading
-        ? ""
-        : `${summary.pendingRequests} pending`,
-      pctColor:
-        "bg-green-100 text-green-700",
-      subtitle:
-        "Requests recorded in the database",
+      value: loading ? "—" : summary.totalRequests.toString(),
+      percent: loading ? "" : `${summary.pendingRequests} pending`,
+      pctColor: "bg-green-100 text-green-700",
+      subtitle: "Requests recorded in the database",
       icon: "chart",
     },
     {
       id: 3,
       title: "30-DAY STOCK MOVEMENTS",
-      value: loading
-        ? "—"
-        : summary.totalMovements.toString(),
+      value: loading ? "—" : summary.totalMovements.toString(),
       tag: loading
         ? ""
         : `${summary.totalInbound} in / ${summary.totalOutbound} out`,
-      tagColor:
-        "bg-gray-100 text-gray-700",
-      subtitle:
-        "Physical inventory transactions",
+      tagColor: "bg-gray-100 text-gray-700",
+      subtitle: "Physical inventory transactions",
       icon: "turnover",
     },
     {
       id: 4,
       title: "LOW STOCK ITEMS",
-      value: loading
-        ? "—"
-        : summary.lowStockItems.toString(),
-      percent: loading
-        ? ""
-        : `${summary.outOfStockItems} out`,
-      pctColor:
-        "bg-red-100 text-red-700",
-      subtitle:
-        "Items requiring replenishment",
+      value: loading ? "—" : summary.lowStockItems.toString(),
+      percent: loading ? "" : `${summary.outOfStockItems} out`,
+      pctColor: "bg-red-100 text-red-700",
+      subtitle: "Items requiring replenishment",
       icon: "warning",
     },
   ];
@@ -285,9 +236,7 @@ function ReportStats() {
                 {stat.value}
               </div>
 
-              <div className="mt-1 text-sm text-gray-400">
-                {stat.subtitle}
-              </div>
+              <div className="mt-1 text-sm text-gray-400">{stat.subtitle}</div>
             </div>
           </div>
         ))}

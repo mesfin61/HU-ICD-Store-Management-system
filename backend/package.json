@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon index.js",
     "dev": "nodemon index.js",
-    "seed": "node scripts/seed.js"
+    "seed": "node scripts/seed.js",
+    "format": "prettier --write \"**/*.js\""
   },
   "keywords": [],
   "author": "",
@@ -24,12 +25,14 @@
     "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.11.0",
-    "multer": "^2.1.1",
     "nodemailer": "^8.0.11",
     "nodemon": "^3.1.14",
     "pg": "^8.21.0",
     "sequelize": "^6.37.8",
     "sequelize-cli": "^6.6.5",
     "uuid": "^14.0.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.6"
   }
 }

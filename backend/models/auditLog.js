@@ -63,12 +63,8 @@ const auditLog = {
         action,
         entityName,
         entityId,
-        oldData
-          ? JSON.stringify(oldData)
-          : null,
-        newData
-          ? JSON.stringify(newData)
-          : null,
+        oldData ? JSON.stringify(oldData) : null,
+        newData ? JSON.stringify(newData) : null,
       ],
     );
 
@@ -88,18 +84,9 @@ const auditLog = {
     entityName = null,
     userId = null,
   } = {}) {
-    const safeLimit = Math.min(
-      Math.max(
-        Number(limit) || 50,
-        1,
-      ),
-      100,
-    );
+    const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
 
-    const safeOffset = Math.max(
-      Number(offset) || 0,
-      0,
-    );
+    const safeOffset = Math.max(Number(offset) || 0, 0);
 
     const result = await pool.query(
       `
@@ -137,13 +124,7 @@ const auditLog = {
       LIMIT $4
       OFFSET $5
       `,
-      [
-        action,
-        entityName,
-        userId,
-        safeLimit,
-        safeOffset,
-      ],
+      [action, entityName, userId, safeLimit, safeOffset],
     );
 
     return result.rows;
@@ -159,29 +140,14 @@ const auditLog = {
   // The browser must NOT supply the user ID.
   // ========================================================
 
-  async findForUser({
-    userId,
-    limit = 50,
-    offset = 0,
-  } = {}) {
+  async findForUser({ userId, limit = 50, offset = 0 } = {}) {
     if (!userId) {
-      throw new Error(
-        "USER_ID_REQUIRED",
-      );
+      throw new Error("USER_ID_REQUIRED");
     }
 
-    const safeLimit = Math.min(
-      Math.max(
-        Number(limit) || 50,
-        1,
-      ),
-      100,
-    );
+    const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
 
-    const safeOffset = Math.max(
-      Number(offset) || 0,
-      0,
-    );
+    const safeOffset = Math.max(Number(offset) || 0, 0);
 
     const result = await pool.query(
       `
@@ -209,11 +175,7 @@ const auditLog = {
       LIMIT $2
       OFFSET $3
       `,
-      [
-        userId,
-        safeLimit,
-        safeOffset,
-      ],
+      [userId, safeLimit, safeOffset],
     );
 
     return result.rows;
@@ -253,9 +215,7 @@ const auditLog = {
       [id],
     );
 
-    return (
-      result.rows[0] || null
-    );
+    return result.rows[0] || null;
   },
 };
 

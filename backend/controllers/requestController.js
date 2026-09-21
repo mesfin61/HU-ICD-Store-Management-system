@@ -1,4 +1,5 @@
 const { request } = require("../models");
+const { isAdministratorRole } = require("../middleware/AuthMiddleware");
 
 // =========================================================
 // STAFF: CREATE REQUEST
@@ -18,15 +19,11 @@ const createRequest = async (req, res) => {
     if (!req.user.department_id) {
       return res.status(400).json({
         success: false,
-        message:
-          "You must belong to a department before creating a request.",
+        message: "You must belong to a department before creating a request.",
       });
     }
 
-    if (
-      typeof purpose !== "string" ||
-      !purpose.trim()
-    ) {
+    if (typeof purpose !== "string" || !purpose.trim()) {
       return res.status(400).json({
         success: false,
         message: "A reason for the request is required.",
@@ -52,9 +49,7 @@ const createRequest = async (req, res) => {
       items: normalizedItems,
     });
 
-    const requestItems = await request.findItems(
-      createdRequest.id,
-    );
+    const requestItems = await request.findItems(createdRequest.id);
 
     return res.status(201).json({
       success: true,
@@ -67,56 +62,32 @@ const createRequest = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(
-      "[Request] createRequest:",
-      error,
-    );
+    console.error("[Request] createRequest:", error);
 
     const errors = {
-      REQUESTER_NOT_FOUND: [
-        404,
-        "Requester not found.",
-      ],
+      REQUESTER_NOT_FOUND: [404, "Requester not found."],
 
-      REQUESTER_INACTIVE: [
-        403,
-        "Your account is inactive.",
-      ],
+      REQUESTER_INACTIVE: [403, "Your account is inactive."],
 
       INVALID_REQUEST_DEPARTMENT: [
         400,
         "Your department information is invalid.",
       ],
 
-      INVALID_REQUEST_PURPOSE: [
-        400,
-        "A reason for the request is required.",
-      ],
+      INVALID_REQUEST_PURPOSE: [400, "A reason for the request is required."],
 
-      REQUEST_ITEMS_REQUIRED: [
-        400,
-        "At least one item is required.",
-      ],
+      REQUEST_ITEMS_REQUIRED: [400, "At least one item is required."],
 
-      INVALID_REQUEST_ITEMS: [
-        400,
-        "Invalid or duplicate request items.",
-      ],
+      INVALID_REQUEST_ITEMS: [400, "Invalid or duplicate request items."],
 
       INVALID_REQUEST_QUANTITY: [
         400,
         "Requested quantity must be a positive whole number.",
       ],
 
-      ITEM_NOT_FOUND: [
-        404,
-        "One or more requested items do not exist.",
-      ],
+      ITEM_NOT_FOUND: [404, "One or more requested items do not exist."],
 
-      ITEM_INACTIVE: [
-        400,
-        "One or more requested items are inactive.",
-      ],
+      ITEM_INACTIVE: [400, "One or more requested items are inactive."],
     };
 
     const known = errors[error.message];
@@ -141,19 +112,14 @@ const createRequest = async (req, res) => {
 
 const getMyRequests = async (req, res) => {
   try {
-    const requests = await request.findByRequester(
-      req.user.id,
-    );
+    const requests = await request.findByRequester(req.user.id);
 
     return res.status(200).json({
       success: true,
       data: requests,
     });
   } catch (error) {
-    console.error(
-      "[Request] getMyRequests:",
-      error,
-    );
+    console.error("[Request] getMyRequests:", error);
 
     return res.status(500).json({
       success: false,
@@ -180,9 +146,7 @@ const getMyRequests = async (req, res) => {
 
 const getRequest = async (req, res) => {
   try {
-    const foundRequest = await request.findById(
-      req.params.id,
-    );
+    const foundRequest = await request.findById(req.params.id);
 
     if (!foundRequest) {
       return res.status(404).json({
@@ -191,36 +155,25 @@ const getRequest = async (req, res) => {
       });
     }
 
-    const isAdministrator =
-      req.user.role_name === "Administrator";
+    const isAdministrator = isAdministratorRole(req.user.role_name);
 
-    const isRequester =
-      foundRequest.requester_id === req.user.id;
+    const isRequester = foundRequest.requester_id === req.user.id;
 
-    const isStoreManager =
-      req.user.role_name === "Store Manager";
+    const isStoreManager = req.user.role_name === "Store Manager";
 
     const managerCanView =
       isStoreManager &&
-      (
-        foundRequest.status === "APPROVED" ||
-        foundRequest.status === "PARTIALLY_APPROVED"
-      );
+      (foundRequest.status === "APPROVED" ||
+        foundRequest.status === "PARTIALLY_APPROVED");
 
-    if (
-      !isAdministrator &&
-      !isRequester &&
-      !managerCanView
-    ) {
+    if (!isAdministrator && !isRequester && !managerCanView) {
       return res.status(403).json({
         success: false,
         message: "Access denied.",
       });
     }
 
-    const items = await request.findItems(
-      foundRequest.id,
-    );
+    const items = await request.findItems(foundRequest.id);
 
     return res.status(200).json({
       success: true,
@@ -230,10 +183,7 @@ const getRequest = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(
-      "[Request] getRequest:",
-      error,
-    );
+    console.error("[Request] getRequest:", error);
 
     return res.status(500).json({
       success: false,
@@ -255,10 +205,7 @@ const getAllRequests = async (req, res) => {
       data: requests,
     });
   } catch (error) {
-    console.error(
-      "[Request] getAllRequests:",
-      error,
-    );
+    console.error("[Request] getAllRequests:", error);
 
     return res.status(500).json({
       success: false,
@@ -267,21 +214,16 @@ const getAllRequests = async (req, res) => {
   }
 };
 
-
 const getRequestsForIssuance = async (req, res) => {
   try {
-    const requests =
-      await request.findReadyForIssuance();
+    const requests = await request.findReadyForIssuance();
 
     return res.status(200).json({
       success: true,
       data: requests,
     });
   } catch (error) {
-    console.error(
-      "[Request] getRequestsForIssuance:",
-      error,
-    );
+    console.error("[Request] getRequestsForIssuance:", error);
 
     return res.status(500).json({
       success: false,
@@ -314,14 +256,10 @@ const approveRequest = async (req, res) => {
   try {
     const { approvedItems } = req.body;
 
-    if (
-      !Array.isArray(approvedItems) ||
-      approvedItems.length === 0
-    ) {
+    if (!Array.isArray(approvedItems) || approvedItems.length === 0) {
       return res.status(400).json({
         success: false,
-        message:
-          "Approved quantities are required for all request items.",
+        message: "Approved quantities are required for all request items.",
       });
     }
 
@@ -331,9 +269,7 @@ const approveRequest = async (req, res) => {
       approvedItems,
     });
 
-    const items = await request.findItems(
-      updatedRequest.id,
-    );
+    const items = await request.findItems(updatedRequest.id);
 
     return res.status(200).json({
       success: true,
@@ -347,36 +283,18 @@ const approveRequest = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(
-      "[Request] approveRequest:",
-      error,
-    );
+    console.error("[Request] approveRequest:", error);
 
     const errors = {
-      REQUEST_NOT_FOUND: [
-        404,
-        "Request not found.",
-      ],
+      REQUEST_NOT_FOUND: [404, "Request not found."],
 
-      SELF_APPROVAL_FORBIDDEN: [
-        403,
-        "You cannot approve your own request.",
-      ],
+      SELF_APPROVAL_FORBIDDEN: [403, "You cannot approve your own request."],
 
-      REQUEST_ALREADY_DECIDED: [
-        409,
-        "This request has already been decided.",
-      ],
+      REQUEST_ALREADY_DECIDED: [409, "This request has already been decided."],
 
-      APPROVED_ITEMS_REQUIRED: [
-        400,
-        "Approved quantities are required.",
-      ],
+      APPROVED_ITEMS_REQUIRED: [400, "Approved quantities are required."],
 
-      INVALID_REQUEST_ITEM: [
-        400,
-        "An invalid request item was supplied.",
-      ],
+      INVALID_REQUEST_ITEM: [400, "An invalid request item was supplied."],
 
       DUPLICATE_APPROVED_ITEM: [
         400,
@@ -413,35 +331,23 @@ const approveRequest = async (req, res) => {
         "The approved quantity has already been reserved.",
       ],
 
-      ITEM_NOT_FOUND: [
-        404,
-        "An approved inventory item could not be found.",
-      ],
+      ITEM_NOT_FOUND: [404, "An approved inventory item could not be found."],
 
-      ITEM_INACTIVE: [
-        400,
-        "An approved inventory item is inactive.",
-      ],
+      ITEM_INACTIVE: [400, "An approved inventory item is inactive."],
 
       INSUFFICIENT_STOCK: [
         409,
         "Insufficient available stock to reserve the approved quantity. The approval was not completed.",
       ],
 
-      INVALID_RESERVATION_QUANTITY: [
-        400,
-        "Invalid reservation quantity.",
-      ],
+      INVALID_RESERVATION_QUANTITY: [400, "Invalid reservation quantity."],
 
       PERFORMED_BY_REQUIRED: [
         400,
         "The administrator performing the approval is required.",
       ],
 
-      DATABASE_CLIENT_REQUIRED: [
-        500,
-        "Database transaction error.",
-      ],
+      DATABASE_CLIENT_REQUIRED: [500, "Database transaction error."],
     };
 
     const known = errors[error.message];
@@ -474,9 +380,7 @@ const rejectRequest = async (req, res) => {
       rejectionReason,
     });
 
-    const items = await request.findItems(
-      updatedRequest.id,
-    );
+    const items = await request.findItems(updatedRequest.id);
 
     return res.status(200).json({
       success: true,
@@ -487,31 +391,16 @@ const rejectRequest = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(
-      "[Request] rejectRequest:",
-      error,
-    );
+    console.error("[Request] rejectRequest:", error);
 
     const errors = {
-      REQUEST_NOT_FOUND: [
-        404,
-        "Request not found.",
-      ],
+      REQUEST_NOT_FOUND: [404, "Request not found."],
 
-      SELF_REJECTION_FORBIDDEN: [
-        403,
-        "You cannot reject your own request.",
-      ],
+      SELF_REJECTION_FORBIDDEN: [403, "You cannot reject your own request."],
 
-      REQUEST_ALREADY_DECIDED: [
-        409,
-        "This request has already been decided.",
-      ],
+      REQUEST_ALREADY_DECIDED: [409, "This request has already been decided."],
 
-      REJECTION_REASON_REQUIRED: [
-        400,
-        "A rejection reason is required.",
-      ],
+      REJECTION_REASON_REQUIRED: [400, "A rejection reason is required."],
     };
 
     const known = errors[error.message];

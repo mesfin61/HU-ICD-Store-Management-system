@@ -1,18 +1,12 @@
-const {
-  inventoryReservationException,
-} = require("../models");
+const { inventoryReservationException } = require("../models");
 
 // =========================================================
 // ADMINISTRATOR: OPEN EXCEPTIONS
 // =========================================================
 
-const getOpenExceptions = async (
-  req,
-  res,
-) => {
+const getOpenExceptions = async (req, res) => {
   try {
-    const exceptions =
-      await inventoryReservationException.findOpen();
+    const exceptions = await inventoryReservationException.findOpen();
 
     return res.status(200).json({
       success: true,
@@ -20,10 +14,7 @@ const getOpenExceptions = async (
       data: exceptions,
     });
   } catch (error) {
-    console.error(
-      "[ReservationException] getOpenExceptions:",
-      error,
-    );
+    console.error("[ReservationException] getOpenExceptions:", error);
 
     return res.status(500).json({
       success: false,
@@ -36,21 +27,16 @@ const getOpenExceptions = async (
 // ADMINISTRATOR: GET ONE
 // =========================================================
 
-const getException = async (
-  req,
-  res,
-) => {
+const getException = async (req, res) => {
   try {
-    const exception =
-      await inventoryReservationException.findById(
-        req.params.id,
-      );
+    const exception = await inventoryReservationException.findById(
+      req.params.id,
+    );
 
     if (!exception) {
       return res.status(404).json({
         success: false,
-        message:
-          "Reservation exception not found.",
+        message: "Reservation exception not found.",
       });
     }
 
@@ -59,10 +45,7 @@ const getException = async (
       data: exception,
     });
   } catch (error) {
-    console.error(
-      "[ReservationException] getException:",
-      error,
-    );
+    console.error("[ReservationException] getException:", error);
 
     return res.status(500).json({
       success: false,
@@ -75,39 +58,26 @@ const getException = async (
 // ADMINISTRATOR: APPROVE
 // =========================================================
 
-const approveException = async (
-  req,
-  res,
-) => {
+const approveException = async (req, res) => {
   try {
-    const {
-      resolutionNotes,
-    } = req.body;
+    const { resolutionNotes } = req.body;
 
-    const exception =
-      await inventoryReservationException.approve({
-        exceptionId: req.params.id,
-        administratorId: req.user.id,
-        resolutionNotes,
-      });
+    const exception = await inventoryReservationException.approve({
+      exceptionId: req.params.id,
+      administratorId: req.user.id,
+      resolutionNotes,
+    });
 
     return res.status(200).json({
       success: true,
-      message:
-        "Reservation exception approved and resolved.",
+      message: "Reservation exception approved and resolved.",
       data: exception,
     });
   } catch (error) {
-    console.error(
-      "[ReservationException] approveException:",
-      error,
-    );
+    console.error("[ReservationException] approveException:", error);
 
     const errors = {
-      EXCEPTION_NOT_FOUND: [
-        404,
-        "Reservation exception not found.",
-      ],
+      EXCEPTION_NOT_FOUND: [404, "Reservation exception not found."],
 
       EXCEPTION_ALREADY_RESOLVED: [
         409,
@@ -119,10 +89,7 @@ const approveException = async (
         "This reservation exception has already been decided.",
       ],
 
-      RESERVATION_NOT_FOUND: [
-        404,
-        "Reservation not found.",
-      ],
+      RESERVATION_NOT_FOUND: [404, "Reservation not found."],
 
       RESERVATION_NOT_ACTIVE: [
         409,
@@ -134,15 +101,9 @@ const approveException = async (
         "Reservation quantity is inconsistent with the exception.",
       ],
 
-      ITEM_NOT_FOUND: [
-        404,
-        "Inventory item not found.",
-      ],
+      ITEM_NOT_FOUND: [404, "Inventory item not found."],
 
-      ITEM_INACTIVE: [
-        400,
-        "Inventory item is inactive.",
-      ],
+      ITEM_INACTIVE: [400, "Inventory item is inactive."],
 
       INSUFFICIENT_PHYSICAL_STOCK: [
         409,
@@ -170,50 +131,33 @@ const approveException = async (
 // ADMINISTRATOR: REJECT
 // =========================================================
 
-const rejectException = async (
-  req,
-  res,
-) => {
+const rejectException = async (req, res) => {
   try {
-    const {
-      resolutionNotes,
-    } = req.body;
+    const { resolutionNotes } = req.body;
 
-    if (
-      typeof resolutionNotes !== "string" ||
-      !resolutionNotes.trim()
-    ) {
+    if (typeof resolutionNotes !== "string" || !resolutionNotes.trim()) {
       return res.status(400).json({
         success: false,
-        message:
-          "A reason for rejecting the exception is required.",
+        message: "A reason for rejecting the exception is required.",
       });
     }
 
-    const exception =
-      await inventoryReservationException.reject({
-        exceptionId: req.params.id,
-        administratorId: req.user.id,
-        resolutionNotes,
-      });
+    const exception = await inventoryReservationException.reject({
+      exceptionId: req.params.id,
+      administratorId: req.user.id,
+      resolutionNotes,
+    });
 
     return res.status(200).json({
       success: true,
-      message:
-        "Reservation exception rejected.",
+      message: "Reservation exception rejected.",
       data: exception,
     });
   } catch (error) {
-    console.error(
-      "[ReservationException] rejectException:",
-      error,
-    );
+    console.error("[ReservationException] rejectException:", error);
 
     const errors = {
-      EXCEPTION_NOT_FOUND: [
-        404,
-        "Reservation exception not found.",
-      ],
+      EXCEPTION_NOT_FOUND: [404, "Reservation exception not found."],
 
       EXCEPTION_ALREADY_RESOLVED: [
         409,

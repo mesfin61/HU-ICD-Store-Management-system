@@ -12,11 +12,7 @@ const department = {
         created_at,
         updated_at
       FROM departments
-      ${
-        includeInactive
-          ? ""
-          : "WHERE is_active = true"
-      }
+      ${includeInactive ? "" : "WHERE is_active = true"}
       ORDER BY name ASC
       `,
     );

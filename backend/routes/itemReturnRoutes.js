@@ -1,9 +1,6 @@
 const express = require("express");
 
-const {
-  protect,
-  restrictTo,
-} = require("../middleware/AuthMiddleware");
+const { protect, restrictTo } = require("../middleware/AuthMiddleware");
 
 const {
   returnInventory,

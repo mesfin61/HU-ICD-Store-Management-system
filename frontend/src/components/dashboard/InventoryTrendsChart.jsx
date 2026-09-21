@@ -102,8 +102,8 @@ function InventoryTrendsChart() {
         </h2>
 
         <p className="mt-1 text-sm text-slate-500">
-          Actual inbound and outbound inventory transactions over
-          the last 30 days.
+          Actual inbound and outbound inventory transactions over the last 30
+          days.
         </p>
       </div>
 
@@ -137,21 +137,14 @@ function InventoryTrendsChart() {
               }}
               barCategoryGap="20%"
             >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                vertical={false}
-              />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
 
               <XAxis
                 dataKey="day"
                 tick={{
                   fontSize: 11,
                 }}
-                interval={
-                  chartData.length > 14
-                    ? 2
-                    : 0
-                }
+                interval={chartData.length > 14 ? 2 : 0}
                 angle={-35}
                 textAnchor="end"
               />
@@ -170,12 +163,9 @@ function InventoryTrendsChart() {
                   name,
                 ]}
                 labelFormatter={(_, payload) => {
-                  const rawDate =
-                    payload?.[0]?.payload?.date;
+                  const rawDate = payload?.[0]?.payload?.date;
 
-                  return rawDate
-                    ? formatChartDate(rawDate)
-                    : "Date";
+                  return rawDate ? formatChartDate(rawDate) : "Date";
                 }}
               />
 

@@ -1,8 +1,6 @@
 require("dotenv").config();
 const bcrypt = require("bcryptjs");
-const {
-  sendPasswordResetEmail,
-} = require("../utils/email");
+const { sendPasswordResetEmail } = require("../utils/email");
 const jwt = require("jsonwebtoken");
 const { user } = require("../models");
 const { findByEmail, findById } = require("../models/user");
@@ -74,7 +72,6 @@ const login = async (req, res) => {
       });
     }
 
-
     const isMatch = await bcrypt.compare(password, foundUser.password_hash);
 
     if (!isMatch) {
@@ -121,7 +118,6 @@ const getMe = async (req, res) => {
         email: foundUser.email,
         phoneNumber: foundUser.phone_number,
         officeLocation: foundUser.office_location,
-        profilePicture: foundUser.profile_picture,
         role: foundUser.role_name,
         isActive: foundUser.is_active,
         createdAt: foundUser.created_at,
@@ -219,7 +215,6 @@ const forgotPassword = async (req, res) => {
       otp,
     });
 
-
     return res.status(200).json({
       success: true,
       message: "OTP sent successfully.",
@@ -294,110 +289,73 @@ const verifyResetOtp = async (req, res) => {
 
 const resetPassword = async (req, res) => {
   try {
-    const {
-      email,
-      otp,
-      newPassword,
-    } = req.body;
+    const { email, otp, newPassword } = req.body;
 
-    if (
-      !email ||
-      !otp ||
-      !newPassword
-    ) {
+    if (!email || !otp || !newPassword) {
       return res.status(400).json({
         success: false,
-        message:
-          "Email, OTP, and new password are required.",
+        message: "Email, OTP, and new password are required.",
       });
     }
 
     if (newPassword.length < 8) {
       return res.status(400).json({
         success: false,
-        message:
-          "New password must be at least 8 characters.",
+        message: "New password must be at least 8 characters.",
       });
     }
 
-    const foundUser =
-      await user.findByEmailWithOtp(
-        email.trim().toLowerCase(),
-      );
+    const foundUser = await user.findByEmailWithOtp(email.trim().toLowerCase());
 
     if (!foundUser) {
       return res.status(404).json({
         success: false,
-        message:
-          "User not found.",
+        message: "User not found.",
       });
     }
 
     if (!foundUser.reset_otp) {
       return res.status(400).json({
         success: false,
-        message:
-          "No password reset request exists.",
+        message: "No password reset request exists.",
       });
     }
 
     if (
       !foundUser.reset_otp_expires ||
-      new Date(
-        foundUser.reset_otp_expires,
-      ) <= new Date()
+      new Date(foundUser.reset_otp_expires) <= new Date()
     ) {
       return res.status(400).json({
         success: false,
-        message:
-          "OTP has expired.",
+        message: "OTP has expired.",
       });
     }
 
-    if (
-      String(foundUser.reset_otp) !==
-      String(otp).trim()
-    ) {
+    if (String(foundUser.reset_otp) !== String(otp).trim()) {
       return res.status(400).json({
         success: false,
-        message:
-          "Invalid OTP.",
+        message: "Invalid OTP.",
       });
     }
 
-    const salt =
-      await bcrypt.genSalt(12);
+    const salt = await bcrypt.genSalt(12);
 
-    const passwordHash =
-      await bcrypt.hash(
-        newPassword,
-        salt,
-      );
+    const passwordHash = await bcrypt.hash(newPassword, salt);
 
-    await user.updatePassword(
-      foundUser.id,
-      passwordHash,
-    );
+    await user.updatePassword(foundUser.id, passwordHash);
 
-    await user.clearResetOtp(
-      foundUser.id,
-    );
+    await user.clearResetOtp(foundUser.id);
 
     return res.status(200).json({
       success: true,
-      message:
-        "Password reset successfully.",
+      message: "Password reset successfully.",
     });
   } catch (err) {
-    console.error(
-      "[Auth] resetPassword error:",
-      err,
-    );
+    console.error("[Auth] resetPassword error:", err);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Server error.",
+      message: "Server error.",
     });
   }
 };
@@ -446,34 +404,6 @@ const updateProfile = async (req, res) => {
   }
 };
 
-const updateProfilePicture = async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "No image uploaded",
-      });
-    }
-
-    const updatedUser = await user.updateProfilePicture(
-      req.user.id,
-      `/uploads/profiles/${req.file.filename}`,
-    );
-
-    res.status(200).json({
-      success: true,
-      data: updatedUser,
-    });
-  } catch (err) {
-    console.error("[Auth] updateProfilePicture error:", err);
-
-    res.status(500).json({
-      success: false,
-      message: "Server error.",
-    });
-  }
-};
-
 module.exports = {
   login,
   logout,
@@ -483,5 +413,4 @@ module.exports = {
   verifyResetOtp,
   resetPassword,
   updateProfile,
-  updateProfilePicture,
 };

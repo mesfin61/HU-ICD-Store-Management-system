@@ -25,3 +25,20 @@ export async function createUser({
 
   return response.data?.data;
 }
+
+export async function transferOwnership(id, currentPassword) {
+  const response = await apiClient.patch(
+    `/api/users/${id}/transfer-ownership`,
+    { currentPassword },
+  );
+
+  return response.data;
+}
+
+export async function setUserActiveState(id, active) {
+  const response = await apiClient.patch(
+    `/api/users/${id}/${active ? "activate" : "deactivate"}`,
+  );
+
+  return response.data;
+}

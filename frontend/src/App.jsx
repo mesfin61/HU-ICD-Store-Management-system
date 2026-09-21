@@ -1,13 +1,7 @@
 import React from "react";
-import {
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
-import {
-  AnimatePresence,
-} from "motion/react";
+import { AnimatePresence } from "motion/react";
 
 import "./App.css";
 
@@ -36,29 +30,30 @@ import MyActivity from "./pages/MyActivity";
 import Messages from "./pages/Messages";
 
 import ProtectedRoute from "./route/ProtectedRoute";
+import PublicOnlyRoute from "./route/PublicOnlyRoute";
 
-import RoleProtectedRoute, {
-  ROLES,
-} from "./route/RoleProtectedRoute";
+import RoleProtectedRoute, { ROLES } from "./route/RoleProtectedRoute";
 
 function App() {
   return (
     <AnimatePresence>
       <Routes>
-
         {/* =================================================
             PUBLIC ROUTES
             ================================================= */}
 
         <Route
           path="/login"
-          element={<Login />}
+          element={
+            <PublicOnlyRoute>
+              <Login />
+            </PublicOnlyRoute>
+          }
         />
 
-        <Route
-          path="/forgot-password"
-          element={<ForgotPassword />}
-        />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+
+        <Route path="/logout" element={<Logout />} />
 
         {/* =================================================
             PROTECTED APPLICATION
@@ -72,15 +67,10 @@ function App() {
             </ProtectedRoute>
           }
         >
-
-        <Route
+          <Route
             path="audit-logs"
             element={
-              <RoleProtectedRoute
-                allowedRoles={[
-                  ROLES.ADMINISTRATOR,
-                ]}
-              >
+              <RoleProtectedRoute allowedRoles={[ROLES.ADMINISTRATOR]}>
                 <AuditLogs />
               </RoleProtectedRoute>
             }
@@ -91,6 +81,7 @@ function App() {
             element={
               <RoleProtectedRoute
                 allowedRoles={[
+                  ROLES.SUPER_ADMIN,
                   ROLES.ADMINISTRATOR,
                   ROLES.STORE_MANAGER,
                   ROLES.STAFF,
@@ -99,7 +90,7 @@ function App() {
                 <MyActivity />
               </RoleProtectedRoute>
             }
-          />  
+          />
 
           {/* =================================================
               DASHBOARD
@@ -111,6 +102,7 @@ function App() {
             element={
               <RoleProtectedRoute
                 allowedRoles={[
+                  ROLES.SUPER_ADMIN,
                   ROLES.ADMINISTRATOR,
                   ROLES.STORE_MANAGER,
                   ROLES.STAFF,
@@ -150,10 +142,7 @@ function App() {
             path="inventory/add-new-item"
             element={
               <RoleProtectedRoute
-                allowedRoles={[
-                  ROLES.ADMINISTRATOR,
-                  ROLES.STORE_MANAGER,
-                ]}
+                allowedRoles={[ROLES.SUPER_ADMIN, ROLES.STORE_MANAGER]}
               >
                 <AddItem />
               </RoleProtectedRoute>
@@ -169,10 +158,7 @@ function App() {
             path="stock"
             element={
               <RoleProtectedRoute
-                allowedRoles={[
-                  ROLES.ADMINISTRATOR,
-                  ROLES.STORE_MANAGER,
-                ]}
+                allowedRoles={[ROLES.ADMINISTRATOR, ROLES.STORE_MANAGER]}
               >
                 <Stock />
               </RoleProtectedRoute>
@@ -189,6 +175,7 @@ function App() {
             element={
               <RoleProtectedRoute
                 allowedRoles={[
+                  ROLES.SUPER_ADMIN,
                   ROLES.ADMINISTRATOR,
                   ROLES.STORE_MANAGER,
                   ROLES.STAFF,
@@ -207,11 +194,7 @@ function App() {
           <Route
             path="requests/new-request"
             element={
-              <RoleProtectedRoute
-                allowedRoles={[
-                  ROLES.STAFF,
-                ]}
-              >
+              <RoleProtectedRoute allowedRoles={[ROLES.STAFF]}>
                 <NewRequest />
               </RoleProtectedRoute>
             }
@@ -225,11 +208,7 @@ function App() {
           <Route
             path="issued-inventory"
             element={
-              <RoleProtectedRoute
-                allowedRoles={[
-                  ROLES.STORE_MANAGER,
-                ]}
-              >
+              <RoleProtectedRoute allowedRoles={[ROLES.STORE_MANAGER]}>
                 <IssuedInventory />
               </RoleProtectedRoute>
             }
@@ -244,10 +223,7 @@ function App() {
             path="reports"
             element={
               <RoleProtectedRoute
-                allowedRoles={[
-                  ROLES.ADMINISTRATOR,
-                  ROLES.STORE_MANAGER,
-                ]}
+                allowedRoles={[ROLES.ADMINISTRATOR, ROLES.STORE_MANAGER]}
               >
                 <Reports />
               </RoleProtectedRoute>
@@ -262,17 +238,13 @@ function App() {
           <Route
             path="users"
             element={
-              <RoleProtectedRoute
-                allowedRoles={[
-                  ROLES.ADMINISTRATOR,
-                ]}
-              >
+              <RoleProtectedRoute allowedRoles={[ROLES.ADMINISTRATOR]}>
                 <Users />
               </RoleProtectedRoute>
             }
           />
 
-            <Route
+          <Route
             path="messages"
             element={
               <RoleProtectedRoute
@@ -346,27 +318,6 @@ function App() {
               </RoleProtectedRoute>
             }
           />
-
-          {/* =================================================
-              LOGOUT
-              ALL ROLES
-              ================================================= */}
-
-          <Route
-            path="logout"
-            element={
-              <RoleProtectedRoute
-                allowedRoles={[
-                  ROLES.ADMINISTRATOR,
-                  ROLES.STORE_MANAGER,
-                  ROLES.STAFF,
-                ]}
-              >
-                <Logout />
-              </RoleProtectedRoute>
-            }
-          />
-
           {/* =================================================
               GENERATE REPORT
               ADMINISTRATOR + STORE MANAGER
@@ -376,32 +327,19 @@ function App() {
             path="generate-report"
             element={
               <RoleProtectedRoute
-                allowedRoles={[
-                  ROLES.ADMINISTRATOR,
-                  ROLES.STORE_MANAGER,
-                ]}
+                allowedRoles={[ROLES.ADMINISTRATOR, ROLES.STORE_MANAGER]}
               >
                 <GenerateReportModal />
               </RoleProtectedRoute>
             }
           />
-
         </Route>
 
         {/* =================================================
             FALLBACK
             ================================================= */}
 
-        <Route
-          path="*"
-          element={
-            <Navigate
-              to="/"
-              replace
-            />
-          }
-        />
-
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AnimatePresence>
   );

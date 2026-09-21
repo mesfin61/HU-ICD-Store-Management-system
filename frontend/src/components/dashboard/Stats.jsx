@@ -1,7 +1,4 @@
-import React, {
-  useEffect,
-  useState,
-} from "react";
+import React, { useEffect, useState } from "react";
 
 import {
   FaBoxOpen,
@@ -22,6 +19,7 @@ import apiClient from "../../services/apiClient";
 // =========================================================
 
 const ROLES = Object.freeze({
+  SUPER_ADMIN: "Super Admin",
   ADMINISTRATOR: "Administrator",
   STORE_MANAGER: "Store Manager",
   STAFF: "Staff",
@@ -65,15 +63,9 @@ function isOverdue(item) {
     return false;
   }
 
-  const dueDate = new Date(
-    item.due_date,
-  );
+  const dueDate = new Date(item.due_date);
 
-  if (
-    Number.isNaN(
-      dueDate.getTime(),
-    )
-  ) {
+  if (Number.isNaN(dueDate.getTime())) {
     return false;
   }
 
@@ -85,17 +77,13 @@ function isOverdue(item) {
 // =========================================================
 
 function Stats() {
-  const [user, setUser] =
-    useState(null);
+  const [user, setUser] = useState(null);
 
-  const [stats, setStats] =
-    useState(INITIAL_STATS);
+  const [stats, setStats] = useState(INITIAL_STATS);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [error, setError] =
-    useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -109,23 +97,18 @@ function Stats() {
         // CURRENT USER
         // ===================================================
 
-        const meResponse =
-          await apiClient.get(
-            "/api/auth/me",
-          );
+        const meResponse = await apiClient.get("/api/auth/me");
 
-        const currentUser =
-          meResponse.data?.user ||
-          null;
+        const currentUser = meResponse.data?.user || null;
 
         if (!currentUser) {
-          throw new Error(
-            "Unable to determine the current user.",
-          );
+          throw new Error("Unable to determine the current user.");
         }
 
         const role =
-          currentUser.role || null;
+          currentUser.role === ROLES.SUPER_ADMIN
+            ? ROLES.ADMINISTRATOR
+            : currentUser.role || null;
 
         if (mounted) {
           setUser(currentUser);
@@ -137,56 +120,27 @@ function Stats() {
         // All authenticated roles may read inventory.
         // ===================================================
 
-        const inventoryResponse =
-          await apiClient.get(
-            "/api/inventory",
-          );
+        const inventoryResponse = await apiClient.get("/api/inventory");
 
-        const inventory =
-          Array.isArray(
-            inventoryResponse.data?.data,
-          )
-            ? inventoryResponse.data.data
-            : [];
+        const inventory = Array.isArray(inventoryResponse.data?.data)
+          ? inventoryResponse.data.data
+          : [];
 
-        const inventoryItems =
-          inventory.length;
+        const inventoryItems = inventory.length;
 
-        const availableStock =
-          inventory.reduce(
-            (total, item) => {
-              const currentStock =
-                Number(
-                  item.current_stock,
-                ) || 0;
+        const availableStock = inventory.reduce((total, item) => {
+          const currentStock = Number(item.current_stock) || 0;
 
-              return (
-                total +
-                currentStock
-              );
-            },
-            0,
-          );
+          return total + currentStock;
+        }, 0);
 
-        const lowStockItems =
-          inventory.filter(
-            (item) => {
-              const currentStock =
-                Number(
-                  item.current_stock,
-                ) || 0;
+        const lowStockItems = inventory.filter((item) => {
+          const currentStock = Number(item.current_stock) || 0;
 
-              const minimumStock =
-                Number(
-                  item.minimum_stock,
-                ) || 0;
+          const minimumStock = Number(item.minimum_stock) || 0;
 
-              return (
-                currentStock <=
-                minimumStock
-              );
-            },
-          ).length;
+          return currentStock <= minimumStock;
+        }).length;
 
         // ===================================================
         // REQUESTS
@@ -203,100 +157,51 @@ function Stats() {
 
         let requests = [];
 
-        if (
-          role ===
-          ROLES.ADMINISTRATOR
-        ) {
-          const response =
-            await apiClient.get(
-              "/api/requests",
-            );
+        if (role === ROLES.ADMINISTRATOR) {
+          const response = await apiClient.get("/api/requests");
 
-          requests =
-            Array.isArray(
-              response.data?.data,
-            )
-              ? response.data.data
-              : [];
+          requests = Array.isArray(response.data?.data)
+            ? response.data.data
+            : [];
         }
 
-        if (
-          role ===
-          ROLES.STORE_MANAGER
-        ) {
-          const response =
-            await apiClient.get(
-              "/api/requests/for-issuance",
-            );
+        if (role === ROLES.STORE_MANAGER) {
+          const response = await apiClient.get("/api/requests/for-issuance");
 
-          requests =
-            Array.isArray(
-              response.data?.data,
-            )
-              ? response.data.data
-              : [];
+          requests = Array.isArray(response.data?.data)
+            ? response.data.data
+            : [];
         }
 
-        if (
-          role ===
-          ROLES.STAFF
-        ) {
-          const response =
-            await apiClient.get(
-              "/api/requests/mine",
-            );
+        if (role === ROLES.STAFF) {
+          const response = await apiClient.get("/api/requests/mine");
 
-          requests =
-            Array.isArray(
-              response.data?.data,
-            )
-              ? response.data.data
-              : [];
+          requests = Array.isArray(response.data?.data)
+            ? response.data.data
+            : [];
         }
 
-        const totalRequests =
-          requests.length;
+        const totalRequests = requests.length;
 
-        const pendingRequests =
-          requests.filter(
-            (request) =>
-              normalizeStatus(
-                request.status,
-              ) === "PENDING",
-          ).length;
+        const pendingRequests = requests.filter(
+          (request) => normalizeStatus(request.status) === "PENDING",
+        ).length;
 
-        const approvedRequests =
-          requests.filter(
-            (request) =>
-              normalizeStatus(
-                request.status,
-              ) === "APPROVED",
-          ).length;
+        const approvedRequests = requests.filter(
+          (request) => normalizeStatus(request.status) === "APPROVED",
+        ).length;
 
-        const partiallyApprovedRequests =
-          requests.filter(
-            (request) =>
-              normalizeStatus(
-                request.status,
-              ) ===
-              "PARTIALLY_APPROVED",
-          ).length;
+        const partiallyApprovedRequests = requests.filter(
+          (request) => normalizeStatus(request.status) === "PARTIALLY_APPROVED",
+        ).length;
 
-        const rejectedRequests =
-          requests.filter(
-            (request) =>
-              normalizeStatus(
-                request.status,
-              ) === "REJECTED",
-          ).length;
+        const rejectedRequests = requests.filter(
+          (request) => normalizeStatus(request.status) === "REJECTED",
+        ).length;
 
-        const fulfilledRequests =
-          requests.filter(
-            (request) =>
-              normalizeStatus(
-                request.status,
-              ) === "FULFILLED",
-          ).length;
+        const fulfilledRequests = requests.filter(
+          (request) => normalizeStatus(request.status) === "FULFILLED",
+        ).length;
 
         // ===================================================
         // ISSUED INVENTORY
@@ -314,46 +219,25 @@ function Stats() {
 
         let issuedItems = [];
 
-        if (
-          role ===
-          ROLES.STORE_MANAGER
-        ) {
-          const response =
-            await apiClient.get(
-              "/api/issuance/outstanding",
-            );
+        if (role === ROLES.STORE_MANAGER) {
+          const response = await apiClient.get("/api/issuance/outstanding");
 
-          issuedItems =
-            Array.isArray(
-              response.data?.data,
-            )
-              ? response.data.data
-              : [];
+          issuedItems = Array.isArray(response.data?.data)
+            ? response.data.data
+            : [];
         }
 
-        if (
-          role === ROLES.STAFF
-        ) {
-          const response =
-            await apiClient.get(
-              "/api/issuance/my-outstanding",
-            );
+        if (role === ROLES.STAFF) {
+          const response = await apiClient.get("/api/issuance/my-outstanding");
 
-          issuedItems =
-            Array.isArray(
-              response.data?.data,
-            )
-              ? response.data.data
-              : [];
+          issuedItems = Array.isArray(response.data?.data)
+            ? response.data.data
+            : [];
         }
 
-        const issuedCount =
-          issuedItems.length;
+        const issuedCount = issuedItems.length;
 
-        const outstandingReturns =
-          issuedItems.filter(
-            isOverdue,
-          ).length;
+        const outstandingReturns = issuedItems.filter(isOverdue).length;
 
         // ===================================================
         // USERS
@@ -363,24 +247,14 @@ function Stats() {
 
         let users = 0;
 
-        if (
-          role ===
-          ROLES.ADMINISTRATOR
-        ) {
-          const response =
-            await apiClient.get(
-              "/api/users",
-            );
+        if (role === ROLES.ADMINISTRATOR) {
+          const response = await apiClient.get("/api/users");
 
-          const systemUsers =
-            Array.isArray(
-              response.data?.data,
-            )
-              ? response.data.data
-              : [];
+          const systemUsers = Array.isArray(response.data?.data)
+            ? response.data.data
+            : [];
 
-          users =
-            systemUsers.length;
+          users = systemUsers.length;
         }
 
         // ===================================================
@@ -389,16 +263,12 @@ function Stats() {
         // Every authenticated user may see their unread count.
         // ===================================================
 
-        const notificationResponse =
-          await apiClient.get(
-            "/api/notifications/unread-count",
-          );
+        const notificationResponse = await apiClient.get(
+          "/api/notifications/unread-count",
+        );
 
         const unreadNotifications =
-          Number(
-            notificationResponse.data
-              ?.data?.count,
-          ) || 0;
+          Number(notificationResponse.data?.data?.count) || 0;
 
         // ===================================================
         // UPDATE STATE
@@ -417,8 +287,7 @@ function Stats() {
             rejectedRequests,
             fulfilledRequests,
 
-            issuedItems:
-              issuedCount,
+            issuedItems: issuedCount,
 
             outstandingReturns,
 
@@ -428,15 +297,11 @@ function Stats() {
           });
         }
       } catch (loadError) {
-        console.error(
-          "[Dashboard] Failed to load statistics:",
-          loadError,
-        );
+        console.error("[Dashboard] Failed to load statistics:", loadError);
 
         if (mounted) {
           setError(
-            loadError.response
-              ?.data?.message ||
+            loadError.response?.data?.message ||
               loadError.message ||
               "Failed to load dashboard data.",
           );
@@ -456,7 +321,7 @@ function Stats() {
   }, []);
 
   const role =
-    user?.role || null;
+    user?.role === ROLES.SUPER_ADMIN ? ROLES.ADMINISTRATOR : user?.role || null;
 
   // =======================================================
   // LOADING
@@ -466,9 +331,7 @@ function Stats() {
     return (
       <section className="space-y-5">
         <div>
-          <h1 className="text-2xl font-bold text-primary">
-            Dashboard
-          </h1>
+          <h1 className="text-2xl font-bold text-primary">Dashboard</h1>
 
           <p className="mt-1 text-sm font-semibold text-slate-500">
             Loading current system information...
@@ -497,9 +360,7 @@ function Stats() {
     return (
       <section className="space-y-5">
         <div>
-          <h1 className="text-2xl font-bold text-primary">
-            Dashboard
-          </h1>
+          <h1 className="text-2xl font-bold text-primary">Dashboard</h1>
 
           <p className="mt-1 text-sm font-semibold text-slate-500">
             Unable to load current dashboard information.
@@ -517,10 +378,7 @@ function Stats() {
   // ADMINISTRATOR DASHBOARD
   // =======================================================
 
-  if (
-    role ===
-    ROLES.ADMINISTRATOR
-  ) {
+  if (role === ROLES.ADMINISTRATOR) {
     return (
       <section className="space-y-5">
         <DashboardHeading
@@ -529,75 +387,45 @@ function Stats() {
         />
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            title="System Users"
-            value={stats.users}
-            icon={FaUsers}
-          />
+          <StatCard title="System Users" value={stats.users} icon={FaUsers} />
 
           <StatCard
             title="Inventory Items"
-            value={
-              stats.inventoryItems
-            }
+            value={stats.inventoryItems}
             icon={FaBoxOpen}
           />
 
           <StatCard
             title="Pending Requests"
-            value={
-              stats.pendingRequests
-            }
-            icon={
-              FaClock
-            }
-            warning={
-              stats.pendingRequests >
-              0
-            }
+            value={stats.pendingRequests}
+            icon={FaClock}
+            warning={stats.pendingRequests > 0}
           />
 
           <StatCard
             title="Low Stock Items"
-            value={
-              stats.lowStockItems
-            }
-            icon={
-              FaExclamationTriangle
-            }
-            warning={
-              stats.lowStockItems >
-              0
-            }
+            value={stats.lowStockItems}
+            icon={FaExclamationTriangle}
+            warning={stats.lowStockItems > 0}
           />
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <InfoCard
             title="Total Requests"
-            value={
-              stats.totalRequests
-            }
-            icon={
-              FaClipboardList
-            }
+            value={stats.totalRequests}
+            icon={FaClipboardList}
           />
 
           <InfoCard
             title="Fulfilled Requests"
-            value={
-              stats.fulfilledRequests
-            }
-            icon={
-              FaCheckCircle
-            }
+            value={stats.fulfilledRequests}
+            icon={FaCheckCircle}
           />
 
           <InfoCard
             title="Rejected Requests"
-            value={
-              stats.rejectedRequests
-            }
+            value={stats.rejectedRequests}
             icon={FaBan}
           />
         </div>
@@ -609,10 +437,7 @@ function Stats() {
   // STORE MANAGER DASHBOARD
   // =======================================================
 
-  if (
-    role ===
-    ROLES.STORE_MANAGER
-  ) {
+  if (role === ROLES.STORE_MANAGER) {
     return (
       <section className="space-y-5">
         <DashboardHeading
@@ -623,73 +448,44 @@ function Stats() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             title="Inventory Items"
-            value={
-              stats.inventoryItems
-            }
+            value={stats.inventoryItems}
             icon={FaBoxOpen}
           />
 
           <StatCard
             title="Available Stock"
-            value={
-              stats.availableStock
-            }
+            value={stats.availableStock}
             icon={FaBoxes}
           />
 
           <StatCard
             title="Low Stock Items"
-            value={
-              stats.lowStockItems
-            }
-            icon={
-              FaExclamationTriangle
-            }
-            warning={
-              stats.lowStockItems >
-              0
-            }
+            value={stats.lowStockItems}
+            icon={FaExclamationTriangle}
+            warning={stats.lowStockItems > 0}
           />
 
           <StatCard
             title="Ready for Issuance"
-            value={
-              stats.totalRequests
-            }
-            icon={
-              FaClipboardCheck
-            }
-            warning={
-              stats.totalRequests >
-              0
-            }
+            value={stats.totalRequests}
+            icon={FaClipboardCheck}
+            warning={stats.totalRequests > 0}
           />
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <InfoCard
             title="Outstanding Issuances"
-            value={
-              stats.issuedItems
-            }
-            icon={
-              FaClipboardCheck
-            }
+            value={stats.issuedItems}
+            icon={FaClipboardCheck}
             description="Issued inventory that has not been fully returned."
           />
 
           <InfoCard
             title="Overdue Returns"
-            value={
-              stats.outstandingReturns
-            }
-            icon={
-              FaExclamationTriangle
-            }
-            warning={
-              stats.outstandingReturns >
-              0
-            }
+            value={stats.outstandingReturns}
+            icon={FaExclamationTriangle}
+            warning={stats.outstandingReturns > 0}
             description="Outstanding issued items past their due date."
           />
         </div>
@@ -701,10 +497,7 @@ function Stats() {
   // STAFF DASHBOARD
   // =======================================================
 
-  if (
-    role ===
-    ROLES.STAFF
-  ) {
+  if (role === ROLES.STAFF) {
     return (
       <section className="space-y-5">
         <DashboardHeading
@@ -715,91 +508,56 @@ function Stats() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             title="My Requests"
-            value={
-              stats.totalRequests
-            }
-            icon={
-              FaClipboardList
-            }
+            value={stats.totalRequests}
+            icon={FaClipboardList}
           />
 
           <StatCard
             title="Pending Requests"
-            value={
-              stats.pendingRequests
-            }
+            value={stats.pendingRequests}
             icon={FaClock}
-            warning={
-              stats.pendingRequests >
-              0
-            }
+            warning={stats.pendingRequests > 0}
           />
 
           <StatCard
             title="Issued Items"
-            value={
-              stats.issuedItems
-            }
-            icon={
-              FaClipboardCheck
-            }
+            value={stats.issuedItems}
+            icon={FaClipboardCheck}
           />
 
           <StatCard
             title="Unread Notifications"
-            value={
-              stats.unreadNotifications
-            }
+            value={stats.unreadNotifications}
             icon={FaExclamationTriangle}
-            warning={
-              stats.unreadNotifications >
-              0
-            }
+            warning={stats.unreadNotifications > 0}
           />
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <InfoCard
             title="Approved Requests"
-            value={
-              stats.approvedRequests
-            }
-            icon={
-              FaCheckCircle
-            }
+            value={stats.approvedRequests}
+            icon={FaCheckCircle}
           />
 
           <InfoCard
             title="Partially Approved"
-            value={
-              stats.partiallyApprovedRequests
-            }
-            icon={
-              FaClipboardCheck
-            }
+            value={stats.partiallyApprovedRequests}
+            icon={FaClipboardCheck}
           />
 
           <InfoCard
             title="Rejected Requests"
-            value={
-              stats.rejectedRequests
-            }
+            value={stats.rejectedRequests}
             icon={FaBan}
           />
         </div>
 
         <InfoCard
           title="Overdue Returns"
-          value={
-            stats.outstandingReturns
-          }
-          icon={
-            FaExclamationTriangle
-          }
-          warning={
-            stats.outstandingReturns >
-            0
-          }
+          value={stats.outstandingReturns}
+          icon={FaExclamationTriangle}
+          warning={stats.outstandingReturns > 0}
           description="Your issued inventory that has passed its due date."
         />
       </section>
@@ -821,8 +579,8 @@ function Stats() {
       />
 
       <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4 text-sm font-medium text-amber-800">
-        Your account does not have a recognized application
-        role. Contact an Administrator.
+        Your account does not have a recognized application role. Contact an
+        Administrator.
       </div>
     </section>
   );
@@ -832,19 +590,12 @@ function Stats() {
 // DASHBOARD HEADING
 // =========================================================
 
-function DashboardHeading({
-  title,
-  description,
-}) {
+function DashboardHeading({ title, description }) {
   return (
     <div>
-      <h1 className="text-2xl font-bold text-primary">
-        {title}
-      </h1>
+      <h1 className="text-2xl font-bold text-primary">{title}</h1>
 
-      <p className="mt-1 text-sm font-semibold text-slate-500">
-        {description}
-      </p>
+      <p className="mt-1 text-sm font-semibold text-slate-500">{description}</p>
     </div>
   );
 }
@@ -853,12 +604,7 @@ function DashboardHeading({
 // STAT CARD
 // =========================================================
 
-function StatCard({
-  title,
-  value,
-  icon: Icon,
-  warning = false,
-}) {
+function StatCard({ title, value, icon: Icon, warning = false }) {
   return (
     <div className="flex min-h-[112px] items-center justify-between rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <div className="min-w-0">
@@ -868,9 +614,7 @@ function StatCard({
 
         <p
           className={`mt-2 text-3xl font-bold ${
-            warning
-              ? "text-red-600"
-              : "text-primary"
+            warning ? "text-red-600" : "text-primary"
           }`}
         >
           {value}
@@ -879,9 +623,7 @@ function StatCard({
 
       <div
         className={`ml-4 shrink-0 rounded-lg p-3 ${
-          warning
-            ? "bg-red-50 text-red-600"
-            : "bg-blue-50 text-blue-700"
+          warning ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-700"
         }`}
       >
         <Icon className="h-6 w-6" />
@@ -894,19 +636,11 @@ function StatCard({
 // INFO CARD
 // =========================================================
 
-function InfoCard({
-  title,
-  value,
-  icon: Icon,
-  description,
-  warning = false,
-}) {
+function InfoCard({ title, value, icon: Icon, description, warning = false }) {
   return (
     <div
       className={`rounded-lg border bg-white p-5 shadow-sm ${
-        warning
-          ? "border-red-200"
-          : "border-slate-200"
+        warning ? "border-red-200" : "border-slate-200"
       }`}
     >
       <div className="flex items-start justify-between gap-4">
@@ -917,9 +651,7 @@ function InfoCard({
 
           <p
             className={`mt-2 text-3xl font-bold ${
-              warning
-                ? "text-red-600"
-                : "text-primary"
+              warning ? "text-red-600" : "text-primary"
             }`}
           >
             {value}
@@ -929,9 +661,7 @@ function InfoCard({
         {Icon && (
           <div
             className={`rounded-lg p-3 ${
-              warning
-                ? "bg-red-50 text-red-600"
-                : "bg-blue-50 text-blue-700"
+              warning ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-700"
             }`}
           >
             <Icon className="h-5 w-5" />
@@ -940,9 +670,7 @@ function InfoCard({
       </div>
 
       {description && (
-        <p className="mt-3 text-sm leading-5 text-slate-500">
-          {description}
-        </p>
+        <p className="mt-3 text-sm leading-5 text-slate-500">{description}</p>
       )}
     </div>
   );

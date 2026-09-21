@@ -1,5 +1,6 @@
 const pool = require("../config/db");
 
+const SUPER_ADMIN = "Super Admin";
 const ADMINISTRATOR = "Administrator";
 
 const user = {
@@ -17,7 +18,6 @@ const user = {
         u.password_hash,
         u.phone_number,
         u.office_location,
-        u.profile_picture,
         u.role_id,
         r.name AS role_name,
         u.department_id,
@@ -72,7 +72,6 @@ const user = {
         u.email,
         u.phone_number,
         u.office_location,
-        u.profile_picture,
         u.role_id,
         r.name AS role_name,
         u.department_id,
@@ -93,6 +92,19 @@ const user = {
     return result.rows[0] || null;
   },
 
+  async findPasswordHashById(id) {
+    const result = await pool.query(
+      `
+      SELECT id, password_hash
+      FROM users
+      WHERE id = $1
+      `,
+      [id],
+    );
+
+    return result.rows[0] || null;
+  },
+
   async findAll() {
     const result = await pool.query(
       `
@@ -102,7 +114,6 @@ const user = {
         u.email,
         u.phone_number,
         u.office_location,
-        u.profile_picture,
         u.role_id,
         r.name AS role_name,
         u.department_id,
@@ -127,13 +138,7 @@ const user = {
   // Administrator only
   // =========================================================
 
-  async create({
-    fullName,
-    email,
-    passwordHash,
-    roleId,
-    departmentId,
-  }) {
+  async create({ fullName, email, passwordHash, roleId, departmentId }) {
     const result = await pool.query(
       `
       INSERT INTO users (
@@ -153,13 +158,7 @@ const user = {
         is_active,
         created_at
       `,
-      [
-        fullName,
-        email,
-        passwordHash,
-        roleId,
-        departmentId || null,
-      ],
+      [fullName, email, passwordHash, roleId, departmentId || null],
     );
 
     return result.rows[0];
@@ -200,10 +199,7 @@ const user = {
        * Serialize operations that can affect the number
        * of active Administrators.
        */
-      await client.query(
-        "SELECT pg_advisory_xact_lock($1)",
-        [874231],
-      );
+      await client.query("SELECT pg_advisory_xact_lock($1)", [874231]);
 
       /*
        * Lock target user.
@@ -244,10 +240,7 @@ const user = {
        */
       if (
         id === actingUserId &&
-        (
-          roleId !== targetUser.role_id ||
-          isActive !== targetUser.is_active
-        )
+        (roleId !== targetUser.role_id || isActive !== targetUser.is_active)
       ) {
         await client.query("ROLLBACK");
 
@@ -286,7 +279,8 @@ const user = {
        * Only the three application roles are allowed.
        */
       const allowedRoles = [
-        "Administrator",
+        SUPER_ADMIN,
+        ADMINISTRATOR,
         "Store Manager",
         "Staff",
       ];
@@ -325,8 +319,7 @@ const user = {
         [departmentId],
       );
 
-      const requestedDepartment =
-        departmentResult.rows[0];
+      const requestedDepartment = departmentResult.rows[0];
 
       if (!requestedDepartment) {
         await client.query("ROLLBACK");
@@ -349,43 +342,39 @@ const user = {
       /*
        * Lock active Administrators.
        */
-      const administratorsResult =
-        await client.query(
-          `
+      const administratorsResult = await client.query(
+        `
           SELECT u.id
           FROM users u
           JOIN roles r
             ON r.id = u.role_id
-          WHERE r.name = $1
+          WHERE r.name IN ($1, $2)
             AND u.is_active = TRUE
           FOR UPDATE
           `,
-          [ADMINISTRATOR],
-        );
+        [SUPER_ADMIN, ADMINISTRATOR],
+      );
 
-      const activeAdministratorCount =
-        administratorsResult.rows.length;
+      const activeAdministratorCount = administratorsResult.rows.length;
 
       const targetIsAdministrator =
+        targetUser.role_name === SUPER_ADMIN ||
         targetUser.role_name === ADMINISTRATOR;
 
       const removingAdministratorRole =
         targetIsAdministrator &&
+        requestedRole.name !== SUPER_ADMIN &&
         requestedRole.name !== ADMINISTRATOR;
 
       const deactivatingAdministrator =
-        targetIsAdministrator &&
-        isActive === false;
+        targetIsAdministrator && isActive === false;
 
       /*
        * The system must NEVER reach a state with zero
        * active Administrators.
        */
       if (
-        (
-          removingAdministratorRole ||
-          deactivatingAdministrator
-        ) &&
+        (removingAdministratorRole || deactivatingAdministrator) &&
         activeAdministratorCount <= 1
       ) {
         await client.query("ROLLBACK");
@@ -456,15 +445,7 @@ const user = {
   // Administrator may also update their own profile.
   // =========================================================
 
-  async updateProfile(
-    id,
-    {
-      fullName,
-      email,
-      phoneNumber,
-      officeLocation,
-    },
-  ) {
+  async updateProfile(id, { fullName, email, phoneNumber, officeLocation }) {
     const result = await pool.query(
       `
       UPDATE users
@@ -483,31 +464,7 @@ const user = {
         office_location,
         updated_at
       `,
-      [
-        fullName,
-        email,
-        phoneNumber,
-        officeLocation,
-        id,
-      ],
-    );
-
-    return result.rows[0] || null;
-  },
-
-  async updateProfilePicture(id, profilePicture) {
-    const result = await pool.query(
-      `
-      UPDATE users
-      SET
-        profile_picture = $1,
-        updated_at = NOW()
-      WHERE id = $2
-      RETURNING
-        id,
-        profile_picture
-      `,
-      [profilePicture, id],
+      [fullName, email, phoneNumber, officeLocation, id],
     );
 
     return result.rows[0] || null;
@@ -577,10 +534,7 @@ const user = {
   // ADMINISTRATOR DEACTIVATION
   // =========================================================
 
-  async deactivateWithAdministratorGuard({
-    id,
-    actingUserId,
-  }) {
+  async deactivateWithAdministratorGuard({ id, actingUserId }) {
     const client = await pool.connect();
 
     try {
@@ -589,10 +543,7 @@ const user = {
       /*
        * Serialize Administrator status changes.
        */
-      await client.query(
-        "SELECT pg_advisory_xact_lock($1)",
-        [874231],
-      );
+      await client.query("SELECT pg_advisory_xact_lock($1)", [874231]);
 
       /*
        * Lock target.
@@ -647,28 +598,27 @@ const user = {
       /*
        * Lock active Administrators.
        */
-      const administratorsResult =
-        await client.query(
-          `
+      const administratorsResult = await client.query(
+        `
           SELECT u.id
           FROM users u
           JOIN roles r
             ON r.id = u.role_id
-          WHERE r.name = $1
+          WHERE r.name IN ($1, $2)
             AND u.is_active = TRUE
           FOR UPDATE
           `,
-          [ADMINISTRATOR],
-        );
+        [SUPER_ADMIN, ADMINISTRATOR],
+      );
 
-      const activeAdministratorCount =
-        administratorsResult.rows.length;
+      const activeAdministratorCount = administratorsResult.rows.length;
 
       /*
        * Never deactivate the final Administrator.
        */
       if (
-        targetUser.role_name === ADMINISTRATOR &&
+        (targetUser.role_name === SUPER_ADMIN ||
+          targetUser.role_name === ADMINISTRATOR) &&
         activeAdministratorCount <= 1
       ) {
         await client.query("ROLLBACK");
@@ -706,6 +656,130 @@ const user = {
       client.release();
     }
   },
+
+  async activate(id) {
+    const result = await pool.query(
+      `
+      UPDATE users
+      SET is_active = TRUE, updated_at = NOW()
+      WHERE id = $1
+      RETURNING id, is_active, updated_at
+      `,
+      [id],
+    );
+
+    return result.rows[0] || null;
+  },
+
+  /*
+  ====================================================================================================
+                  TRANSFER OWNERSHIP ONLY SUPER ADMIN CAN ACCESS IT
+  ====================================================================================================
+  */
+
+  async transferOwnership({ actingUserId, targetUserId }) {
+    const client = await pool.connect();
+
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT pg_advisory_xact_lock($1)", [874231]);
+
+      if (!actingUserId || !targetUserId || actingUserId === targetUserId) {
+        await client.query("ROLLBACK");
+        return { success: false, reason: "INVALID_TRANSFER" };
+      }
+
+      const usersResult = await client.query(
+        `
+        SELECT
+          u.id,
+          u.is_active,
+          r.name AS role_name
+        FROM users u
+        JOIN roles r ON r.id = u.role_id
+        WHERE u.id IN ($1, $2)
+        FOR UPDATE
+        `,
+        [actingUserId, targetUserId],
+      );
+
+      const actingUser = usersResult.rows.find(
+        (candidate) => candidate.id === actingUserId,
+      );
+      const targetUser = usersResult.rows.find(
+        (candidate) => candidate.id === targetUserId,
+      );
+
+      if (!actingUser || !targetUser) {
+        await client.query("ROLLBACK");
+        return { success: false, reason: "NOT_FOUND" };
+      }
+
+      if (actingUser.role_name !== SUPER_ADMIN) {
+        await client.query("ROLLBACK");
+        return { success: false, reason: "NOT_AUTHORIZED" };
+      }
+
+      if (!targetUser.is_active) {
+        await client.query("ROLLBACK");
+        return { success: false, reason: "TARGET_INACTIVE" };
+      }
+
+      const rolesResult = await client.query(
+        `
+        SELECT id, name
+        FROM roles
+        WHERE name IN ($1, $2)
+        `,
+        [SUPER_ADMIN, "Store Manager"],
+      );
+
+      const superAdminRole = rolesResult.rows.find(
+        (role) => role.name === SUPER_ADMIN,
+      );
+      const replacementRole = rolesResult.rows.find(
+        (role) => role.name === "Store Manager",
+      );
+
+      if (!superAdminRole || !replacementRole) {
+        await client.query("ROLLBACK");
+        return { success: false, reason: "INVALID_ROLE_CONFIGURATION" };
+      }
+
+      const demotedResult = await client.query(
+        `
+        UPDATE users
+        SET role_id = $1, updated_at = NOW()
+        WHERE id = $2
+        RETURNING id, role_id, is_active, updated_at
+        `,
+        [replacementRole.id, actingUserId],
+      );
+
+      const promotedResult = await client.query(
+        `
+        UPDATE users
+        SET role_id = $1, updated_at = NOW()
+        WHERE id = $2
+        RETURNING id, role_id, is_active, updated_at
+        `,
+        [superAdminRole.id, targetUserId],
+      );
+
+      await client.query("COMMIT");
+
+      return {
+        success: true,
+        previousOwner: demotedResult.rows[0],
+        newOwner: promotedResult.rows[0],
+      };
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
 };
 
 module.exports = user;

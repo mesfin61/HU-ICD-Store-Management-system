@@ -8,10 +8,8 @@ const {
   verifyResetOtp,
   resetPassword,
   updateProfile,
-  updateProfilePicture,
 } = require("../controllers/authController");
 const { protect } = require("../middleware/AuthMiddleware");
-const { uploadProfilePicture } = require("../middleware/uploadMiddleware");
 
 const router = express.Router();
 
@@ -25,10 +23,4 @@ router.post("/logout", protect, logout);
 router.get("/me", protect, getMe);
 router.patch("/change-password", protect, changePassword);
 router.patch("/profile", protect, updateProfile);
-router.patch(
-  "/profile-picture",
-  protect,
-  uploadProfilePicture.single("profilePicture"),
-  updateProfilePicture,
-);
 module.exports = router;

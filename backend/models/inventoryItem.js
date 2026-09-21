@@ -105,17 +105,11 @@ const inventoryItem = {
       throw new Error("PERFORMED_BY_REQUIRED");
     }
 
-    if (
-      typeof itemCode !== "string" ||
-      !itemCode.trim()
-    ) {
+    if (typeof itemCode !== "string" || !itemCode.trim()) {
       throw new Error("ITEM_CODE_REQUIRED");
     }
 
-    if (
-      typeof name !== "string" ||
-      !name.trim()
-    ) {
+    if (typeof name !== "string" || !name.trim()) {
       throw new Error("ITEM_NAME_REQUIRED");
     }
 
@@ -123,57 +117,38 @@ const inventoryItem = {
       throw new Error("CATEGORY_REQUIRED");
     }
 
-    if (
-      !Number.isInteger(minimumStock) ||
-      minimumStock < 0
-    ) {
+    if (!Number.isInteger(minimumStock) || minimumStock < 0) {
       throw new Error("INVALID_MINIMUM_STOCK");
     }
 
-    if (
-      !Number.isInteger(initialQuantity) ||
-      initialQuantity < 0
-    ) {
+    if (!Number.isInteger(initialQuantity) || initialQuantity < 0) {
       throw new Error("INVALID_INITIAL_QUANTITY");
     }
 
-    if (
-      typeof isAsset !== "boolean"
-    ) {
+    if (typeof isAsset !== "boolean") {
       throw new Error("INVALID_ASSET_FLAG");
     }
 
     const cleanItemCode = itemCode.trim();
     const cleanName = name.trim();
     const cleanDescription =
-      typeof description === "string" &&
-      description.trim()
+      typeof description === "string" && description.trim()
         ? description.trim()
         : null;
 
     const cleanUnit =
-      typeof unit === "string" &&
-      unit.trim()
-        ? unit.trim()
-        : "pcs";
+      typeof unit === "string" && unit.trim() ? unit.trim() : "pcs";
 
     const cleanVendor =
-      typeof vendor === "string" &&
-      vendor.trim()
-        ? vendor.trim()
-        : null;
+      typeof vendor === "string" && vendor.trim() ? vendor.trim() : null;
 
     const cleanReferenceNo =
-      typeof referenceNo === "string" &&
-      referenceNo.trim()
+      typeof referenceNo === "string" && referenceNo.trim()
         ? referenceNo.trim()
         : null;
 
     const cleanRemarks =
-      typeof remarks === "string" &&
-      remarks.trim()
-        ? remarks.trim()
-        : null;
+      typeof remarks === "string" && remarks.trim() ? remarks.trim() : null;
 
     const client = await pool.connect();
 
@@ -206,16 +181,15 @@ const inventoryItem = {
       // 2. ENSURE ITEM CODE DOES NOT ALREADY EXIST
       // =====================================================
 
-      const existingItemResult =
-        await client.query(
-          `
+      const existingItemResult = await client.query(
+        `
           SELECT id
           FROM items
           WHERE item_code = $1
           FOR SHARE
           `,
-          [cleanItemCode],
-        );
+        [cleanItemCode],
+      );
 
       if (existingItemResult.rows.length > 0) {
         throw new Error("ITEM_CODE_ALREADY_EXISTS");
@@ -292,19 +266,14 @@ const inventoryItem = {
       if (initialQuantity > 0) {
         const receiptRemarks = [
           "Initial inventory receipt during item registration.",
-          cleanVendor
-            ? `Vendor: ${cleanVendor}`
-            : null,
-          cleanRemarks
-            ? `Remarks: ${cleanRemarks}`
-            : null,
+          cleanVendor ? `Vendor: ${cleanVendor}` : null,
+          cleanRemarks ? `Remarks: ${cleanRemarks}` : null,
         ]
           .filter(Boolean)
           .join(" ");
 
-        const transactionResult =
-          await client.query(
-            `
+        const transactionResult = await client.query(
+          `
             INSERT INTO inventory_transactions (
               item_id,
               transaction_type,
@@ -331,19 +300,17 @@ const inventoryItem = {
               performed_by,
               transaction_date
             `,
-            [
-              item.id,
-              initialQuantity,
-              cleanReferenceNo,
-              receiptRemarks,
-              performedBy,
-            ],
-          );
+          [
+            item.id,
+            initialQuantity,
+            cleanReferenceNo,
+            receiptRemarks,
+            performedBy,
+          ],
+        );
 
-        inventoryTransaction =
-          transactionResult.rows[0];
+        inventoryTransaction = transactionResult.rows[0];
       }
-
 
       await auditLog.create({
         client,
@@ -371,8 +338,7 @@ const inventoryItem = {
           vendor: cleanVendor,
           reference_no: cleanReferenceNo,
           remarks: cleanRemarks,
-          inventory_transaction_id:
-            inventoryTransaction?.id || null,
+          inventory_transaction_id: inventoryTransaction?.id || null,
         },
       });
 
@@ -397,7 +363,6 @@ const inventoryItem = {
     }
   },
 
-
   // =========================================================
   // RECEIVE STOCK
   //
@@ -408,13 +373,7 @@ const inventoryItem = {
   // LEDGER: RECEIPT
   // =========================================================
 
-  async receiveStock({
-    itemId,
-    quantity,
-    performedBy,
-    referenceNo,
-    remarks,
-  }) {
+  async receiveStock({ itemId, quantity, performedBy, referenceNo, remarks }) {
     return this.changeStock({
       itemId,
       quantity,
@@ -436,13 +395,7 @@ const inventoryItem = {
   // LEDGER: ADJUSTMENT_IN
   // =========================================================
 
-  async adjustStockIn({
-    itemId,
-    quantity,
-    performedBy,
-    referenceNo,
-    remarks,
-  }) {
+  async adjustStockIn({ itemId, quantity, performedBy, referenceNo, remarks }) {
     return this.changeStock({
       itemId,
       quantity,
@@ -501,13 +454,7 @@ const inventoryItem = {
   // A write-off cannot silently consume reserved inventory.
   // =========================================================
 
-  async writeOffStock({
-    itemId,
-    quantity,
-    performedBy,
-    referenceNo,
-    remarks,
-  }) {
+  async writeOffStock({ itemId, quantity, performedBy, referenceNo, remarks }) {
     return this.changeStock({
       itemId,
       quantity,
@@ -607,23 +554,13 @@ const inventoryItem = {
     };
 
     if (
-      !Object.prototype.hasOwnProperty.call(
-        allowedOperations,
-        transactionType,
-      )
+      !Object.prototype.hasOwnProperty.call(allowedOperations, transactionType)
     ) {
-      throw new Error(
-        "INVALID_STOCK_TRANSACTION_TYPE",
-      );
+      throw new Error("INVALID_STOCK_TRANSACTION_TYPE");
     }
 
-    if (
-      allowedOperations[transactionType] !==
-      direction
-    ) {
-      throw new Error(
-        "INVALID_STOCK_TRANSACTION_DIRECTION",
-      );
+    if (allowedOperations[transactionType] !== direction) {
+      throw new Error("INVALID_STOCK_TRANSACTION_DIRECTION");
     }
 
     // -------------------------------------------------------
@@ -631,16 +568,12 @@ const inventoryItem = {
     // -------------------------------------------------------
 
     const cleanReferenceNo =
-      typeof referenceNo === "string" &&
-      referenceNo.trim()
+      typeof referenceNo === "string" && referenceNo.trim()
         ? referenceNo.trim()
         : null;
 
     const cleanRemarks =
-      typeof remarks === "string" &&
-      remarks.trim()
-        ? remarks.trim()
-        : null;
+      typeof remarks === "string" && remarks.trim() ? remarks.trim() : null;
 
     const client = await pool.connect();
 
@@ -683,30 +616,16 @@ const inventoryItem = {
       // 2. READ OLD STOCK VALUES
       // =====================================================
 
-      const oldCurrentStock = Number(
-        item.current_stock || 0,
-      );
+      const oldCurrentStock = Number(item.current_stock || 0);
 
-      const oldPhysicalStock = Number(
-        item.physical_stock || 0,
-      );
+      const oldPhysicalStock = Number(item.physical_stock || 0);
 
-      if (
-        !Number.isInteger(oldCurrentStock) ||
-        oldCurrentStock < 0
-      ) {
-        throw new Error(
-          "INVALID_CURRENT_STOCK",
-        );
+      if (!Number.isInteger(oldCurrentStock) || oldCurrentStock < 0) {
+        throw new Error("INVALID_CURRENT_STOCK");
       }
 
-      if (
-        !Number.isInteger(oldPhysicalStock) ||
-        oldPhysicalStock < 0
-      ) {
-        throw new Error(
-          "INVALID_PHYSICAL_STOCK",
-        );
+      if (!Number.isInteger(oldPhysicalStock) || oldPhysicalStock < 0) {
+        throw new Error("INVALID_PHYSICAL_STOCK");
       }
 
       // -----------------------------------------------------
@@ -716,9 +635,7 @@ const inventoryItem = {
       // -----------------------------------------------------
 
       if (oldCurrentStock > oldPhysicalStock) {
-        throw new Error(
-          "INVENTORY_STATE_INCONSISTENT",
-        );
+        throw new Error("INVENTORY_STATE_INCONSISTENT");
       }
 
       // =====================================================
@@ -745,16 +662,12 @@ const inventoryItem = {
       let reservationConflict = null;
 
       if (direction === "OUT") {
-        const availableStock =
-          oldCurrentStock;
+        const availableStock = oldCurrentStock;
 
         if (quantity > availableStock) {
-          const reservedQuantity =
-            oldPhysicalStock -
-            oldCurrentStock;
+          const reservedQuantity = oldPhysicalStock - oldCurrentStock;
 
-          const quantityAffectingReservations =
-            quantity - availableStock;
+          const quantityAffectingReservations = quantity - availableStock;
 
           // -------------------------------------------------
           // Defensive consistency check.
@@ -765,18 +678,11 @@ const inventoryItem = {
           // -------------------------------------------------
 
           if (quantity > oldPhysicalStock) {
-            throw new Error(
-              "INSUFFICIENT_PHYSICAL_STOCK",
-            );
+            throw new Error("INSUFFICIENT_PHYSICAL_STOCK");
           }
 
-          if (
-            quantityAffectingReservations >
-            reservedQuantity
-          ) {
-            throw new Error(
-              "INVENTORY_STATE_INCONSISTENT",
-            );
+          if (quantityAffectingReservations > reservedQuantity) {
+            throw new Error("INVENTORY_STATE_INCONSISTENT");
           }
 
           reservationConflict = {
@@ -808,16 +714,11 @@ const inventoryItem = {
           // reservation.
           // -------------------------------------------------
 
-          const error =
-            new Error(
-              "RESERVATION_CONFLICT",
-            );
+          const error = new Error("RESERVATION_CONFLICT");
 
-          error.code =
-            "RESERVATION_CONFLICT";
+          error.code = "RESERVATION_CONFLICT";
 
-          error.conflict =
-            reservationConflict;
+          error.conflict = reservationConflict;
 
           throw error;
         }
@@ -831,21 +732,13 @@ const inventoryItem = {
       let newPhysicalStock;
 
       if (direction === "IN") {
-        newPhysicalStock =
-          oldPhysicalStock +
-          quantity;
+        newPhysicalStock = oldPhysicalStock + quantity;
 
-        newCurrentStock =
-          oldCurrentStock +
-          quantity;
+        newCurrentStock = oldCurrentStock + quantity;
       } else {
-        newPhysicalStock =
-          oldPhysicalStock -
-          quantity;
+        newPhysicalStock = oldPhysicalStock - quantity;
 
-        newCurrentStock =
-          oldCurrentStock -
-          quantity;
+        newCurrentStock = oldCurrentStock - quantity;
       }
 
       // =====================================================
@@ -853,28 +746,19 @@ const inventoryItem = {
       // =====================================================
 
       if (newPhysicalStock < 0) {
-        throw new Error(
-          "INSUFFICIENT_PHYSICAL_STOCK",
-        );
+        throw new Error("INSUFFICIENT_PHYSICAL_STOCK");
       }
 
       if (newCurrentStock < 0) {
-        throw new Error(
-          "INSUFFICIENT_STOCK",
-        );
+        throw new Error("INSUFFICIENT_STOCK");
       }
 
       // -----------------------------------------------------
       // Final consistency check.
       // -----------------------------------------------------
 
-      if (
-        newCurrentStock >
-        newPhysicalStock
-      ) {
-        throw new Error(
-          "INVENTORY_STATE_INCONSISTENT",
-        );
+      if (newCurrentStock > newPhysicalStock) {
+        throw new Error("INVENTORY_STATE_INCONSISTENT");
       }
 
       // =====================================================
@@ -915,15 +799,10 @@ const inventoryItem = {
           created_at,
           updated_at
         `,
-        [
-          newCurrentStock,
-          newPhysicalStock,
-          itemId,
-        ],
+        [newCurrentStock, newPhysicalStock, itemId],
       );
 
-      const updatedItem =
-        updateResult.rows[0];
+      const updatedItem = updateResult.rows[0];
 
       // =====================================================
       // 7. INVENTORY LEDGER
@@ -931,9 +810,8 @@ const inventoryItem = {
       // Permanent inventory movement history.
       // =====================================================
 
-      const transactionResult =
-        await client.query(
-          `
+      const transactionResult = await client.query(
+        `
           INSERT INTO inventory_transactions (
             item_id,
             transaction_type,
@@ -959,18 +837,17 @@ const inventoryItem = {
             remarks,
             performed_by
           `,
-          [
-            itemId,
-            transactionType,
-            quantity,
-            cleanReferenceNo,
-            cleanRemarks,
-            performedBy,
-          ],
-        );
+        [
+          itemId,
+          transactionType,
+          quantity,
+          cleanReferenceNo,
+          cleanRemarks,
+          performedBy,
+        ],
+      );
 
-      const inventoryTransaction =
-        transactionResult.rows[0];
+      const inventoryTransaction = transactionResult.rows[0];
 
       // =====================================================
       // 8. AUDIT LOG
@@ -987,10 +864,8 @@ const inventoryItem = {
           item_id: itemId,
           item_code: item.item_code,
           item_name: item.name,
-          current_stock:
-            oldCurrentStock,
-          physical_stock:
-            oldPhysicalStock,
+          current_stock: oldCurrentStock,
+          physical_stock: oldPhysicalStock,
         },
 
         newData: {
@@ -998,28 +873,21 @@ const inventoryItem = {
           item_code: item.item_code,
           item_name: item.name,
 
-          current_stock:
-            newCurrentStock,
+          current_stock: newCurrentStock,
 
-          physical_stock:
-            newPhysicalStock,
+          physical_stock: newPhysicalStock,
 
-          quantity_changed:
-            quantity,
+          quantity_changed: quantity,
 
           direction,
 
-          transaction_type:
-            transactionType,
+          transaction_type: transactionType,
 
-          inventory_transaction_id:
-            inventoryTransaction.id,
+          inventory_transaction_id: inventoryTransaction.id,
 
-          reference_no:
-            cleanReferenceNo,
+          reference_no: cleanReferenceNo,
 
-          remarks:
-            cleanRemarks,
+          remarks: cleanRemarks,
         },
       });
 
@@ -1045,45 +913,35 @@ const inventoryItem = {
 
       switch (transactionType) {
         case "RECEIPT":
-          notificationTitle =
-            "Inventory received successfully";
+          notificationTitle = "Inventory received successfully";
 
-          notificationMessage =
-            `${quantity} ${updatedItem.unit} of ${updatedItem.name} was successfully received into inventory. Current available stock is ${newCurrentStock}.`;
+          notificationMessage = `${quantity} ${updatedItem.unit} of ${updatedItem.name} was successfully received into inventory. Current available stock is ${newCurrentStock}.`;
 
           break;
 
         case "ADJUSTMENT_IN":
-          notificationTitle =
-            "Inventory adjustment completed";
+          notificationTitle = "Inventory adjustment completed";
 
-          notificationMessage =
-            `Inventory adjustment completed successfully. ${quantity} ${updatedItem.unit} of ${updatedItem.name} was added to inventory. Current available stock is ${newCurrentStock}.`;
+          notificationMessage = `Inventory adjustment completed successfully. ${quantity} ${updatedItem.unit} of ${updatedItem.name} was added to inventory. Current available stock is ${newCurrentStock}.`;
 
           break;
 
         case "ADJUSTMENT_OUT":
-          notificationTitle =
-            "Inventory adjustment completed";
+          notificationTitle = "Inventory adjustment completed";
 
-          notificationMessage =
-            `Inventory adjustment completed successfully. ${quantity} ${updatedItem.unit} of ${updatedItem.name} was removed from inventory. Current available stock is ${newCurrentStock}.`;
+          notificationMessage = `Inventory adjustment completed successfully. ${quantity} ${updatedItem.unit} of ${updatedItem.name} was removed from inventory. Current available stock is ${newCurrentStock}.`;
 
           break;
 
         case "WRITE_OFF":
-          notificationTitle =
-            "Inventory write-off completed";
+          notificationTitle = "Inventory write-off completed";
 
-          notificationMessage =
-            `${quantity} ${updatedItem.unit} of ${updatedItem.name} was successfully written off. Current available stock is ${newCurrentStock}.`;
+          notificationMessage = `${quantity} ${updatedItem.unit} of ${updatedItem.name} was successfully written off. Current available stock is ${newCurrentStock}.`;
 
           break;
 
         default:
-          throw new Error(
-            "INVALID_STOCK_TRANSACTION_TYPE",
-          );
+          throw new Error("INVALID_STOCK_TRANSACTION_TYPE");
       }
 
       await notification.createWithClient({
@@ -1095,7 +953,6 @@ const inventoryItem = {
 
         message: notificationMessage,
       });
-
 
       // =====================================================
       // 9. COMMIT

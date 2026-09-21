@@ -35,10 +35,7 @@ const itemReturn = {
       throw new Error("ISSUED_ITEM_ID_REQUIRED");
     }
 
-    if (
-      !Number.isInteger(quantityReturned) ||
-      quantityReturned <= 0
-    ) {
+    if (!Number.isInteger(quantityReturned) || quantityReturned <= 0) {
       throw new Error("INVALID_RETURN_QUANTITY");
     }
 
@@ -115,11 +112,9 @@ const itemReturn = {
         throw new Error("ITEM_NOT_FOUND");
       }
 
-      const oldCurrentStock =
-        Number(item.current_stock);
+      const oldCurrentStock = Number(item.current_stock);
 
-      const oldPhysicalStock =
-        Number(item.physical_stock);
+      const oldPhysicalStock = Number(item.physical_stock);
 
       if (
         !Number.isInteger(oldCurrentStock) ||
@@ -128,12 +123,8 @@ const itemReturn = {
         oldPhysicalStock < 0 ||
         oldCurrentStock > oldPhysicalStock
       ) {
-        throw new Error(
-          "INVENTORY_STATE_INCONSISTENT",
-        );
+        throw new Error("INVENTORY_STATE_INCONSISTENT");
       }
-     
-   
 
       // -------------------------------------------------------
       // Do not silently return inventory for a deleted/missing
@@ -164,9 +155,7 @@ const itemReturn = {
         returnedResult.rows[0].returned_quantity || 0,
       );
 
-      const issuedQuantity = Number(
-        issuedItem.quantity || 0,
-      );
+      const issuedQuantity = Number(issuedItem.quantity || 0);
 
       // -------------------------------------------------------
       // Defensive validation
@@ -177,13 +166,10 @@ const itemReturn = {
       }
 
       if (alreadyReturned > issuedQuantity) {
-        throw new Error(
-          "RETURN_HISTORY_EXCEEDS_ISSUED_QUANTITY",
-        );
+        throw new Error("RETURN_HISTORY_EXCEEDS_ISSUED_QUANTITY");
       }
 
-      const remainingQuantity =
-        issuedQuantity - alreadyReturned;
+      const remainingQuantity = issuedQuantity - alreadyReturned;
 
       // =======================================================
       // 4. PREVENT DUPLICATE / EXCESSIVE RETURN
@@ -201,14 +187,11 @@ const itemReturn = {
       // 5. CALCULATE NEW RETURN TOTAL
       // =======================================================
 
-      const totalReturned =
-        alreadyReturned + quantityReturned;
+      const totalReturned = alreadyReturned + quantityReturned;
 
-      const fullyReturned =
-        totalReturned === issuedQuantity;
+      const fullyReturned = totalReturned === issuedQuantity;
 
-      const newQuantityRemaining =
-        issuedQuantity - totalReturned;
+      const newQuantityRemaining = issuedQuantity - totalReturned;
 
       // =======================================================
       // 6.RESTORE INVENTORY STOCK
@@ -221,13 +204,10 @@ const itemReturn = {
       // Therefore RETURN adds the returned quantity back.
       // =======================================================
 
-      const newCurrentStock =
-        oldCurrentStock + quantityReturned;
+      const newCurrentStock = oldCurrentStock + quantityReturned;
 
-      const newPhysicalStock =
-        oldPhysicalStock + quantityReturned;
+      const newPhysicalStock = oldPhysicalStock + quantityReturned;
 
-     
       const updateItemResult = await client.query(
         `
         UPDATE items
@@ -245,37 +225,26 @@ const itemReturn = {
           minimum_stock,
           unit
         `,
-        [
-          newCurrentStock,
-          newPhysicalStock,
-          item.id,
-        ],
+        [newCurrentStock, newPhysicalStock, item.id],
       );
 
-      const updatedItem =
-        updateItemResult.rows[0];
+      const updatedItem = updateItemResult.rows[0];
 
       if (updateItemResult.rowCount !== 1) {
-        throw new Error(
-          "INVENTORY_UPDATE_FAILED",
-        );
-      }  
+        throw new Error("INVENTORY_UPDATE_FAILED");
+      }
 
       // =======================================================
       // 7. RECORD RETURN HISTORY
       // =======================================================
 
       const cleanConditionStatus =
-        typeof conditionStatus === "string" &&
-        conditionStatus.trim()
+        typeof conditionStatus === "string" && conditionStatus.trim()
           ? conditionStatus.trim()
           : null;
 
       const cleanRemarks =
-        typeof remarks === "string" &&
-        remarks.trim()
-          ? remarks.trim()
-          : null;
+        typeof remarks === "string" && remarks.trim() ? remarks.trim() : null;
 
       const returnResult = await client.query(
         `
@@ -299,16 +268,10 @@ const itemReturn = {
           condition_status,
           remarks
         `,
-        [
-          issuedItemId,
-          quantityReturned,
-          cleanConditionStatus,
-          cleanRemarks,
-        ],
+        [issuedItemId, quantityReturned, cleanConditionStatus, cleanRemarks],
       );
 
-      const returnRecord =
-        returnResult.rows[0];
+      const returnRecord = returnResult.rows[0];
 
       // =======================================================
       // 8. UPDATE ISSUED ITEM RETURN STATUS
@@ -360,8 +323,7 @@ const itemReturn = {
           item.id,
           quantityReturned,
           issuedItemId,
-          cleanRemarks ||
-            "Inventory returned from issued item",
+          cleanRemarks || "Inventory returned from issued item",
           performedBy,
         ],
       );
@@ -369,7 +331,7 @@ const itemReturn = {
       // =======================================================
       // 10. AUDIT LOG
       //
-      // 
+      //
       // =======================================================
 
       await auditLog.create({
@@ -383,18 +345,13 @@ const itemReturn = {
           issued_item_id: issuedItemId,
           item_id: issuedItem.item_id,
           issued_quantity: issuedQuantity,
-          quantity_previously_returned:
-            alreadyReturned,
-          quantity_remaining_before_return:
-            remainingQuantity,
-          issued_item_returned:
-            Boolean(issuedItem.returned),
+          quantity_previously_returned: alreadyReturned,
+          quantity_remaining_before_return: remainingQuantity,
+          issued_item_returned: Boolean(issuedItem.returned),
 
-          current_stock:
-            oldCurrentStock,
+          current_stock: oldCurrentStock,
 
-          physical_stock:
-            oldPhysicalStock,
+          physical_stock: oldPhysicalStock,
         },
 
         newData: {
@@ -402,32 +359,23 @@ const itemReturn = {
           issued_item_id: issuedItemId,
           item_id: issuedItem.item_id,
 
-          quantity_returned:
-            quantityReturned,
+          quantity_returned: quantityReturned,
 
-          total_quantity_returned:
-            totalReturned,
+          total_quantity_returned: totalReturned,
 
-          quantity_remaining_after_return:
-            newQuantityRemaining,
+          quantity_remaining_after_return: newQuantityRemaining,
 
-          issued_item_returned:
-            fullyReturned,
+          issued_item_returned: fullyReturned,
 
-          current_stock:
-            newCurrentStock,
+          current_stock: newCurrentStock,
 
-          physical_stock:
-            newPhysicalStock,
+          physical_stock: newPhysicalStock,
 
-          condition_status:
-            cleanConditionStatus,
+          condition_status: cleanConditionStatus,
 
-          remarks:
-            cleanRemarks,
+          remarks: cleanRemarks,
         },
       });
-
 
       await notification.createWithClient({
         client,
@@ -467,16 +415,13 @@ const itemReturn = {
 
         item: updatedItem,
 
-        quantityIssued:
-          issuedQuantity,
+        quantityIssued: issuedQuantity,
 
-        quantityPreviouslyReturned:
-          alreadyReturned,
+        quantityPreviouslyReturned: alreadyReturned,
 
         quantityReturned,
 
-        quantityRemaining:
-          newQuantityRemaining,
+        quantityRemaining: newQuantityRemaining,
 
         fullyReturned,
       };

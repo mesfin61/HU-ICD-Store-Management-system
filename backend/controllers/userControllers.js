@@ -1,13 +1,8 @@
 const bcrypt = require("bcryptjs");
-const {
-  sendWelcomeEmail,
-} = require("../utils/email");
-const { user, role, department } = require("../models");
+const { sendWelcomeEmail } = require("../utils/email");
+const { user, role, department, auditLog } = require("../models");
 
-const {
-  ROLES,
-} = require("../middleware/AuthMiddleware");
-
+const { ROLES, isAdministratorRole } = require("../middleware/AuthMiddleware");
 
 const getAllUsers = async (req, res) => {
   try {
@@ -27,7 +22,6 @@ const getAllUsers = async (req, res) => {
     });
   }
 };
-
 
 const getUserById = async (req, res) => {
   try {
@@ -54,23 +48,16 @@ const getUserById = async (req, res) => {
   }
 };
 
-
 const createUser = async (req, res) => {
   try {
-    const {
-      fullName,
-      email,
-      password,
-      departmentId,
-      roleId,
-    } = req.body;
+    const { fullName, email, password, departmentId, roleId } = req.body;
 
     /*
      * This controller is Administrator-only.
      * The route should also enforce this restriction.
      * This second check is intentional defense in depth.
      */
-    if (req.user.role_name !== ROLES.ADMINISTRATOR) {
+    if (!isAdministratorRole(req.user.role_name)) {
       return res.status(403).json({
         success: false,
         message: "Access denied.",
@@ -100,8 +87,7 @@ const createUser = async (req, res) => {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    const existingUser =
-      await user.findByEmail(normalizedEmail);
+    const existingUser = await user.findByEmail(normalizedEmail);
 
     if (existingUser) {
       return res.status(400).json({
@@ -115,13 +101,13 @@ const createUser = async (req, res) => {
     if (!requestedRole) {
       return res.status(400).json({
         success: false,
-        message: "Invalid role.",
       });
     }
 
     /*
-     * Only the three application roles are valid.
+     Only the three application roles are valid. 
      */
+    
     const validRoles = Object.values(ROLES);
 
     if (!validRoles.includes(requestedRole.name)) {
@@ -131,8 +117,7 @@ const createUser = async (req, res) => {
       });
     }
 
-    const requestedDepartment =
-      await department.findById(departmentId);
+    const requestedDepartment = await department.findById(departmentId);
 
     if (!requestedDepartment) {
       return res.status(400).json({
@@ -149,8 +134,7 @@ const createUser = async (req, res) => {
     }
 
     const salt = await bcrypt.genSalt(12);
-    const passwordHash =
-      await bcrypt.hash(password, salt);
+    const passwordHash = await bcrypt.hash(password, salt);
 
     const newUser = await user.create({
       fullName: fullName.trim(),
@@ -158,6 +142,19 @@ const createUser = async (req, res) => {
       passwordHash,
       roleId: requestedRole.id,
       departmentId: requestedDepartment.id,
+    });
+
+    await auditLog.create({
+      userId: req.user.id,
+      action: "USER_CREATED",
+      entityName: "users",
+      entityId: newUser.id,
+      newData: {
+        fullName: newUser.full_name,
+        email: newUser.email,
+        role: requestedRole.name,
+        department: requestedDepartment.name,
+      },
     });
 
     let emailSent = true;
@@ -172,10 +169,7 @@ const createUser = async (req, res) => {
     } catch (emailError) {
       emailSent = false;
 
-      console.error(
-        "[User] Welcome email failed:",
-        emailError,
-      );
+      console.error("[User] Welcome email failed:", emailError);
     }
 
     return res.status(201).json({
@@ -187,37 +181,25 @@ const createUser = async (req, res) => {
       data: newUser,
     });
   } catch (error) {
-    console.error(
-      "[User] createUser error:",
-      error,
-    );
+    console.error("[User] createUser error:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Server error.",
+      message: "Server error.",
     });
   }
 };
 
-
-
 const updateUser = async (req, res) => {
   try {
-    const {
-      fullName,
-      email,
-      roleId,
-      departmentId,
-      isActive,
-    } = req.body;
+    const { fullName, email, roleId, departmentId, isActive } = req.body;
 
     const { id } = req.params;
 
     /*
      * Defense in depth.
      */
-    if (req.user.role_name !== ROLES.ADMINISTRATOR) {
+    if (!isAdministratorRole(req.user.role_name)) {
       return res.status(403).json({
         success: false,
         message: "Access denied.",
@@ -243,8 +225,7 @@ const updateUser = async (req, res) => {
     ) {
       return res.status(403).json({
         success: false,
-        message:
-          "You cannot change your own role or account status.",
+        message: "You cannot change your own role or account status.",
       });
     }
 
@@ -264,9 +245,7 @@ const updateUser = async (req, res) => {
         });
       }
 
-      if (
-        !Object.values(ROLES).includes(requestedRole.name)
-      ) {
+      if (!Object.values(ROLES).includes(requestedRole.name)) {
         return res.status(400).json({
           success: false,
           message: "Invalid role.",
@@ -280,37 +259,27 @@ const updateUser = async (req, res) => {
      * Determine final values.
      */
     const finalFullName =
-      fullName !== undefined
-        ? fullName.trim()
-        : existingUser.full_name;
+      fullName !== undefined ? fullName.trim() : existingUser.full_name;
 
     const finalEmail =
-      email !== undefined
-        ? email.trim().toLowerCase()
-        : existingUser.email;
+      email !== undefined ? email.trim().toLowerCase() : existingUser.email;
 
     const finalIsActive =
-      isActive !== undefined
-        ? isActive
-        : existingUser.is_active;
+      isActive !== undefined ? isActive : existingUser.is_active;
 
     const finalDepartmentId =
-      departmentId !== undefined
-        ? departmentId
-        : existingUser.department_id;
+      departmentId !== undefined ? departmentId : existingUser.department_id;
 
     /*
      * Validate email uniqueness.
      */
     if (finalEmail !== existingUser.email) {
-      const emailTaken =
-        await user.findByEmail(finalEmail);
+      const emailTaken = await user.findByEmail(finalEmail);
 
       if (emailTaken && emailTaken.id !== id) {
         return res.status(400).json({
           success: false,
-          message:
-            "Email is already in use by another user.",
+          message: "Email is already in use by another user.",
         });
       }
     }
@@ -319,8 +288,7 @@ const updateUser = async (req, res) => {
      * Department must be valid and active.
      */
     if (departmentId !== undefined) {
-      const requestedDepartment =
-        await department.findById(departmentId);
+      const requestedDepartment = await department.findById(departmentId);
 
       if (!requestedDepartment) {
         return res.status(400).json({
@@ -332,29 +300,25 @@ const updateUser = async (req, res) => {
       if (!requestedDepartment.is_active) {
         return res.status(400).json({
           success: false,
-          message:
-            "The selected department is inactive.",
+          message: "The selected department is inactive.",
         });
       }
     }
 
     /*
      * Delegate integrity-sensitive changes to the model.
-     *
-     * IMPORTANT:
      * The model method must enforce the Administrator
      * protection rules transactionally.
      */
-    const result =
-      await user.updateWithAdministratorGuard({
-        id,
-        actingUserId: req.user.id,
-        fullName: finalFullName,
-        email: finalEmail,
-        roleId: finalRoleId,
-        isActive: finalIsActive,
-        departmentId: finalDepartmentId,
-      });
+    const result = await user.updateWithAdministratorGuard({
+      id,
+      actingUserId: req.user.id,
+      fullName: finalFullName,
+      email: finalEmail,
+      roleId: finalRoleId,
+      isActive: finalIsActive,
+      departmentId: finalDepartmentId,
+    });
 
     if (!result.success) {
       switch (result.reason) {
@@ -380,8 +344,7 @@ const updateUser = async (req, res) => {
         case "SELF_PRIVILEGE_CHANGE":
           return res.status(403).json({
             success: false,
-            message:
-              "You cannot change your own role or account status.",
+            message: "You cannot change your own role or account status.",
           });
 
         default:
@@ -392,15 +355,33 @@ const updateUser = async (req, res) => {
       }
     }
 
+    await auditLog.create({
+      userId: req.user.id,
+      action: "USER_UPDATED",
+      entityName: "users",
+      entityId: id,
+      oldData: {
+        fullName: existingUser.full_name,
+        email: existingUser.email,
+        roleId: existingUser.role_id,
+        departmentId: existingUser.department_id,
+        isActive: existingUser.is_active,
+      },
+      newData: {
+        fullName: finalFullName,
+        email: finalEmail,
+        roleId: finalRoleId,
+        departmentId: finalDepartmentId,
+        isActive: finalIsActive,
+      },
+    });
+
     return res.status(200).json({
       success: true,
       data: result.user,
     });
   } catch (error) {
-    console.error(
-      "[User] updateUser error:",
-      error.message,
-    );
+    console.error("[User] updateUser error:", error.message);
 
     return res.status(500).json({
       success: false,
@@ -409,6 +390,177 @@ const updateUser = async (req, res) => {
   }
 };
 
+const transferOwnership = async (req, res) => {
+  try {
+    const { currentPassword } = req.body;
+
+    if (req.user.role_name !== ROLES.SUPER_ADMIN) {
+      return res.status(403).json({
+        success: false,
+        message: "Only a Super Admin can transfer ownership.",
+      });
+    }
+
+    if (!currentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Your current password is required.",
+      });
+    }
+
+    const authenticatedUser = await user.findByEmail(req.user.email);
+    const passwordMatches = authenticatedUser?.password_hash
+      ? await bcrypt.compare(currentPassword, authenticatedUser.password_hash)
+      : false;
+
+    if (!passwordMatches) {
+      return res.status(401).json({
+        success: false,
+        message: "Your current password is incorrect.",
+      });
+    }
+
+    const targetUser = await user.findById(req.params.id);
+
+    if (!targetUser) {
+      return res.status(404).json({
+        success: false,
+        message: "Target user not found.",
+      });
+    }
+
+    const result = await user.transferOwnership({
+      actingUserId: req.user.id,
+      targetUserId: req.params.id,
+    });
+
+    if (!result.success) {
+      switch (result.reason) {
+        case "INVALID_TRANSFER":
+          return res.status(400).json({
+            success: false,
+            message: "A different target user is required.",
+          });
+
+        case "NOT_FOUND":
+          return res.status(404).json({
+            success: false,
+            message: "Target user not found.",
+          });
+
+        case "NOT_AUTHORIZED":
+          return res.status(403).json({
+            success: false,
+            message: "Only the current Super Admin can transfer ownership.",
+          });
+
+        case "TARGET_INACTIVE":
+          return res.status(400).json({
+            success: false,
+            message: "Ownership cannot be transferred to an inactive user.",
+          });
+
+        case "INVALID_ROLE_CONFIGURATION":
+          return res.status(500).json({
+            success: false,
+            message: "Required ownership roles are not configured.",
+          });
+
+        default:
+          return res.status(400).json({
+            success: false,
+            message: "Ownership transfer was rejected.",
+          });
+      }
+    }
+
+    await auditLog.create({
+      userId: req.user.id,
+      action: "OWNERSHIP_TRANSFERRED",
+      entityName: "users",
+      entityId: targetUser.id,
+      oldData: {
+        previousOwnerId: req.user.id,
+        previousOwnerRole: ROLES.SUPER_ADMIN,
+        targetUserRole: targetUser.role_name,
+      },
+      newData: {
+        previousOwnerId: req.user.id,
+        previousOwnerRole: ROLES.STORE_MANAGER,
+        newOwnerId: targetUser.id,
+        newOwnerRole: ROLES.SUPER_ADMIN,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Ownership transferred successfully.",
+      data: result,
+    });
+  } catch (error) {
+    console.error("[User] transferOwnership error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error.",
+    });
+  }
+};
+
+const changePassword = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required.",
+      });
+    }
+
+    const foundUser = await user.findPasswordHashById(id);
+
+    if (!foundUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(
+      currentPassword,
+      foundUser.password_hash,
+    );
+
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password is incorrect.",
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be at least 8 characters.",
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    const updatedPassword = await user.updatePassword(id, passwordHash);
+
+    return res.status(200).json({
+      success: true,
+      message: "Password updated successfully.",
+      data: updatedPassword,
+    });
+  } catch (error) {
+    console.log("[User] changePassword error:", error.message);
+    return res.status(500).json({ success: false, message: "Server error." });
+  }
+};
 
 const deactivateUser = async (req, res) => {
   try {
@@ -417,7 +569,7 @@ const deactivateUser = async (req, res) => {
     /*
      * Defense in depth.
      */
-    if (req.user.role_name !== ROLES.ADMINISTRATOR) {
+    if (!isAdministratorRole(req.user.role_name)) {
       return res.status(403).json({
         success: false,
         message: "Access denied.",
@@ -433,19 +585,17 @@ const deactivateUser = async (req, res) => {
       });
     }
 
-    const result =
-      await user.deactivateWithAdministratorGuard({
-        id,
-        actingUserId: req.user.id,
-      });
+    const result = await user.deactivateWithAdministratorGuard({
+      id,
+      actingUserId: req.user.id,
+    });
 
     if (!result.success) {
       switch (result.reason) {
         case "SELF_DEACTIVATION":
           return res.status(400).json({
             success: false,
-            message:
-              "You cannot deactivate your own account.",
+            message: "You cannot deactivate your own account.",
           });
 
         case "ALREADY_INACTIVE":
@@ -457,8 +607,7 @@ const deactivateUser = async (req, res) => {
         case "LAST_ADMINISTRATOR":
           return res.status(400).json({
             success: false,
-            message:
-              "The last active Administrator cannot be deactivated.",
+            message: "The last active Administrator cannot be deactivated.",
           });
 
         case "NOT_FOUND":
@@ -475,16 +624,26 @@ const deactivateUser = async (req, res) => {
       }
     }
 
+    await auditLog.create({
+      userId: req.user.id,
+      action: "USER_DEACTIVATED",
+      entityName: "users",
+      entityId: id,
+      oldData: {
+        isActive: foundUser.is_active,
+      },
+      newData: {
+        isActive: false,
+      },
+    });
+
     return res.status(200).json({
       success: true,
       message: "User deactivated successfully.",
       data: result.user,
     });
   } catch (error) {
-    console.error(
-      "[User] deactivateUser error:",
-      error.message,
-    );
+    console.error("[User] deactivateUser error:", error.message);
 
     return res.status(500).json({
       success: false,
@@ -493,6 +652,58 @@ const deactivateUser = async (req, res) => {
   }
 };
 
+const activateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (req.user.role_name !== ROLES.SUPER_ADMIN) {
+      return res.status(403).json({
+        success: false,
+        message: "Only a Super Admin can activate users.",
+      });
+    }
+
+    const foundUser = await user.findById(id);
+
+    if (!foundUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    if (foundUser.is_active) {
+      return res.status(400).json({
+        success: false,
+        message: "User is already active.",
+      });
+    }
+
+    const activatedUser = await user.activate(id);
+
+    await auditLog.create({
+      userId: req.user.id,
+      action: "USER_ACTIVATED",
+      entityName: "users",
+      entityId: id,
+      oldData: { isActive: false },
+      newData: { isActive: true },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "User activated successfully.",
+      data: activatedUser,
+    });
+  } catch (error) {
+    console.error("[User] activateUser error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error.",
+    });
+  }
+};
 
 const deleteUser = async (req, res) => {
   /*
@@ -500,8 +711,7 @@ const deleteUser = async (req, res) => {
    */
   return res.status(405).json({
     success: false,
-    message:
-      "User deletion is disabled. Deactivate the user instead.",
+    message: "User deletion is disabled. Deactivate the user instead.",
   });
 };
 
@@ -511,6 +721,9 @@ module.exports = {
   getUserById,
   createUser,
   updateUser,
+  transferOwnership,
+  changePassword,
+  activateUser,
   deactivateUser,
   deleteUser,
 };

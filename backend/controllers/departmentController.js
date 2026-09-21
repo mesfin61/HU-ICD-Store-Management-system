@@ -1,9 +1,8 @@
-const { department } = require("../models");
+const { department, auditLog } = require("../models");
 
 const getAllDepartments = async (req, res) => {
   try {
-    const includeInactive =
-      req.query.includeInactive === "true";
+    const includeInactive = req.query.includeInactive === "true";
 
     const departments = await department.findAll({
       includeInactive,
@@ -15,10 +14,7 @@ const getAllDepartments = async (req, res) => {
       data: departments,
     });
   } catch (error) {
-    console.error(
-      "[Department] getAllDepartments error:",
-      error.message,
-    );
+    console.error("[Department] getAllDepartments error:", error.message);
 
     return res.status(500).json({
       success: false,
@@ -29,8 +25,7 @@ const getAllDepartments = async (req, res) => {
 
 const getDepartmentById = async (req, res) => {
   try {
-    const foundDepartment =
-      await department.findById(req.params.id);
+    const foundDepartment = await department.findById(req.params.id);
 
     if (!foundDepartment) {
       return res.status(404).json({
@@ -44,10 +39,7 @@ const getDepartmentById = async (req, res) => {
       data: foundDepartment,
     });
   } catch (error) {
-    console.error(
-      "[Department] getDepartmentById error:",
-      error.message,
-    );
+    console.error("[Department] getDepartmentById error:", error.message);
 
     return res.status(500).json({
       success: false,
@@ -58,14 +50,11 @@ const getDepartmentById = async (req, res) => {
 
 const createDepartment = async (req, res) => {
   try {
-    const cleanName = String(
-      req.body.name || "",
-    ).trim();
+    const cleanName = String(req.body.name || "").trim();
 
-    const cleanDescription =
-      req.body.description
-        ? String(req.body.description).trim()
-        : null;
+    const cleanDescription = req.body.description
+      ? String(req.body.description).trim()
+      : null;
 
     if (!cleanName) {
       return res.status(400).json({
@@ -77,27 +66,35 @@ const createDepartment = async (req, res) => {
     if (cleanName.length > 150) {
       return res.status(400).json({
         success: false,
-        message:
-          "Department name must not exceed 150 characters.",
+        message: "Department name must not exceed 150 characters.",
       });
     }
 
-    const existingDepartment =
-      await department.findByName(cleanName);
+    const existingDepartment = await department.findByName(cleanName);
 
     if (existingDepartment) {
       return res.status(409).json({
         success: false,
-        message:
-          "A department with this name already exists.",
+        message: "A department with this name already exists.",
       });
     }
 
-    const createdDepartment =
-      await department.create({
-        name: cleanName,
-        description: cleanDescription,
-      });
+    const createdDepartment = await department.create({
+      name: cleanName,
+      description: cleanDescription,
+    });
+
+    await auditLog.create({
+      userId: req.user.id,
+      action: "DEPARTMENT_CREATED",
+      entityName: "departments",
+      entityId: createdDepartment.id,
+      newData: {
+        name: createdDepartment.name,
+        description: createdDepartment.description,
+      },
+    });
+ 
 
     return res.status(201).json({
       success: true,
@@ -105,10 +102,7 @@ const createDepartment = async (req, res) => {
       data: createdDepartment,
     });
   } catch (error) {
-    console.error(
-      "[Department] createDepartment error:",
-      error.message,
-    );
+    console.error("[Department] createDepartment error:", error.message);
 
     /*
      * PostgreSQL unique constraint protection.
@@ -118,8 +112,7 @@ const createDepartment = async (req, res) => {
     if (error.code === "23505") {
       return res.status(409).json({
         success: false,
-        message:
-          "A department with this name already exists.",
+        message: "A department with this name already exists.",
       });
     }
 
@@ -134,14 +127,11 @@ const updateDepartment = async (req, res) => {
   try {
     const departmentId = req.params.id;
 
-    const cleanName = String(
-      req.body.name || "",
-    ).trim();
+    const cleanName = String(req.body.name || "").trim();
 
-    const cleanDescription =
-      req.body.description
-        ? String(req.body.description).trim()
-        : null;
+    const cleanDescription = req.body.description
+      ? String(req.body.description).trim()
+      : null;
 
     if (!cleanName) {
       return res.status(400).json({
@@ -153,13 +143,11 @@ const updateDepartment = async (req, res) => {
     if (cleanName.length > 150) {
       return res.status(400).json({
         success: false,
-        message:
-          "Department name must not exceed 150 characters.",
+        message: "Department name must not exceed 150 characters.",
       });
     }
 
-    const existingDepartment =
-      await department.findById(departmentId);
+    const existingDepartment = await department.findById(departmentId);
 
     if (!existingDepartment) {
       return res.status(404).json({
@@ -168,28 +156,38 @@ const updateDepartment = async (req, res) => {
       });
     }
 
-    const departmentWithSameName =
-      await department.findByName(cleanName);
+    const departmentWithSameName = await department.findByName(cleanName);
 
-    if (
-      departmentWithSameName &&
-      departmentWithSameName.id !== departmentId
-    ) {
+    if (departmentWithSameName && departmentWithSameName.id !== departmentId) {
       return res.status(409).json({
         success: false,
-        message:
-          "Another department already uses this name.",
+        message: "Another department already uses this name.",
       });
     }
 
-    const updatedDepartment =
-      await department.update(
-        departmentId,
-        {
-          name: cleanName,
-          description: cleanDescription,
-        },
-      );
+    const updatedDepartment = await department.update(departmentId, {
+      name: cleanName,
+      description: cleanDescription,
+    });
+
+    await auditLog.create({
+      userId: req.user.id,
+      action: "DEPARTMENT_UPDATED",
+      entityName: "departments",
+      entityId: updatedDepartment.id,
+      oldData: {
+        name: existingDepartment.name,
+        updated_at: existingDepartment.updated_at,
+        description: existingDepartment.description,
+        is_active: existingDepartment.is_active
+      },
+      newData: {
+        name: updatedDepartment.name,
+        updated_at: updatedDepartment.updated_at,
+        description: updatedDepartment.description,
+        is_active: updatedDepartment.is_active
+      }
+    })
 
     return res.status(200).json({
       success: true,
@@ -197,16 +195,12 @@ const updateDepartment = async (req, res) => {
       data: updatedDepartment,
     });
   } catch (error) {
-    console.error(
-      "[Department] updateDepartment error:",
-      error.message,
-    );
+    console.error("[Department] updateDepartment error:", error.message);
 
     if (error.code === "23505") {
       return res.status(409).json({
         success: false,
-        message:
-          "Another department already uses this name.",
+        message: "Another department already uses this name.",
       });
     }
 
@@ -221,8 +215,7 @@ const deactivateDepartment = async (req, res) => {
   try {
     const departmentId = req.params.id;
 
-    const existingDepartment =
-      await department.findById(departmentId);
+    const existingDepartment = await department.findById(departmentId);
 
     if (!existingDepartment) {
       return res.status(404).json({
@@ -238,20 +231,34 @@ const deactivateDepartment = async (req, res) => {
       });
     }
 
-    const deactivatedDepartment =
-      await department.deactivate(departmentId);
+    const deactivatedDepartment = await department.deactivate(departmentId);
+
+    await auditLog.create({
+      userId: req.user.id,
+      action: "DEPARTMENT_DEACTIVATED",
+      entityName: "departments",
+      entityId: deactivatedDepartment.id,
+      oldData: {
+        name: existingDepartment.name,
+        updated_at: existingDepartment.updated_at,
+        description: existingDepartment.description,
+        is_active: existingDepartment.is_active
+      },
+      newData: {
+        name: deactivatedDepartment.name,
+        updated_at: deactivatedDepartment.updated_at,
+        description: deactivatedDepartment.description,
+        is_active: deactivatedDepartment.is_active
+      }
+    });
 
     return res.status(200).json({
       success: true,
-      message:
-        "Department deactivated successfully.",
+      message: "Department deactivated successfully.",
       data: deactivatedDepartment,
     });
   } catch (error) {
-    console.error(
-      "[Department] deactivateDepartment error:",
-      error.message,
-    );
+    console.error("[Department] deactivateDepartment error:", error.message);
 
     return res.status(500).json({
       success: false,
@@ -264,8 +271,7 @@ const activateDepartment = async (req, res) => {
   try {
     const departmentId = req.params.id;
 
-    const existingDepartment =
-      await department.findById(departmentId);
+    const existingDepartment = await department.findById(departmentId);
 
     if (!existingDepartment) {
       return res.status(404).json({
@@ -281,20 +287,34 @@ const activateDepartment = async (req, res) => {
       });
     }
 
-    const activatedDepartment =
-      await department.activate(departmentId);
+    const activatedDepartment = await department.activate(departmentId);
+
+    await auditLog.create({
+      userId: req.user.id,
+      action: "DEPARTMENT_ACTIVATED",
+      entityName: "departments",
+      entityId: activatedDepartment.id,
+      oldData: {
+        name: existingDepartment.name,
+        updated_at: existingDepartment.updated_at,
+        description: existingDepartment.description,
+        is_active: existingDepartment.is_active
+      },
+      newData: {
+        name: activatedDepartment.name,
+        updated_at: activatedDepartment.updated_at,
+        description: activatedDepartment.description,
+        is_active: activatedDepartment.is_active
+      }
+    });
 
     return res.status(200).json({
       success: true,
-      message:
-        "Department activated successfully.",
+      message: "Department activated successfully.",
       data: activatedDepartment,
     });
   } catch (error) {
-    console.error(
-      "[Department] activateDepartment error:",
-      error.message,
-    );
+    console.error("[Department] activateDepartment error:", error.message);
 
     return res.status(500).json({
       success: false,

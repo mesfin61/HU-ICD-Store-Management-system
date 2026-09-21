@@ -1,7 +1,5 @@
-const {
-  inventoryReservation,
-  request,
-} = require("../models");
+const { inventoryReservation, request } = require("../models");
+const { isAdministratorRole } = require("../middleware/AuthMiddleware");
 
 const inventoryReservationController = {
   // =========================================================
@@ -24,8 +22,7 @@ const inventoryReservationController = {
         });
       }
 
-      const foundRequest =
-        await request.findById(requestId);
+      const foundRequest = await request.findById(requestId);
 
       if (!foundRequest) {
         return res.status(404).json({
@@ -34,24 +31,17 @@ const inventoryReservationController = {
         });
       }
 
-      const isAdministrator =
-        req.user.role_name === "Administrator";
+      const isAdministrator = isAdministratorRole(req.user.role_name);
 
-      const isStoreManager =
-        req.user.role_name === "Store Manager";
+      const isStoreManager = req.user.role_name === "Store Manager";
 
-      const isRequester =
-        foundRequest.requester_id === req.user.id;
+      const isRequester = foundRequest.requester_id === req.user.id;
 
       // -------------------------------------------------------
       // Staff can only see their own reservations.
       // -------------------------------------------------------
 
-      if (
-        !isAdministrator &&
-        !isStoreManager &&
-        !isRequester
-      ) {
+      if (!isAdministrator && !isStoreManager && !isRequester) {
         return res.status(403).json({
           success: false,
           message: "Access denied.",
@@ -70,15 +60,12 @@ const inventoryReservationController = {
       ) {
         return res.status(403).json({
           success: false,
-          message:
-            "This request is not available for issuance.",
+          message: "This request is not available for issuance.",
         });
       }
 
       const reservations =
-        await inventoryReservation.findByRequestId(
-          requestId,
-        );
+        await inventoryReservation.findByRequestId(requestId);
 
       return res.status(200).json({
         success: true,
@@ -86,10 +73,7 @@ const inventoryReservationController = {
         data: reservations,
       });
     } catch (error) {
-      console.error(
-        "[Inventory Reservation] getByRequest error:",
-        error,
-      );
+      console.error("[Inventory Reservation] getByRequest error:", error);
 
       return res.status(500).json({
         success: false,

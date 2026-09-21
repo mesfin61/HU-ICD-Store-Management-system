@@ -14,12 +14,7 @@ import apiClient from "../../services/apiClient";
 const fieldClass =
   "h-9 w-full rounded-md border border-slate-200 bg-slate-50 px-3 text-xs text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white";
 
-function CustomReportCard({
-  categories,
-  departments,
-  loading,
-  error,
-}) {
+function CustomReportCard({ categories, departments, loading, error }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.05)]">
       <div className="mb-4 text-sm font-semibold text-slate-800">
@@ -124,11 +119,10 @@ function ReportOverviewPanel() {
         setLoading(true);
         setError("");
 
-        const [inventoryResponse, requestsResponse] =
-          await Promise.all([
-            apiClient.get("/api/inventory"),
-            apiClient.get("/api/requests"),
-          ]);
+        const [inventoryResponse, requestsResponse] = await Promise.all([
+          apiClient.get("/api/inventory"),
+          apiClient.get("/api/requests"),
+        ]);
 
         if (!mounted) return;
 
@@ -173,13 +167,10 @@ function ReportOverviewPanel() {
     return [
       ...new Set(
         inventory
-          .map(
-            (item) =>
-              String(
-                item.category_name ||
-                  item.category ||
-                  "Uncategorized",
-              ).trim(),
+          .map((item) =>
+            String(
+              item.category_name || item.category || "Uncategorized",
+            ).trim(),
           )
           .filter(Boolean),
       ),
@@ -190,13 +181,12 @@ function ReportOverviewPanel() {
     return [
       ...new Set(
         requests
-          .map(
-            (request) =>
-              String(
-                request.department_name ||
-                  request.department ||
-                  "Unknown Department",
-              ).trim(),
+          .map((request) =>
+            String(
+              request.department_name ||
+                request.department ||
+                "Unknown Department",
+            ).trim(),
           )
           .filter(Boolean),
       ),
@@ -204,23 +194,17 @@ function ReportOverviewPanel() {
   }, [requests]);
 
   const chartData = useMemo(() => {
-    const categoryMap = inventory.reduce(
-      (accumulator, item) => {
-        const category = String(
-          item.category_name ||
-            item.category ||
-            "Uncategorized",
-        ).trim();
+    const categoryMap = inventory.reduce((accumulator, item) => {
+      const category = String(
+        item.category_name || item.category || "Uncategorized",
+      ).trim();
 
-        const quantity = Number(item.current_stock) || 0;
+      const quantity = Number(item.current_stock) || 0;
 
-        accumulator[category] =
-          (accumulator[category] || 0) + quantity;
+      accumulator[category] = (accumulator[category] || 0) + quantity;
 
-        return accumulator;
-      },
-      {},
-    );
+      return accumulator;
+    }, {});
 
     return Object.entries(categoryMap)
       .map(([category, units]) => ({

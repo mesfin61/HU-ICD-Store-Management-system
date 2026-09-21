@@ -1,9 +1,6 @@
 const express = require("express");
 
-const {
-  protect,
-  restrictTo,
-} = require("../middleware/AuthMiddleware");
+const { protect, restrictTo } = require("../middleware/AuthMiddleware");
 
 const {
   issueInventory,
@@ -20,8 +17,6 @@ const router = express.Router();
 
 router.use(protect);
 
-
-
 // =========================================================
 // OUTSTANDING ISSUED INVENTORY
 // =========================================================
@@ -31,7 +26,6 @@ router.get(
   restrictTo("Store Manager"),
   getOutstandingIssuedItems,
 );
-
 
 // =========================================================
 // GET ISSUANCES FOR REQUEST
@@ -61,16 +55,8 @@ router.get(
 // STAFF: MY OUTSTANDING ISSUED INVENTORY
 // =========================================================
 
-router.get(
-  "/my-outstanding",
-  restrictTo("Staff"),
-  getMyOutstandingIssuedItems,
-);
+router.get("/my-outstanding", restrictTo("Staff"), getMyOutstandingIssuedItems);
 
-router.post(
-  "/request/:requestId",
-  restrictTo("Store Manager"),
-  issueInventory,
-);
+router.post("/request/:requestId", restrictTo("Store Manager"), issueInventory);
 
 module.exports = router;

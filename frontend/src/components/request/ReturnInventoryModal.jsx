@@ -1,40 +1,17 @@
-import React, {
-  useState,
-} from "react";
+import React, { useState } from "react";
 
-import {
-  returnInventory,
-} from "../../services/itemReturnService";
+import { returnInventory } from "../../services/itemReturnService";
 
-function ReturnInventoryModal({
-  issuedItem,
-  onClose,
-  onSuccess,
-}) {
-  const [
-    quantityReturned,
-    setQuantityReturned,
-  ] = useState("");
+function ReturnInventoryModal({ issuedItem, onClose, onSuccess }) {
+  const [quantityReturned, setQuantityReturned] = useState("");
 
-  const [
-    conditionStatus,
-    setConditionStatus,
-  ] = useState("GOOD");
+  const [conditionStatus, setConditionStatus] = useState("GOOD");
 
-  const [
-    remarks,
-    setRemarks,
-  ] = useState("");
+  const [remarks, setRemarks] = useState("");
 
-  const [
-    isSubmitting,
-    setIsSubmitting,
-  ] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [
-    errorMessage,
-    setErrorMessage,
-  ] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   if (!issuedItem) {
     return null;
@@ -44,63 +21,38 @@ function ReturnInventoryModal({
   // DATA FROM ISSUED INVENTORY API
   // =========================================================
 
-  const issuedQuantity =
-    Number(
-      issuedItem.quantity_issued,
-    ) || 0;
+  const issuedQuantity = Number(issuedItem.quantity_issued) || 0;
 
-  const alreadyReturned =
-    Number(
-      issuedItem.quantity_returned,
-    ) || 0;
+  const alreadyReturned = Number(issuedItem.quantity_returned) || 0;
 
-  const remainingQuantity =
-    Number(
-      issuedItem.quantity_remaining,
-    );
+  const remainingQuantity = Number(issuedItem.quantity_remaining);
 
   /*
    * Use the backend-provided remaining quantity when
    * available. Fall back to the calculated value only if
    * the backend field is missing.
    */
-  const effectiveRemainingQuantity =
-    Number.isFinite(remainingQuantity)
-      ? remainingQuantity
-      : Math.max(
-          issuedQuantity -
-            alreadyReturned,
-          0,
-        );
+  const effectiveRemainingQuantity = Number.isFinite(remainingQuantity)
+    ? remainingQuantity
+    : Math.max(issuedQuantity - alreadyReturned, 0);
 
   // =========================================================
   // SUBMIT RETURN
   // =========================================================
 
-  const handleSubmit = async (
-    event,
-  ) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     setErrorMessage("");
 
-    const quantity =
-      Number(quantityReturned);
+    const quantity = Number(quantityReturned);
 
-    if (
-      !Number.isInteger(quantity) ||
-      quantity <= 0
-    ) {
-      setErrorMessage(
-        "Return quantity must be a positive whole number.",
-      );
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      setErrorMessage("Return quantity must be a positive whole number.");
       return;
     }
 
-    if (
-      quantity >
-      effectiveRemainingQuantity
-    ) {
+    if (quantity > effectiveRemainingQuantity) {
       setErrorMessage(
         `You can return at most ${effectiveRemainingQuantity} ${issuedItem.unit || "pcs"}.`,
       );
@@ -110,33 +62,24 @@ function ReturnInventoryModal({
     try {
       setIsSubmitting(true);
 
-      const result =
-        await returnInventory({
-          issuedItemId:
-            issuedItem.id,
+      const result = await returnInventory({
+        issuedItemId: issuedItem.id,
 
-          quantityReturned:
-            quantity,
+        quantityReturned: quantity,
 
-          conditionStatus,
+        conditionStatus,
 
-          remarks:
-            remarks.trim() || null,
-        });
+        remarks: remarks.trim() || null,
+      });
 
       if (onSuccess) {
         await onSuccess(result);
       }
     } catch (error) {
-      console.error(
-        "[ReturnInventoryModal] return inventory:",
-        error,
-      );
+      console.error("[ReturnInventoryModal] return inventory:", error);
 
       setErrorMessage(
-        error.response?.data
-          ?.message ||
-          "Failed to return inventory.",
+        error.response?.data?.message || "Failed to return inventory.",
       );
     } finally {
       setIsSubmitting(false);
@@ -149,29 +92,22 @@ function ReturnInventoryModal({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
-
       <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-2xl">
-
         {/* ===================================================
             HEADER
             =================================================== */}
 
         <div className="flex items-start justify-between border-b bg-white px-6 py-4">
-
           <div>
-            <h2 className="text-xl font-bold text-primary">
-              Return Inventory
-            </h2>
+            <h2 className="text-xl font-bold text-primary">Return Inventory</h2>
 
             <p className="mt-1 text-sm font-medium text-slate-600">
-              {issuedItem.item_name ||
-                "Inventory Item"}
+              {issuedItem.item_name || "Inventory Item"}
             </p>
 
             {issuedItem.item_code && (
               <p className="text-xs text-slate-400">
-                Item Code:{" "}
-                {issuedItem.item_code}
+                Item Code: {issuedItem.item_code}
               </p>
             )}
           </div>
@@ -185,18 +121,13 @@ function ReturnInventoryModal({
           >
             ×
           </button>
-
         </div>
 
         {/* ===================================================
             FORM
             =================================================== */}
 
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-6 p-6"
-        >
-
+        <form onSubmit={handleSubmit} className="space-y-6 p-6">
           {/* ERROR */}
 
           {errorMessage && (
@@ -210,51 +141,35 @@ function ReturnInventoryModal({
               ================================================= */}
 
           <div className="grid gap-4 md:grid-cols-3">
-
             <div className="rounded-lg border bg-slate-50 p-4">
-
               <div className="text-xs font-semibold uppercase text-slate-500">
                 Issued Quantity
               </div>
 
               <div className="mt-1 text-lg font-bold text-primary">
-                {issuedQuantity}{" "}
-                {issuedItem.unit ||
-                  "pcs"}
+                {issuedQuantity} {issuedItem.unit || "pcs"}
               </div>
-
             </div>
 
             <div className="rounded-lg border bg-slate-50 p-4">
-
               <div className="text-xs font-semibold uppercase text-slate-500">
                 Already Returned
               </div>
 
               <div className="mt-1 text-lg font-bold text-primary">
-                {alreadyReturned}{" "}
-                {issuedItem.unit ||
-                  "pcs"}
+                {alreadyReturned} {issuedItem.unit || "pcs"}
               </div>
-
             </div>
 
             <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-
               <div className="text-xs font-semibold uppercase text-blue-700">
                 Remaining
               </div>
 
               <div className="mt-1 text-lg font-bold text-blue-800">
-                {
-                  effectiveRemainingQuantity
-                }{" "}
-                {issuedItem.unit ||
-                  "pcs"}
+                {effectiveRemainingQuantity} {issuedItem.unit || "pcs"}
               </div>
-
             </div>
-
           </div>
 
           {/* =================================================
@@ -262,7 +177,6 @@ function ReturnInventoryModal({
               ================================================= */}
 
           <div>
-
             <label
               htmlFor="quantity-returned"
               className="block text-sm font-semibold text-primary"
@@ -275,36 +189,23 @@ function ReturnInventoryModal({
               name="quantityReturned"
               type="number"
               min="1"
-              max={
-                effectiveRemainingQuantity
-              }
+              max={effectiveRemainingQuantity}
               step="1"
               value={quantityReturned}
               onChange={(event) => {
-                setQuantityReturned(
-                  event.target.value,
-                );
+                setQuantityReturned(event.target.value);
 
                 setErrorMessage("");
               }}
-              disabled={
-                isSubmitting ||
-                effectiveRemainingQuantity <=
-                  0
-              }
+              disabled={isSubmitting || effectiveRemainingQuantity <= 0}
               className="mt-2 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-primary outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
               placeholder="Enter quantity"
             />
 
             <p className="mt-1 text-xs text-slate-500">
-              Maximum returnable quantity:{" "}
-              {
-                effectiveRemainingQuantity
-              }{" "}
-              {issuedItem.unit ||
-                "pcs"}
+              Maximum returnable quantity: {effectiveRemainingQuantity}{" "}
+              {issuedItem.unit || "pcs"}
             </p>
-
           </div>
 
           {/* =================================================
@@ -312,7 +213,6 @@ function ReturnInventoryModal({
               ================================================= */}
 
           <div>
-
             <label
               htmlFor="condition-status"
               className="block text-sm font-semibold text-primary"
@@ -324,31 +224,18 @@ function ReturnInventoryModal({
               id="condition-status"
               name="conditionStatus"
               value={conditionStatus}
-              onChange={(event) =>
-                setConditionStatus(
-                  event.target.value,
-                )
-              }
+              onChange={(event) => setConditionStatus(event.target.value)}
               disabled={isSubmitting}
               className="mt-2 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-primary outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
             >
-              <option value="GOOD">
-                Good
-              </option>
+              <option value="GOOD">Good</option>
 
-              <option value="DAMAGED">
-                Damaged
-              </option>
+              <option value="DAMAGED">Damaged</option>
 
-              <option value="NEEDS_REPAIR">
-                Needs Repair
-              </option>
+              <option value="NEEDS_REPAIR">Needs Repair</option>
 
-              <option value="UNUSABLE">
-                Unusable
-              </option>
+              <option value="UNUSABLE">Unusable</option>
             </select>
-
           </div>
 
           {/* =================================================
@@ -356,7 +243,6 @@ function ReturnInventoryModal({
               ================================================= */}
 
           <div>
-
             <label
               htmlFor="return-remarks"
               className="block text-sm font-semibold text-primary"
@@ -372,16 +258,11 @@ function ReturnInventoryModal({
               name="remarks"
               rows={4}
               value={remarks}
-              onChange={(event) =>
-                setRemarks(
-                  event.target.value,
-                )
-              }
+              onChange={(event) => setRemarks(event.target.value)}
               disabled={isSubmitting}
               placeholder="Optional return remarks..."
               className="mt-2 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-primary outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
             />
-
           </div>
 
           {/* =================================================
@@ -389,7 +270,6 @@ function ReturnInventoryModal({
               ================================================= */}
 
           <div className="flex justify-end gap-3 border-t pt-4">
-
             <button
               type="button"
               onClick={onClose}
@@ -401,20 +281,12 @@ function ReturnInventoryModal({
 
             <button
               type="submit"
-              disabled={
-                isSubmitting ||
-                effectiveRemainingQuantity <=
-                  0
-              }
+              disabled={isSubmitting || effectiveRemainingQuantity <= 0}
               className="rounded-md bg-blue-600 px-6 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isSubmitting
-                ? "Returning..."
-                : "Confirm Return"}
+              {isSubmitting ? "Returning..." : "Confirm Return"}
             </button>
-
           </div>
-
         </form>
       </div>
     </div>

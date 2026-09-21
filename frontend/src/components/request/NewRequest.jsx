@@ -1,7 +1,4 @@
-import React, {
-  useEffect,
-  useState,
-} from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createRequest } from "../../services/requestService";
 import { getInventoryItems } from "../../services/inventoryService";
@@ -9,17 +6,13 @@ import { getInventoryItems } from "../../services/inventoryService";
 function NewRequest() {
   const navigate = useNavigate();
 
-  const [inventoryItems, setInventoryItems] =
-    useState([]);
+  const [inventoryItems, setInventoryItems] = useState([]);
 
-  const [inventoryLoading, setInventoryLoading] =
-    useState(true);
+  const [inventoryLoading, setInventoryLoading] = useState(true);
 
-  const [submitError, setSubmitError] =
-    useState("");
+  const [submitError, setSubmitError] = useState("");
 
-  const [isSubmitting, setIsSubmitting] =
-    useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [form, setForm] = useState({
     purpose: "",
@@ -35,24 +28,17 @@ function NewRequest() {
         setInventoryLoading(true);
         setSubmitError("");
 
-        const data =
-          await getInventoryItems();
+        const data = await getInventoryItems();
 
         if (mounted) {
-          setInventoryItems(
-            Array.isArray(data) ? data : [],
-          );
+          setInventoryItems(Array.isArray(data) ? data : []);
         }
       } catch (error) {
-        console.error(
-          "[Request] load inventory:",
-          error,
-        );
+        console.error("[Request] load inventory:", error);
 
         if (mounted) {
           setSubmitError(
-            error.response?.data?.message ||
-              "Failed to load inventory.",
+            error.response?.data?.message || "Failed to load inventory.",
           );
         }
       } finally {
@@ -70,19 +56,11 @@ function NewRequest() {
   }, []);
 
   const handleChange = (event) => {
-    const {
-      name,
-      value,
-    } = event.target;
+    const { name, value } = event.target;
 
     setForm((current) => ({
       ...current,
-      [name]:
-        name === "quantity"
-          ? value === ""
-            ? ""
-            : Number(value)
-          : value,
+      [name]: name === "quantity" ? (value === "" ? "" : Number(value)) : value,
     }));
   };
 
@@ -92,26 +70,17 @@ function NewRequest() {
     setSubmitError("");
 
     if (!form.purpose.trim()) {
-      setSubmitError(
-        "A reason for the request is required.",
-      );
+      setSubmitError("A reason for the request is required.");
       return;
     }
 
     if (!form.itemId) {
-      setSubmitError(
-        "Please select an inventory item.",
-      );
+      setSubmitError("Please select an inventory item.");
       return;
     }
 
-    if (
-      !Number.isInteger(form.quantity) ||
-      form.quantity <= 0
-    ) {
-      setSubmitError(
-        "Quantity must be a positive whole number.",
-      );
+    if (!Number.isInteger(form.quantity) || form.quantity <= 0) {
+      setSubmitError("Quantity must be a positive whole number.");
       return;
     }
 
@@ -119,8 +88,7 @@ function NewRequest() {
 
     try {
       await createRequest({
-        purpose:
-          form.purpose.trim(),
+        purpose: form.purpose.trim(),
 
         items: [
           {
@@ -132,14 +100,10 @@ function NewRequest() {
 
       navigate("/requests");
     } catch (error) {
-      console.error(
-        "[Request] create request:",
-        error,
-      );
+      console.error("[Request] create request:", error);
 
       setSubmitError(
-        error.response?.data?.message ||
-          "Failed to submit request.",
+        error.response?.data?.message || "Failed to submit request.",
       );
     } finally {
       setIsSubmitting(false);
@@ -159,8 +123,7 @@ function NewRequest() {
             </h1>
 
             <p className="mt-1 text-sm text-slate-500">
-              Submit a request for inventory from the
-              store.
+              Submit a request for inventory from the store.
             </p>
           </div>
 
@@ -181,31 +144,19 @@ function NewRequest() {
                 value={form.itemId}
                 onChange={handleChange}
                 required
-                disabled={
-                  inventoryLoading ||
-                  isSubmitting
-                }
+                disabled={inventoryLoading || isSubmitting}
                 className="rounded-lg border border-gray-300 bg-slate-50 px-4 py-3 text-primary outline-none transition focus:border-blue-500"
               >
                 <option value="">
-                  {inventoryLoading
-                    ? "Loading inventory..."
-                    : "Select an item"}
+                  {inventoryLoading ? "Loading inventory..." : "Select an item"}
                 </option>
 
-                {inventoryItems.map(
-                  (item) => (
-                    <option
-                      key={item.id}
-                      value={item.id}
-                    >
-                      {item.item_code} —{" "}
-                      {item.name} (
-                      {item.current_stock}{" "}
-                      {item.unit} available)
-                    </option>
-                  ),
-                )}
+                {inventoryItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.item_code} — {item.name} ({item.current_stock}{" "}
+                    {item.unit} available)
+                  </option>
+                ))}
               </select>
             </label>
 
@@ -234,12 +185,9 @@ function NewRequest() {
 
               <div className="flex h-full items-center rounded-lg border border-gray-200 bg-slate-50 px-4 py-3">
                 {(() => {
-                  const item =
-                    inventoryItems.find(
-                      (entry) =>
-                        entry.id ===
-                        form.itemId,
-                    );
+                  const item = inventoryItems.find(
+                    (entry) => entry.id === form.itemId,
+                  );
 
                   if (!item) {
                     return (
@@ -251,8 +199,7 @@ function NewRequest() {
 
                   return (
                     <span className="text-sm font-semibold text-primary">
-                      {item.current_stock}{" "}
-                      {item.unit} available
+                      {item.current_stock} {item.unit} available
                     </span>
                   );
                 })()}
@@ -280,9 +227,7 @@ function NewRequest() {
           <div className="mt-6 flex justify-end gap-3 border-t pt-4">
             <button
               type="button"
-              onClick={() =>
-                navigate("/requests")
-              }
+              onClick={() => navigate("/requests")}
               disabled={isSubmitting}
               className="rounded-md border border-primary px-6 py-3 text-sm font-semibold text-primary disabled:opacity-50"
             >
@@ -291,15 +236,10 @@ function NewRequest() {
 
             <button
               type="submit"
-              disabled={
-                inventoryLoading ||
-                isSubmitting
-              }
+              disabled={inventoryLoading || isSubmitting}
               className="rounded-md bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isSubmitting
-                ? "Submitting..."
-                : "Submit Request"}
+              {isSubmitting ? "Submitting..." : "Submit Request"}
             </button>
           </div>
         </form>

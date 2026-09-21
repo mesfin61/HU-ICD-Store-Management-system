@@ -29,10 +29,7 @@ export async function getAuditLogs({
     params.userId = userId;
   }
 
-  const response = await apiClient.get(
-    "/api/audit-logs",
-    { params },
-  );
+  const response = await apiClient.get("/api/audit-logs", { params });
 
   return response.data.data;
 }
@@ -43,9 +40,7 @@ export async function getAuditLogs({
 // =========================================================
 
 export async function getAuditLog(id) {
-  const response = await apiClient.get(
-    `/api/audit-logs/${id}`,
-  );
+  const response = await apiClient.get(`/api/audit-logs/${id}`);
 
   return response.data.data;
 }

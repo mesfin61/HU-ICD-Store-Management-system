@@ -40,10 +40,7 @@ function AddItem() {
           setCategories(Array.isArray(data) ? data : []);
         }
       } catch (error) {
-        console.error(
-          "[Inventory] load categories:",
-          error,
-        );
+        console.error("[Inventory] load categories:", error);
 
         if (mounted) {
           setErrorMessage(
@@ -71,9 +68,7 @@ function AddItem() {
     setForm((current) => ({
       ...current,
       [name]:
-        name === "initialQty" || name === "minStock"
-          ? Number(value)
-          : value,
+        name === "initialQty" || name === "minStock" ? Number(value) : value,
     }));
   };
 
@@ -97,43 +92,32 @@ function AddItem() {
       return;
     }
 
-    if (
-      !Number.isInteger(form.initialQty) ||
-      form.initialQty < 0
-    ) {
-      setErrorMessage(
-        "Initial quantity must be a non-negative whole number.",
-      );
+    if (!Number.isInteger(form.initialQty) || form.initialQty < 0) {
+      setErrorMessage("Initial quantity must be a non-negative whole number.");
       return;
     }
 
-    if (
-      !Number.isInteger(form.minStock) ||
-      form.minStock < 0
-    ) {
-      setErrorMessage(
-        "Minimum stock must be a non-negative whole number.",
-      );
+    if (!Number.isInteger(form.minStock) || form.minStock < 0) {
+      setErrorMessage("Minimum stock must be a non-negative whole number.");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const createdItem =
-        await createInventoryItem({
-          itemCode: form.itemCode,
-          name: form.itemName,
-          categoryId: form.categoryId,
-          description: form.description,
-          unit: form.unit,
-          minimumStock: form.minStock,
-          initialQuantity: form.initialQty,
-          isAsset: false,
-          vendor: form.vendor,
-          referenceNo: "",
-          remarks: "",
-        });
+      const createdItem = await createInventoryItem({
+        itemCode: form.itemCode,
+        name: form.itemName,
+        categoryId: form.categoryId,
+        description: form.description,
+        unit: form.unit,
+        minimumStock: form.minStock,
+        initialQuantity: form.initialQty,
+        isAsset: false,
+        vendor: form.vendor,
+        referenceNo: "",
+        remarks: "",
+      });
 
       navigate("/inventory", {
         state: {
@@ -142,14 +126,10 @@ function AddItem() {
         },
       });
     } catch (error) {
-      console.error(
-        "[Inventory] AddItem:",
-        error,
-      );
+      console.error("[Inventory] AddItem:", error);
 
       setErrorMessage(
-        error.response?.data?.message ||
-          "Failed to register inventory item.",
+        error.response?.data?.message || "Failed to register inventory item.",
       );
     } finally {
       setIsSubmitting(false);
@@ -157,22 +137,14 @@ function AddItem() {
   };
 
   const selectedCategory =
-    categories.find(
-      (category) =>
-        category.id === form.categoryId,
-    )?.name || "No category selected";
+    categories.find((category) => category.id === form.categoryId)?.name ||
+    "No category selected";
 
-  const previewItemName =
-    form.itemName.trim() ||
-    "New inventory item";
+  const previewItemName = form.itemName.trim() || "New inventory item";
 
-  const previewItemCode =
-    form.itemCode.trim() ||
-    "Enter item code";
+  const previewItemCode = form.itemCode.trim() || "Enter item code";
 
-  const previewVendor =
-    form.vendor.trim() ||
-    "Vendor not specified";
+  const previewVendor = form.vendor.trim() || "Vendor not specified";
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 px-4 py-4">
@@ -181,9 +153,7 @@ function AddItem() {
         className="w-full lg:w-2/3 rounded-lg bg-white p-6 shadow"
       >
         <div className="mb-6 mt-0 bg-secondary-container p-2">
-          <h2 className="text-2xl font-bold text-primary">
-            Item Registration
-          </h2>
+          <h2 className="text-2xl font-bold text-primary">Item Registration</h2>
 
           <p className="mt-1 text-sm text-slate-500">
             Register a new inventory item in the store database.
@@ -239,9 +209,7 @@ function AddItem() {
             </div>
 
             <div>
-              <label className="block font-medium text-primary">
-                Category
-              </label>
+              <label className="block font-medium text-primary">Category</label>
 
               <select
                 name="categoryId"
@@ -258,10 +226,7 @@ function AddItem() {
                 </option>
 
                 {categories.map((category) => (
-                  <option
-                    key={category.id}
-                    value={category.id}
-                  >
+                  <option key={category.id} value={category.id}>
                     {category.name}
                   </option>
                 ))}
@@ -291,9 +256,7 @@ function AddItem() {
               <FaClipboardCheck />
             </div>
 
-            <h3 className="font-bold text-primary">
-              Stock Details
-            </h3>
+            <h3 className="font-bold text-primary">Stock Details</h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -354,9 +317,7 @@ function AddItem() {
               <MdOutlineSettingsSuggest />
             </div>
 
-            <h3 className="font-bold text-primary">
-              Supplier Information
-            </h3>
+            <h3 className="font-bold text-primary">Supplier Information</h3>
           </div>
 
           <div>
@@ -386,15 +347,10 @@ function AddItem() {
 
           <button
             type="submit"
-            disabled={
-              isSubmitting ||
-              categoryLoading
-            }
+            disabled={isSubmitting || categoryLoading}
             className="rounded bg-primary font-bold px-6 py-2 text-white shadow disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isSubmitting
-              ? "Saving..."
-              : "Save Item"}
+            {isSubmitting ? "Saving..." : "Save Item"}
           </button>
         </div>
       </form>
@@ -421,9 +377,7 @@ function AddItem() {
 
               <div className="mt-5 text-sm text-slate-600">
                 <div className="flex justify-between border-b pb-3">
-                  <span className="text-primary">
-                    Category
-                  </span>
+                  <span className="text-primary">Category</span>
 
                   <span className="font-semibold text-primary">
                     {selectedCategory}
@@ -431,9 +385,7 @@ function AddItem() {
                 </div>
 
                 <div className="mt-3 flex justify-between gap-4 border-b pb-3">
-                  <span className="text-primary">
-                    Manufacturer
-                  </span>
+                  <span className="text-primary">Manufacturer</span>
 
                   <span className="text-right font-semibold text-primary">
                     {previewVendor}
@@ -441,24 +393,18 @@ function AddItem() {
                 </div>
 
                 <div className="mt-3 flex justify-between border-b pb-3">
-                  <span className="text-primary">
-                    Stock Level
-                  </span>
+                  <span className="text-primary">Stock Level</span>
 
                   <span className="font-semibold text-primary">
-                    {form.initialQty}{" "}
-                    {form.unit}
+                    {form.initialQty} {form.unit}
                   </span>
                 </div>
 
                 <div className="mt-3 flex justify-between">
-                  <span className="text-primary">
-                    Minimum Stock
-                  </span>
+                  <span className="text-primary">Minimum Stock</span>
 
                   <span className="font-semibold text-primary">
-                    {form.minStock}{" "}
-                    {form.unit}
+                    {form.minStock} {form.unit}
                   </span>
                 </div>
               </div>

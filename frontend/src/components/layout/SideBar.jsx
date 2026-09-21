@@ -1,12 +1,6 @@
-import React, {
-  useEffect,
-  useState,
-} from "react";
+import React, { useEffect, useState } from "react";
 
-import {
-  NavLink,
-  useLocation,
-} from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 
 import {
   FaBoxOpen,
@@ -31,6 +25,7 @@ import apiClient from "../../services/apiClient";
 // =========================================================
 
 const ROLES = Object.freeze({
+  SUPER_ADMIN: "Super Admin",
   ADMINISTRATOR: "Administrator",
   STORE_MANAGER: "Store Manager",
   STAFF: "Staff",
@@ -73,11 +68,9 @@ function NavItem({
 function SideBar() {
   const location = useLocation();
 
-  const [user, setUser] =
-    useState(null);
+  const [user, setUser] = useState(null);
 
-  const [isLoadingUser, setIsLoadingUser] =
-    useState(true);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
 
   const isReportsSection =
     location.pathname === "/reports" ||
@@ -94,23 +87,15 @@ function SideBar() {
       try {
         setIsLoadingUser(true);
 
-        const response =
-          await apiClient.get(
-            "/api/auth/me",
-          );
+        const response = await apiClient.get("/api/auth/me");
 
         if (!mounted) {
           return;
         }
 
-        setUser(
-          response.data?.user || null,
-        );
+        setUser(response.data?.user || null);
       } catch (error) {
-        console.error(
-          "[SideBar] Failed to load current user:",
-          error,
-        );
+        console.error("[SideBar] Failed to load current user:", error);
 
         if (mounted) {
           setUser(null);
@@ -133,102 +118,63 @@ function SideBar() {
   // CURRENT ROLE
   // =======================================================
 
-  const userRole =
-    user?.role || null;
+  const userRole = user?.role || null;
 
   const isAdministrator =
-    userRole ===
-    ROLES.ADMINISTRATOR;
+    userRole === ROLES.ADMINISTRATOR || userRole === ROLES.SUPER_ADMIN;
 
-  const isStoreManager =
-    userRole ===
-    ROLES.STORE_MANAGER;
+  const isStoreManager = userRole === ROLES.STORE_MANAGER;
 
-  const isStaff =
-    userRole ===
-    ROLES.STAFF;
+  const isStaff = userRole === ROLES.STAFF;
 
   // =======================================================
   // ROLE-BASED PERMISSIONS
   // =======================================================
 
-  const canViewDashboard =
-    isAdministrator ||
-    isStoreManager ||
-    isStaff;
+  const canViewDashboard = isAdministrator || isStoreManager || isStaff;
 
-  const canViewInventory =
-    isAdministrator ||
-    isStoreManager ||
-    isStaff;
+  const canViewInventory = isAdministrator || isStoreManager || isStaff;
 
-  const canViewStockMovement =
-    isAdministrator ||
-    isStoreManager;
+  const canViewStockMovement = isAdministrator || isStoreManager;
 
-  const canViewRequests =
-    isAdministrator ||
-    isStoreManager ||
-    isStaff;
+  const canViewRequests = isAdministrator || isStoreManager || isStaff;
 
-  const canViewNotifications =
-    isAdministrator ||
-    isStoreManager ||
-    isStaff;
+  const canViewNotifications = isAdministrator || isStoreManager || isStaff;
 
-  const canViewIssuedInventory =
-    isStoreManager;
+  const canViewIssuedInventory = isStoreManager;
 
   const canViewReports =
-    isAdministrator ||
-    isStoreManager;
+    userRole === ROLES.SUPER_ADMIN || isStoreManager;
 
-  const canViewAuditLogs =
-    isAdministrator;
+  const canViewAuditLogs = isAdministrator;
 
-  const canViewMyActivity =
-    isAdministrator ||
-    isStoreManager ||
-    isStaff;
+  const canViewMyActivity = isAdministrator || isStoreManager || isStaff;
 
-  const canViewUserManagement =
-    isAdministrator;
+  const canViewUserManagement = isAdministrator;
 
-  const canViewSettings =
-    isAdministrator ||
-    isStoreManager ||
-    isStaff;
-  const canViewMessages =
-  isAdministrator ||
-  isStoreManager ||
-  isStaff;
+  const canViewSettings = isAdministrator || isStoreManager || isStaff;
+  const canViewMessages = isAdministrator || isStoreManager || isStaff;
 
   // =======================================================
   // RENDER
   // =======================================================
 
   return (
-    <aside className="fixed left-0 top-0 z-20 flex h-screen w-64 flex-col bg-slate-900 text-white">
-
+    <aside className="fixed left-0 top-0 z-20 flex h-screen w-64 flex-col overflow-hidden bg-slate-900 text-white">
       {/* ===================================================
           BRAND
           =================================================== */}
 
-      <div className="p-6">
-
+      <div className="shrink-0 p-6">
         <div className="mb-6 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-md bg-blue-600 font-bold">
             HU
           </div>
 
           <div>
-            <h1 className="text-lg font-semibold">
-              HU-ICT
-            </h1>
+            <h1 className="text-lg font-semibold">HU-ICT</h1>
 
-            <p className="text-xs text-slate-300">
-              Store Management System
-            </p>
+            <p className="text-xs text-slate-300">Store Management System</p>
           </div>
         </div>
 
@@ -236,36 +182,29 @@ function SideBar() {
             USER / ROLE
             ================================================= */}
 
-        {!isLoadingUser &&
-          user && (
-            <div className="mb-5 rounded-lg bg-slate-800 px-3 py-2">
-              <div className="truncate text-sm font-semibold text-white">
-                {user.full_name ||
-                  user.fullName ||
-                  "User"}
-              </div>
-
-              <div className="mt-0.5 text-xs text-slate-400">
-                {userRole ||
-                  "Unknown role"}
-              </div>
+        {!isLoadingUser && user && (
+          <div className="mb-5 rounded-lg bg-slate-800 px-3 py-2">
+            <div className="truncate text-sm font-semibold text-white">
+              {user.full_name || user.fullName || "User"}
             </div>
-          )}
 
-        {/* =================================================
-            MAIN NAVIGATION
-            ================================================= */}
+            <div className="mt-0.5 text-xs text-slate-400">
+              {userRole || "Unknown role"}
+            </div>
+          </div>
+        )}
+      </div>
 
+      {/* =================================================
+          MAIN NAVIGATION
+          ================================================= */}
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-4">
         <nav className="space-y-1">
-
           {/* DASHBOARD */}
 
           {canViewDashboard && (
-            <NavItem
-              to="/"
-              end
-              icon={FaTachometerAlt}
-            >
+            <NavItem to="/" end icon={FaTachometerAlt}>
               Dashboard
             </NavItem>
           )}
@@ -273,10 +212,7 @@ function SideBar() {
           {/* INVENTORY */}
 
           {canViewInventory && (
-            <NavItem
-              to="/inventory"
-              icon={FaBoxOpen}
-            >
+            <NavItem to="/inventory" icon={FaBoxOpen}>
               Inventory
             </NavItem>
           )}
@@ -284,10 +220,7 @@ function SideBar() {
           {/* STOCK MOVEMENT */}
 
           {canViewStockMovement && (
-            <NavItem
-              to="/stock"
-              icon={FaExchangeAlt}
-            >
+            <NavItem to="/stock" icon={FaExchangeAlt}>
               Stock Movement
             </NavItem>
           )}
@@ -295,10 +228,7 @@ function SideBar() {
           {/* REQUESTS */}
 
           {canViewRequests && (
-            <NavItem
-              to="/requests"
-              icon={FaClipboardList}
-            >
+            <NavItem to="/requests" icon={FaClipboardList}>
               Requests
             </NavItem>
           )}
@@ -306,10 +236,7 @@ function SideBar() {
           {/* NOTIFICATIONS */}
 
           {canViewNotifications && (
-            <NavItem
-              to="/notifications"
-              icon={FaBell}
-            >
+            <NavItem to="/notifications" icon={FaBell}>
               Notifications
             </NavItem>
           )}
@@ -317,10 +244,7 @@ function SideBar() {
           {/* ISSUED INVENTORY */}
 
           {canViewIssuedInventory && (
-            <NavItem
-              to="/issued-inventory"
-              icon={FaClipboardCheck}
-            >
+            <NavItem to="/issued-inventory" icon={FaClipboardCheck}>
               Issued Inventory
             </NavItem>
           )}
@@ -331,9 +255,7 @@ function SideBar() {
             <NavItem
               to="/reports"
               icon={FaChartBar}
-              isReportsRoute={
-                isReportsSection
-              }
+              isReportsRoute={isReportsSection}
             >
               Reports
             </NavItem>
@@ -342,10 +264,7 @@ function SideBar() {
           {/* AUDIT LOG */}
 
           {canViewAuditLogs && (
-            <NavItem
-              to="/audit-logs"
-              icon={FaHistory}
-            >
+            <NavItem to="/audit-logs" icon={FaHistory}>
               Audit Log
             </NavItem>
           )}
@@ -353,10 +272,7 @@ function SideBar() {
           {/* MY ACTIVITY */}
 
           {canViewMyActivity && (
-            <NavItem
-              to="/my-activity"
-              icon={FaUserClock}
-            >
+            <NavItem to="/my-activity" icon={FaUserClock}>
               My Activity
             </NavItem>
           )}
@@ -364,20 +280,14 @@ function SideBar() {
           {/* USER MANAGEMENT */}
 
           {canViewUserManagement && (
-            <NavItem
-              to="/users"
-              icon={FaUsers}
-            >
+            <NavItem to="/users" icon={FaUsers}>
               User Management
             </NavItem>
           )}
           {canViewMessages && (
-          <NavItem
-            to="/messages"
-            icon={FaEnvelope}
-          >
-            Messages
-          </NavItem>
+            <NavItem to="/messages" icon={FaEnvelope}>
+              Messages
+            </NavItem>
           )}
         </nav>
       </div>
@@ -386,8 +296,7 @@ function SideBar() {
           BOTTOM NAVIGATION
           =================================================== */}
 
-      <div className="mt-auto p-6">
-
+      <div className="mt-auto shrink-0 p-6">
         {/* SETTINGS */}
 
         {canViewSettings && (
@@ -423,7 +332,6 @@ function SideBar() {
 
           <span>Logout</span>
         </NavLink>
-
       </div>
     </aside>
   );

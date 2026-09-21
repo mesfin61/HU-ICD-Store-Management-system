@@ -34,10 +34,7 @@ const inventoryReservationException = {
       throw new Error("DATABASE_CLIENT_REQUIRED");
     }
 
-    if (
-      !Number.isInteger(quantityAffected) ||
-      quantityAffected <= 0
-    ) {
+    if (!Number.isInteger(quantityAffected) || quantityAffected <= 0) {
       throw new Error("INVALID_EXCEPTION_QUANTITY");
     }
 
@@ -122,13 +119,7 @@ const inventoryReservationException = {
           decision,
           created_at
         `,
-        [
-          reservation.id,
-          itemId,
-          affected,
-          reason.trim(),
-          authorizedBy,
-        ],
+        [reservation.id, itemId, affected, reason.trim(), authorizedBy],
       );
 
       createdExceptions.push(result.rows[0]);
@@ -142,9 +133,7 @@ const inventoryReservationException = {
     // -------------------------------------------------------
 
     if (remaining > 0) {
-      throw new Error(
-        "RESERVATION_EXCEPTION_QUANTITY_UNRESOLVED",
-      );
+      throw new Error("RESERVATION_EXCEPTION_QUANTITY_UNRESOLVED");
     }
 
     return createdExceptions;
@@ -261,11 +250,7 @@ const inventoryReservationException = {
   // If anything fails -> EVERYTHING rolls back.
   // =========================================================
 
-  async approve({
-    exceptionId,
-    administratorId,
-    resolutionNotes,
-  }) {
+  async approve({ exceptionId, administratorId, resolutionNotes }) {
     const client = await pool.connect();
 
     try {
@@ -292,34 +277,26 @@ const inventoryReservationException = {
         [exceptionId],
       );
 
-      const exception =
-        exceptionResult.rows[0];
+      const exception = exceptionResult.rows[0];
 
       if (!exception) {
-        throw new Error(
-          "EXCEPTION_NOT_FOUND",
-        );
+        throw new Error("EXCEPTION_NOT_FOUND");
       }
 
       if (exception.status !== "OPEN") {
-        throw new Error(
-          "EXCEPTION_ALREADY_RESOLVED",
-        );
+        throw new Error("EXCEPTION_ALREADY_RESOLVED");
       }
 
       if (exception.decision !== "PENDING") {
-        throw new Error(
-          "EXCEPTION_ALREADY_DECIDED",
-        );
+        throw new Error("EXCEPTION_ALREADY_DECIDED");
       }
 
       // -----------------------------------------------------
       // Lock reservation
       // -----------------------------------------------------
 
-      const reservationResult =
-        await client.query(
-          `
+      const reservationResult = await client.query(
+        `
           SELECT
             id,
             item_id,
@@ -330,33 +307,24 @@ const inventoryReservationException = {
           WHERE id = $1
           FOR UPDATE
           `,
-          [exception.reservation_id],
-        );
+        [exception.reservation_id],
+      );
 
-      const reservation =
-        reservationResult.rows[0];
+      const reservation = reservationResult.rows[0];
 
       if (!reservation) {
-        throw new Error(
-          "RESERVATION_NOT_FOUND",
-        );
+        throw new Error("RESERVATION_NOT_FOUND");
       }
 
-      if (
-        reservation.status !== "RESERVED"
-      ) {
-        throw new Error(
-          "RESERVATION_NOT_ACTIVE",
-        );
+      if (reservation.status !== "RESERVED") {
+        throw new Error("RESERVATION_NOT_ACTIVE");
       }
 
       if (
         Number(reservation.quantity_remaining) <
         Number(exception.quantity_affected)
       ) {
-        throw new Error(
-          "RESERVATION_QUANTITY_INCONSISTENT",
-        );
+        throw new Error("RESERVATION_QUANTITY_INCONSISTENT");
       }
 
       // -----------------------------------------------------
@@ -389,22 +357,14 @@ const inventoryReservationException = {
         throw new Error("ITEM_INACTIVE");
       }
 
-      const quantity = Number(
-        exception.quantity_affected,
-      );
+      const quantity = Number(exception.quantity_affected);
 
-      const oldPhysicalStock = Number(
-        item.physical_stock,
-      );
+      const oldPhysicalStock = Number(item.physical_stock);
 
-      const oldCurrentStock = Number(
-        item.current_stock,
-      );
+      const oldCurrentStock = Number(item.current_stock);
 
       if (quantity > oldPhysicalStock) {
-        throw new Error(
-          "INSUFFICIENT_PHYSICAL_STOCK",
-        );
+        throw new Error("INSUFFICIENT_PHYSICAL_STOCK");
       }
 
       // -----------------------------------------------------
@@ -421,11 +381,9 @@ const inventoryReservationException = {
       // reservation quantity_remaining decreases.
       // -----------------------------------------------------
 
-      const newPhysicalStock =
-        oldPhysicalStock - quantity;
+      const newPhysicalStock = oldPhysicalStock - quantity;
 
-      const newCurrentStock =
-        oldCurrentStock;
+      const newCurrentStock = oldCurrentStock;
 
       // -----------------------------------------------------
       // Update inventory.
@@ -440,26 +398,17 @@ const inventoryReservationException = {
           updated_at = NOW()
         WHERE id = $3
         `,
-        [
-          newPhysicalStock,
-          newCurrentStock,
-          item.id,
-        ],
+        [newPhysicalStock, newCurrentStock, item.id],
       );
 
       // -----------------------------------------------------
       // Update reservation.
       // -----------------------------------------------------
 
-      const newRemaining =
-        Number(
-          reservation.quantity_remaining,
-        ) - quantity;
+      const newRemaining = Number(reservation.quantity_remaining) - quantity;
 
       const newReservationStatus =
-        newRemaining === 0
-          ? "CANCELLED"
-          : "RESERVED";
+        newRemaining === 0 ? "CANCELLED" : "RESERVED";
 
       await client.query(
         `
@@ -475,11 +424,7 @@ const inventoryReservationException = {
             END
         WHERE id = $3
         `,
-        [
-          newRemaining,
-          newReservationStatus,
-          reservation.id,
-        ],
+        [newRemaining, newReservationStatus, reservation.id],
       );
 
       // -----------------------------------------------------
@@ -507,22 +452,15 @@ const inventoryReservationException = {
           $5
         )
         `,
-        [
-          item.id,
-          quantity,
-          exception.id,
-          exception.reason,
-          administratorId,
-        ],
+        [item.id, quantity, exception.id, exception.reason, administratorId],
       );
 
       // -----------------------------------------------------
       // Resolve exception.
       // -----------------------------------------------------
 
-      const resolvedResult =
-        await client.query(
-          `
+      const resolvedResult = await client.query(
+        `
           UPDATE inventory_reservation_exceptions
           SET
             decision = 'APPROVED',
@@ -545,12 +483,8 @@ const inventoryReservationException = {
             resolved_by,
             resolution_notes
           `,
-          [
-            administratorId,
-            resolutionNotes?.trim() || null,
-            exceptionId,
-          ],
-        );
+        [administratorId, resolutionNotes?.trim() || null, exceptionId],
+      );
 
       // -----------------------------------------------------
       // Audit.
@@ -560,35 +494,27 @@ const inventoryReservationException = {
         client,
         userId: administratorId,
         action: "RESERVATION_EXCEPTION_APPROVED",
-        entityName:
-          "inventory_reservation_exceptions",
+        entityName: "inventory_reservation_exceptions",
         entityId: exceptionId,
 
         oldData: {
           status: "OPEN",
           decision: "PENDING",
-          reservation_id:
-            reservation.id,
+          reservation_id: reservation.id,
           quantity_affected: quantity,
         },
 
         newData: {
           status: "RESOLVED",
           decision: "APPROVED",
-          reservation_id:
-            reservation.id,
+          reservation_id: reservation.id,
           quantity_affected: quantity,
-          physical_stock_before:
-            oldPhysicalStock,
-          physical_stock_after:
-            newPhysicalStock,
-          reservation_quantity_remaining:
-            newRemaining,
-          reservation_status:
-            newReservationStatus,
+          physical_stock_before: oldPhysicalStock,
+          physical_stock_after: newPhysicalStock,
+          reservation_quantity_remaining: newRemaining,
+          reservation_status: newReservationStatus,
           resolved_by: administratorId,
-          resolution_notes:
-            resolutionNotes?.trim() || null,
+          resolution_notes: resolutionNotes?.trim() || null,
         },
       });
 
@@ -630,13 +556,10 @@ const inventoryReservationException = {
         [reservation.id],
       );
 
-      const requester =
-        requesterResult.rows[0];
+      const requester = requesterResult.rows[0];
 
       if (!requester) {
-        throw new Error(
-          "REQUESTER_NOT_FOUND",
-        );
+        throw new Error("REQUESTER_NOT_FOUND");
       }
 
       // -----------------------------------------------------
@@ -650,11 +573,9 @@ const inventoryReservationException = {
       await notification.createWithClient({
         client,
 
-        userId:
-          requester.requester_id,
+        userId: requester.requester_id,
 
-        title:
-          "Reserved inventory affected",
+        title: "Reserved inventory affected",
 
         message:
           `${quantity} ${item.unit || "pcs"} of ${item.name} ` +
@@ -674,11 +595,9 @@ const inventoryReservationException = {
       await notification.createWithClient({
         client,
 
-        userId:
-          administratorId,
+        userId: administratorId,
 
-        title:
-          "Reservation exception approved",
+        title: "Reservation exception approved",
 
         message:
           `Reservation exception ${exception.id} was approved ` +
@@ -707,11 +626,7 @@ const inventoryReservationException = {
   // Only exception state changes.
   // =========================================================
 
-  async reject({
-    exceptionId,
-    administratorId,
-    resolutionNotes,
-  }) {
+  async reject({ exceptionId, administratorId, resolutionNotes }) {
     const client = await pool.connect();
 
     try {
@@ -736,26 +651,19 @@ const inventoryReservationException = {
       const exception = result.rows[0];
 
       if (!exception) {
-        throw new Error(
-          "EXCEPTION_NOT_FOUND",
-        );
+        throw new Error("EXCEPTION_NOT_FOUND");
       }
 
       if (exception.status !== "OPEN") {
-        throw new Error(
-          "EXCEPTION_ALREADY_RESOLVED",
-        );
+        throw new Error("EXCEPTION_ALREADY_RESOLVED");
       }
 
       if (exception.decision !== "PENDING") {
-        throw new Error(
-          "EXCEPTION_ALREADY_DECIDED",
-        );
+        throw new Error("EXCEPTION_ALREADY_DECIDED");
       }
 
-      const resolved =
-        await client.query(
-          `
+      const resolved = await client.query(
+        `
           UPDATE inventory_reservation_exceptions
           SET
             decision = 'REJECTED',
@@ -778,19 +686,14 @@ const inventoryReservationException = {
             resolved_by,
             resolution_notes
           `,
-          [
-            administratorId,
-            resolutionNotes?.trim() || null,
-            exceptionId,
-          ],
-        );
+        [administratorId, resolutionNotes?.trim() || null, exceptionId],
+      );
 
       await auditLog.create({
         client,
         userId: administratorId,
         action: "RESERVATION_EXCEPTION_REJECTED",
-        entityName:
-          "inventory_reservation_exceptions",
+        entityName: "inventory_reservation_exceptions",
         entityId: exceptionId,
 
         oldData: {
@@ -802,8 +705,7 @@ const inventoryReservationException = {
           status: "RESOLVED",
           decision: "REJECTED",
           resolved_by: administratorId,
-          resolution_notes:
-            resolutionNotes?.trim() || null,
+          resolution_notes: resolutionNotes?.trim() || null,
         },
       });
 

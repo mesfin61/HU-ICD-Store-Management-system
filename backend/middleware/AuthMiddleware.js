@@ -2,10 +2,14 @@ const jwt = require("jsonwebtoken");
 const { user } = require("../models");
 
 const ROLES = Object.freeze({
+  SUPER_ADMIN: "Super Admin",
   ADMINISTRATOR: "Administrator",
   STORE_MANAGER: "Store Manager",
   STAFF: "Staff",
 });
+
+const isAdministratorRole = (role) =>
+  role === ROLES.SUPER_ADMIN || role === ROLES.ADMINISTRATOR;
 
 const protect = async (req, res, next) => {
   try {
@@ -27,10 +31,7 @@ const protect = async (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET,
-    );
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const foundUser = await user.findById(decoded.id);
 
@@ -70,10 +71,7 @@ const protect = async (req, res, next) => {
       });
     }
 
-    console.error(
-      "[authMiddleware] error:",
-      err.message,
-    );
+    console.error("[authMiddleware] error:", err.message);
 
     return res.status(500).json({
       success: false,
@@ -83,6 +81,31 @@ const protect = async (req, res, next) => {
 };
 
 const restrictTo = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authorized.",
+      });
+    }
+
+    const hasAdministratorAccess =
+      isAdministratorRole(req.user.role_name) &&
+      (roles.includes(ROLES.SUPER_ADMIN) ||
+        roles.includes(ROLES.ADMINISTRATOR));
+
+    if (!roles.includes(req.user.role_name) && !hasAdministratorAccess) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied.",
+      });
+    }
+
+    next();
+  };
+};
+
+const restrictToExact = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
@@ -105,5 +128,7 @@ const restrictTo = (...roles) => {
 module.exports = {
   protect,
   restrictTo,
+  restrictToExact,
   ROLES,
+  isAdministratorRole,
 };

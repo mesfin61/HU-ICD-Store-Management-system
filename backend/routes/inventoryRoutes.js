@@ -1,9 +1,6 @@
 const express = require("express");
 
-const {
-  protect,
-  restrictTo,
-} = require("../middleware/AuthMiddleware");
+const { protect, restrictTo } = require("../middleware/AuthMiddleware");
 
 const {
   createItem,
@@ -43,58 +40,32 @@ router.get("/", getAllItems);
 // Otherwise "transactions" could be interpreted as an item ID.
 // =========================================================
 
-router.get(
-  "/transactions/trends",
-  getInventoryMovementTrends,
-);
+router.get("/transactions/trends", getInventoryMovementTrends);
 
 // =========================================================
 // CREATE INVENTORY ITEM
 // Store Manager only
 // =========================================================
 
-router.post(
-  "/",
-  restrictTo("Store Manager"),
-  createItem,
-);
+router.post("/", restrictTo("Store Manager"), createItem);
 
 // =========================================================
 // GET INVENTORY ITEM BY ID
 // =========================================================
 
-router.get(
-  "/:id",
-  getItemById,
-);
+router.get("/:id", getItemById);
 
 // =========================================================
 // STOCK MANAGEMENT
 // Store Manager only
 // =========================================================
 
-router.post(
-  "/:id/receive",
-  restrictTo("Store Manager"),
-  receiveStock,
-);
+router.post("/:id/receive", restrictTo("Store Manager"), receiveStock);
 
-router.post(
-  "/:id/adjust-in",
-  restrictTo("Store Manager"),
-  adjustStockIn,
-);
+router.post("/:id/adjust-in", restrictTo("Store Manager"), adjustStockIn);
 
-router.post(
-  "/:id/adjust-out",
-  restrictTo("Store Manager"),
-  adjustStockOut,
-);
+router.post("/:id/adjust-out", restrictTo("Store Manager"), adjustStockOut);
 
-router.post(
-  "/:id/write-off",
-  restrictTo("Store Manager"),
-  writeOffStock,
-);
+router.post("/:id/write-off", restrictTo("Store Manager"), writeOffStock);
 
 module.exports = router;

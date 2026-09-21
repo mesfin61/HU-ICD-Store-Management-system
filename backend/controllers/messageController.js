@@ -1,9 +1,5 @@
 const pool = require("../config/db");
-
-const {
-  message,
-  notification,
-} = require("../models");
+const { isAdministratorRole } = require("../middleware/AuthMiddleware");
 
 // =========================================================
 // MESSAGE CONTROLLER
@@ -28,12 +24,7 @@ const messageController = {
     const client = await pool.connect();
 
     try {
-      const {
-        recipientId,
-        subject,
-        body,
-        parentMessageId = null,
-      } = req.body;
+      const { recipientId, subject, body, parentMessageId = null } = req.body;
 
       const sender = req.user;
 
@@ -41,16 +32,12 @@ const messageController = {
       // NORMALIZE AUTHENTICATED USER ROLE
       // =====================================================
 
-      const senderRole =
-        sender.role_name ||
-        sender.role ||
-        null;
+      const senderRole = sender.role_name || sender.role || null;
 
       if (!sender || !sender.id) {
         return res.status(401).json({
           success: false,
-          message:
-            "Authenticated user not found.",
+          message: "Authenticated user not found.",
         });
       }
 
@@ -61,30 +48,21 @@ const messageController = {
       if (!recipientId) {
         return res.status(400).json({
           success: false,
-          message:
-            "Recipient is required.",
+          message: "Recipient is required.",
         });
       }
 
-      if (
-        typeof subject !== "string" ||
-        !subject.trim()
-      ) {
+      if (typeof subject !== "string" || !subject.trim()) {
         return res.status(400).json({
           success: false,
-          message:
-            "Subject is required.",
+          message: "Subject is required.",
         });
       }
 
-      if (
-        typeof body !== "string" ||
-        !body.trim()
-      ) {
+      if (typeof body !== "string" || !body.trim()) {
         return res.status(400).json({
           success: false,
-          message:
-            "Message body is required.",
+          message: "Message body is required.",
         });
       }
 
@@ -93,16 +71,13 @@ const messageController = {
       // =====================================================
 
       if (
-        ![
-          "Administrator",
-          "Staff",
-          "Store Manager",
-        ].includes(senderRole)
+        !["Super Admin", "Administrator", "Staff", "Store Manager"].includes(
+          senderRole,
+        )
       ) {
         return res.status(403).json({
           success: false,
-          message:
-            "You are not authorized to use messaging.",
+          message: "You are not authorized to use messaging.",
         });
       }
 
@@ -110,9 +85,8 @@ const messageController = {
       // FIND RECIPIENT
       // =====================================================
 
-      const recipientResult =
-        await client.query(
-          `
+      const recipientResult = await client.query(
+        `
           SELECT
             u.id,
             u.full_name,
@@ -127,25 +101,22 @@ const messageController = {
 
           WHERE u.id = $1
           `,
-          [recipientId],
-        );
+        [recipientId],
+      );
 
-      const recipient =
-        recipientResult.rows[0];
+      const recipient = recipientResult.rows[0];
 
       if (!recipient) {
         return res.status(404).json({
           success: false,
-          message:
-            "Recipient not found.",
+          message: "Recipient not found.",
         });
       }
 
       if (!recipient.is_active) {
         return res.status(400).json({
           success: false,
-          message:
-            "Recipient is inactive.",
+          message: "Recipient is inactive.",
         });
       }
 
@@ -153,14 +124,10 @@ const messageController = {
       // PREVENT SELF-MESSAGING
       // =====================================================
 
-      if (
-        sender.id ===
-        recipient.id
-      ) {
+      if (sender.id === recipient.id) {
         return res.status(400).json({
           success: false,
-          message:
-            "You cannot send a message to yourself.",
+          message: "You cannot send a message to yourself.",
         });
       }
 
@@ -178,15 +145,12 @@ const messageController = {
       // =====================================================
 
       if (
-        senderRole !==
-          "Administrator" &&
-        recipient.role !==
-          "Administrator"
+        !isAdministratorRole(senderRole) &&
+        !isAdministratorRole(recipient.role)
       ) {
         return res.status(403).json({
           success: false,
-          message:
-            "You may only send messages to an Administrator.",
+          message: "You may only send messages to an Administrator.",
         });
       }
 
@@ -200,9 +164,8 @@ const messageController = {
       // =====================================================
 
       if (parentMessageId) {
-        const parentResult =
-          await client.query(
-            `
+        const parentResult = await client.query(
+          `
             SELECT
               id,
               sender_id,
@@ -210,31 +173,26 @@ const messageController = {
             FROM messages
             WHERE id = $1
             `,
-            [parentMessageId],
-          );
+          [parentMessageId],
+        );
 
-        const parentMessage =
-          parentResult.rows[0];
+        const parentMessage = parentResult.rows[0];
 
         if (!parentMessage) {
           return res.status(404).json({
             success: false,
-            message:
-              "Parent message not found.",
+            message: "Parent message not found.",
           });
         }
 
         const isParticipant =
-          parentMessage.sender_id ===
-            sender.id ||
-          parentMessage.recipient_id ===
-            sender.id;
+          parentMessage.sender_id === sender.id ||
+          parentMessage.recipient_id === sender.id;
 
         if (!isParticipant) {
           return res.status(403).json({
             success: false,
-            message:
-              "You are not authorized to reply to this message.",
+            message: "You are not authorized to reply to this message.",
           });
         }
       }
@@ -249,9 +207,8 @@ const messageController = {
       // 1. INSERT MESSAGE
       // =====================================================
 
-      const messageResult =
-        await client.query(
-          `
+      const messageResult = await client.query(
+        `
           INSERT INTO messages (
             sender_id,
             recipient_id,
@@ -276,17 +233,10 @@ const messageController = {
             is_read,
             created_at
           `,
-          [
-            sender.id,
-            recipient.id,
-            parentMessageId,
-            subject.trim(),
-            body.trim(),
-          ],
-        );
+        [sender.id, recipient.id, parentMessageId, subject.trim(), body.trim()],
+      );
 
-      const createdMessage =
-        messageResult.rows[0];
+      const createdMessage = messageResult.rows[0];
 
       // =====================================================
       // 2. CREATE NOTIFICATION
@@ -297,14 +247,11 @@ const messageController = {
       await notification.createWithClient({
         client,
 
-        userId:
-          recipient.id,
+        userId: recipient.id,
 
-        title:
-          "New message",
+        title: "New message",
 
-        message:
-          `${sender.full_name || "A system user"} sent you a message: "${subject.trim()}".`,
+        message: `${sender.full_name || "A system user"} sent you a message: "${subject.trim()}".`,
       });
 
       // =====================================================
@@ -319,8 +266,7 @@ const messageController = {
 
       return res.status(201).json({
         success: true,
-        message:
-          "Message sent successfully.",
+        message: "Message sent successfully.",
         data: createdMessage,
       });
     } catch (error) {
@@ -329,46 +275,23 @@ const messageController = {
       // =====================================================
 
       try {
-        await client.query(
-          "ROLLBACK",
-        );
+        await client.query("ROLLBACK");
       } catch (rollbackError) {
-        console.error(
-          "[Message] rollback failed:",
-          rollbackError,
-        );
+        console.error("[Message] rollback failed:", rollbackError);
       }
 
-      console.error(
-        "[Message] sendMessage:",
-        error,
-      );
+      console.error("[Message] sendMessage:", error);
 
       const errors = {
-        SENDER_REQUIRED: [
-          400,
-          "Sender is required.",
-        ],
+        SENDER_REQUIRED: [400, "Sender is required."],
 
-        RECIPIENT_REQUIRED: [
-          400,
-          "Recipient is required.",
-        ],
+        RECIPIENT_REQUIRED: [400, "Recipient is required."],
 
-        CANNOT_MESSAGE_SELF: [
-          400,
-          "You cannot send a message to yourself.",
-        ],
+        CANNOT_MESSAGE_SELF: [400, "You cannot send a message to yourself."],
 
-        SUBJECT_REQUIRED: [
-          400,
-          "Subject is required.",
-        ],
+        SUBJECT_REQUIRED: [400, "Subject is required."],
 
-        MESSAGE_BODY_REQUIRED: [
-          400,
-          "Message body is required.",
-        ],
+        MESSAGE_BODY_REQUIRED: [400, "Message body is required."],
 
         DATABASE_CLIENT_REQUIRED: [
           500,
@@ -391,13 +314,10 @@ const messageController = {
         ],
       };
 
-      const known =
-        errors[error.message];
+      const known = errors[error.message];
 
       if (known) {
-        return res.status(
-          known[0],
-        ).json({
+        return res.status(known[0]).json({
           success: false,
           message: known[1],
         });
@@ -405,8 +325,7 @@ const messageController = {
 
       return res.status(500).json({
         success: false,
-        message:
-          "Message could not be sent.",
+        message: "Message could not be sent.",
       });
     } finally {
       client.release();
@@ -419,10 +338,7 @@ const messageController = {
 
   async getInbox(req, res) {
     try {
-      const messages =
-        await message.findInbox(
-          req.user.id,
-        );
+      const messages = await message.findInbox(req.user.id);
 
       return res.status(200).json({
         success: true,
@@ -430,15 +346,11 @@ const messageController = {
         data: messages,
       });
     } catch (error) {
-      console.error(
-        "[Message] getInbox:",
-        error,
-      );
+      console.error("[Message] getInbox:", error);
 
       return res.status(500).json({
         success: false,
-        message:
-          "Server error.",
+        message: "Server error.",
       });
     }
   },
@@ -449,10 +361,7 @@ const messageController = {
 
   async getSent(req, res) {
     try {
-      const messages =
-        await message.findSent(
-          req.user.id,
-        );
+      const messages = await message.findSent(req.user.id);
 
       return res.status(200).json({
         success: true,
@@ -460,15 +369,11 @@ const messageController = {
         data: messages,
       });
     } catch (error) {
-      console.error(
-        "[Message] getSent:",
-        error,
-      );
+      console.error("[Message] getSent:", error);
 
       return res.status(500).json({
         success: false,
-        message:
-          "Server error.",
+        message: "Server error.",
       });
     }
   },
@@ -479,17 +384,12 @@ const messageController = {
 
   async getMessage(req, res) {
     try {
-      const found =
-        await message.findById(
-          req.params.id,
-          req.user.id,
-        );
+      const found = await message.findById(req.params.id, req.user.id);
 
       if (!found) {
         return res.status(404).json({
           success: false,
-          message:
-            "Message not found.",
+          message: "Message not found.",
         });
       }
 
@@ -498,15 +398,11 @@ const messageController = {
         data: found,
       });
     } catch (error) {
-      console.error(
-        "[Message] getMessage:",
-        error,
-      );
+      console.error("[Message] getMessage:", error);
 
       return res.status(500).json({
         success: false,
-        message:
-          "Server error.",
+        message: "Server error.",
       });
     }
   },
@@ -517,17 +413,12 @@ const messageController = {
 
   async markAsRead(req, res) {
     try {
-      const updated =
-        await message.markAsRead(
-          req.params.id,
-          req.user.id,
-        );
+      const updated = await message.markAsRead(req.params.id, req.user.id);
 
       if (!updated) {
         return res.status(404).json({
           success: false,
-          message:
-            "Message not found.",
+          message: "Message not found.",
         });
       }
 
@@ -536,15 +427,11 @@ const messageController = {
         data: updated,
       });
     } catch (error) {
-      console.error(
-        "[Message] markAsRead:",
-        error,
-      );
+      console.error("[Message] markAsRead:", error);
 
       return res.status(500).json({
         success: false,
-        message:
-          "Server error.",
+        message: "Server error.",
       });
     }
   },
@@ -555,10 +442,7 @@ const messageController = {
 
   async getUnreadCount(req, res) {
     try {
-      const count =
-        await message.countUnread(
-          req.user.id,
-        );
+      const count = await message.countUnread(req.user.id);
 
       return res.status(200).json({
         success: true,
@@ -567,15 +451,11 @@ const messageController = {
         },
       });
     } catch (error) {
-      console.error(
-        "[Message] getUnreadCount:",
-        error,
-      );
+      console.error("[Message] getUnreadCount:", error);
 
       return res.status(500).json({
         success: false,
-        message:
-          "Server error.",
+        message: "Server error.",
       });
     }
   },
@@ -588,10 +468,7 @@ const messageController = {
     try {
       const sender = req.user;
 
-      const senderRole =
-        sender.role_name ||
-        sender.role ||
-        null;
+      const senderRole = sender.role_name || sender.role || null;
 
       // =====================================================
       // DETERMINE ALLOWED RECIPIENT ROLES
@@ -599,26 +476,14 @@ const messageController = {
 
       let allowedRoles = [];
 
-      if (
-        senderRole ===
-        "Administrator"
-      ) {
-        allowedRoles = [
-          "Staff",
-          "Store Manager",
-        ];
-      } else if (
-        senderRole === "Staff" ||
-        senderRole === "Store Manager"
-      ) {
-        allowedRoles = [
-          "Administrator",
-        ];
+      if (isAdministratorRole(senderRole)) {
+        allowedRoles = ["Staff", "Store Manager"];
+      } else if (senderRole === "Staff" || senderRole === "Store Manager") {
+        allowedRoles = ["Super Admin"];
       } else {
         return res.status(403).json({
           success: false,
-          message:
-            "You are not authorized to use messaging.",
+          message: "You are not authorized to use messaging.",
         });
       }
 
@@ -626,9 +491,8 @@ const messageController = {
       // GET ACTIVE USERS ONLY
       // =====================================================
 
-      const result =
-        await pool.query(
-          `
+      const result = await pool.query(
+        `
           SELECT
             u.id,
             u.full_name,
@@ -652,11 +516,8 @@ const messageController = {
           ORDER BY
             u.full_name ASC
           `,
-          [
-            allowedRoles,
-            sender.id,
-          ],
-        );
+        [allowedRoles, sender.id],
+      );
 
       return res.status(200).json({
         success: true,
@@ -664,19 +525,14 @@ const messageController = {
         data: result.rows,
       });
     } catch (error) {
-      console.error(
-        "[Message] getRecipients:",
-        error,
-      );
+      console.error("[Message] getRecipients:", error);
 
       return res.status(500).json({
         success: false,
-        message:
-          "Server error.",
+        message: "Server error.",
       });
     }
   },
 };
 
-module.exports =
-  messageController;
+module.exports = messageController;

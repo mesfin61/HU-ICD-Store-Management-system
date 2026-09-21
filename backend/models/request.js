@@ -8,12 +8,7 @@ const request = {
   // CREATE REQUEST
   // =========================================================
 
-  async create({
-    requesterId,
-    departmentId,
-    purpose,
-    items,
-  }) {
+  async create({ requesterId, departmentId, purpose, items }) {
     const client = await pool.connect();
 
     try {
@@ -50,10 +45,7 @@ const request = {
         throw new Error("INVALID_REQUEST_DEPARTMENT");
       }
 
-      if (
-        typeof purpose !== "string" ||
-        !purpose.trim()
-      ) {
+      if (typeof purpose !== "string" || !purpose.trim()) {
         throw new Error("INVALID_REQUEST_PURPOSE");
       }
 
@@ -73,10 +65,7 @@ const request = {
       }
 
       for (const item of items) {
-        if (
-          !Number.isInteger(item.quantity) ||
-          item.quantity <= 0
-        ) {
+        if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
           throw new Error("INVALID_REQUEST_QUANTITY");
         }
 
@@ -128,11 +117,7 @@ const request = {
           approved_at,
           rejection_reason
         `,
-        [
-          requesterId,
-          departmentId,
-          cleanPurpose,
-        ],
+        [requesterId, departmentId, cleanPurpose],
       );
 
       await auditLog.create({
@@ -165,15 +150,11 @@ const request = {
           )
           VALUES ($1, $2, $3, 0)
           `,
-          [
-            newRequest.id,
-            item.itemId,
-            item.quantity,
-          ],
+          [newRequest.id, item.itemId, item.quantity],
         );
       }
 
-            // =======================================================
+      // =======================================================
       // NOTIFICATIONS
       // =======================================================
 
@@ -210,7 +191,7 @@ const request = {
         JOIN roles r
           ON r.id = u.role_id
         WHERE
-          r.name = 'Administrator'
+          r.name IN ('Super Admin', 'Administrator')
           AND u.is_active = TRUE
           AND u.id <> $1
         `,
@@ -227,7 +208,6 @@ const request = {
             `request that requires your review.`,
         });
       }
-
 
       await client.query("COMMIT");
 
@@ -407,15 +387,13 @@ const request = {
     return result.rows;
   },
 
-
-
   // =========================================================
-// STORE MANAGER: FIND REQUESTS READY FOR ISSUANCE
-// =========================================================
+  // STORE MANAGER: FIND REQUESTS READY FOR ISSUANCE
+  // =========================================================
 
-async findReadyForIssuance() {
-  const result = await pool.query(
-    `
+  async findReadyForIssuance() {
+    const result = await pool.query(
+      `
     SELECT
       r.id,
 
@@ -456,12 +434,10 @@ async findReadyForIssuance() {
       r.approved_at ASC,
       r.requested_at ASC
     `,
-  );
+    );
 
-  return result.rows;
-},
-
-
+    return result.rows;
+  },
 
   // =========================================================
   // ADMINISTRATOR: APPROVE REQUEST
@@ -487,11 +463,7 @@ async findReadyForIssuance() {
   // If reservation fails, approval ALSO rolls back.
   // =========================================================
 
-  async approve({
-    requestId,
-    administratorId,
-    approvedItems,
-  }) {
+  async approve({ requestId, administratorId, approvedItems }) {
     const client = await pool.connect();
 
     try {
@@ -520,10 +492,7 @@ async findReadyForIssuance() {
         throw new Error("REQUEST_NOT_FOUND");
       }
 
-      if (
-        foundRequest.requester_id ===
-        administratorId
-      ) {
+      if (foundRequest.requester_id === administratorId) {
         throw new Error("SELF_APPROVAL_FORBIDDEN");
       }
 
@@ -531,14 +500,10 @@ async findReadyForIssuance() {
         throw new Error("REQUEST_ALREADY_DECIDED");
       }
 
-      if (
-        !Array.isArray(approvedItems) ||
-        approvedItems.length === 0
-      ) {
+      if (!Array.isArray(approvedItems) || approvedItems.length === 0) {
         throw new Error("APPROVED_ITEMS_REQUIRED");
       }
 
-     
       // -------------------------------------------------------
       // Lock request items
       //
@@ -562,66 +527,40 @@ async findReadyForIssuance() {
       const requestItems = requestItemsResult.rows;
 
       const requestItemMap = new Map(
-        requestItems.map((item) => [
-          item.id,
-          item,
-        ]),
+        requestItems.map((item) => [item.id, item]),
       );
 
-      const approvedIds = approvedItems.map(
-        (item) => item.requestItemId,
-      );
+      const approvedIds = approvedItems.map((item) => item.requestItemId);
 
-      if (
-        new Set(approvedIds).size !==
-        approvedIds.length
-      ) {
+      if (new Set(approvedIds).size !== approvedIds.length) {
         throw new Error("DUPLICATE_APPROVED_ITEM");
       }
 
       let totalApproved = 0;
 
       for (const approvedItem of approvedItems) {
-        const requestItem =
-          requestItemMap.get(
-            approvedItem.requestItemId,
-          );
+        const requestItem = requestItemMap.get(approvedItem.requestItemId);
 
         if (!requestItem) {
           throw new Error("INVALID_REQUEST_ITEM");
         }
 
         if (
-          !Number.isInteger(
-            approvedItem.quantityApproved,
-          ) ||
+          !Number.isInteger(approvedItem.quantityApproved) ||
           approvedItem.quantityApproved < 0
         ) {
-          throw new Error(
-            "INVALID_APPROVED_QUANTITY",
-          );
+          throw new Error("INVALID_APPROVED_QUANTITY");
         }
 
-        if (
-          approvedItem.quantityApproved >
-          requestItem.quantity_requested
-        ) {
-          throw new Error(
-            "APPROVED_QUANTITY_EXCEEDS_REQUEST",
-          );
+        if (approvedItem.quantityApproved > requestItem.quantity_requested) {
+          throw new Error("APPROVED_QUANTITY_EXCEEDS_REQUEST");
         }
 
-        totalApproved +=
-          approvedItem.quantityApproved;
+        totalApproved += approvedItem.quantityApproved;
       }
 
-      if (
-        approvedItems.length !==
-        requestItems.length
-      ) {
-        throw new Error(
-          "ALL_REQUEST_ITEMS_MUST_BE_DECIDED",
-        );
+      if (approvedItems.length !== requestItems.length) {
+        throw new Error("ALL_REQUEST_ITEMS_MUST_BE_DECIDED");
       }
 
       // -------------------------------------------------------
@@ -636,10 +575,7 @@ async findReadyForIssuance() {
             quantity_approved = $1
           WHERE id = $2
           `,
-          [
-            approvedItem.quantityApproved,
-            approvedItem.requestItemId,
-          ],
+          [approvedItem.quantityApproved, approvedItem.requestItemId],
         );
       }
 
@@ -653,15 +589,9 @@ async findReadyForIssuance() {
         status = "REJECTED";
       } else if (
         approvedItems.every((approvedItem) => {
-          const original =
-            requestItemMap.get(
-              approvedItem.requestItemId,
-            );
+          const original = requestItemMap.get(approvedItem.requestItemId);
 
-          return (
-            approvedItem.quantityApproved ===
-            original.quantity_requested
-          );
+          return approvedItem.quantityApproved === original.quantity_requested;
         })
       ) {
         status = "APPROVED";
@@ -695,12 +625,8 @@ async findReadyForIssuance() {
             approved_at,
             rejection_reason
           `,
-          [
-            administratorId,
-            requestId,
-          ],
+          [administratorId, requestId],
         );
-
 
         await auditLog.create({
           client,
@@ -752,11 +678,7 @@ async findReadyForIssuance() {
           approved_at,
           rejection_reason
         `,
-        [
-          status,
-          administratorId,
-          requestId,
-        ],
+        [status, administratorId, requestId],
       );
 
       // -------------------------------------------------------
@@ -768,40 +690,24 @@ async findReadyForIssuance() {
       // The system reserves every approved quantity > 0.
       // -------------------------------------------------------
 
-      const positiveApprovedItems =
-        approvedItems
-          .filter(
-            (item) =>
-              item.quantityApproved > 0,
-          )
-          .sort((a, b) => {
-            const itemA =
-              requestItemMap.get(
-                a.requestItemId,
-              );
+      const positiveApprovedItems = approvedItems
+        .filter((item) => item.quantityApproved > 0)
+        .sort((a, b) => {
+          const itemA = requestItemMap.get(a.requestItemId);
 
-            const itemB =
-              requestItemMap.get(
-                b.requestItemId,
-              );
+          const itemB = requestItemMap.get(b.requestItemId);
 
-            return itemA.item_id.localeCompare(
-              itemB.item_id,
-            );
-          });
+          return itemA.item_id.localeCompare(itemB.item_id);
+        });
 
       for (const approvedItem of positiveApprovedItems) {
-        await inventoryReservation.reserveWithClient(
-          {
-            client,
-            requestId,
-            requestItemId:
-              approvedItem.requestItemId,
-            quantity:
-              approvedItem.quantityApproved,
-            performedBy: administratorId,
-          },
-        );
+        await inventoryReservation.reserveWithClient({
+          client,
+          requestId,
+          requestItemId: approvedItem.requestItemId,
+          quantity: approvedItem.quantityApproved,
+          performedBy: administratorId,
+        });
       }
 
       await auditLog.create({
@@ -893,8 +799,6 @@ async findReadyForIssuance() {
         });
       }
 
-                  
-
       // -------------------------------------------------------
       // EVERYTHING COMMITTED TOGETHER
       // -------------------------------------------------------
@@ -914,11 +818,7 @@ async findReadyForIssuance() {
   // ADMINISTRATOR: REJECT REQUEST
   // =========================================================
 
-  async reject({
-    requestId,
-    administratorId,
-    rejectionReason,
-  }) {
+  async reject({ requestId, administratorId, rejectionReason }) {
     const client = await pool.connect();
 
     try {
@@ -943,26 +843,16 @@ async findReadyForIssuance() {
         throw new Error("REQUEST_NOT_FOUND");
       }
 
-      if (
-        foundRequest.requester_id ===
-        administratorId
-      ) {
-        throw new Error(
-          "SELF_REJECTION_FORBIDDEN",
-        );
+      if (foundRequest.requester_id === administratorId) {
+        throw new Error("SELF_REJECTION_FORBIDDEN");
       }
 
       if (foundRequest.status !== "PENDING") {
         throw new Error("REQUEST_ALREADY_DECIDED");
       }
 
-      if (
-        typeof rejectionReason !== "string" ||
-        !rejectionReason.trim()
-      ) {
-        throw new Error(
-          "REJECTION_REASON_REQUIRED",
-        );
+      if (typeof rejectionReason !== "string" || !rejectionReason.trim()) {
+        throw new Error("REJECTION_REASON_REQUIRED");
       }
 
       const result = await client.query(
@@ -985,11 +875,7 @@ async findReadyForIssuance() {
           approved_at,
           rejection_reason
         `,
-        [
-          administratorId,
-          rejectionReason.trim(),
-          requestId,
-        ],
+        [administratorId, rejectionReason.trim(), requestId],
       );
 
       await auditLog.create({
@@ -1022,8 +908,7 @@ async findReadyForIssuance() {
         client,
         userId: administratorId,
         title: "Request Rejected Successfully",
-        message:
-          "The inventory request was rejected successfully.",
+        message: "The inventory request was rejected successfully.",
       });
 
       // -------------------------------------------------------

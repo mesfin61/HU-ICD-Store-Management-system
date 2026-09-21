@@ -7,6 +7,7 @@ import { useUser } from "../context/AuthContext";
 // =========================================================
 
 export const ROLES = Object.freeze({
+  SUPER_ADMIN: "Super Admin",
   ADMINISTRATOR: "Administrator",
   STORE_MANAGER: "Store Manager",
   STAFF: "Staff",
@@ -16,14 +17,8 @@ export const ROLES = Object.freeze({
 // ROLE PROTECTED ROUTE
 // =========================================================
 
-function RoleProtectedRoute({
-  allowedRoles = [],
-  children,
-}) {
-  const {
-    user,
-    loading,
-  } = useUser();
+function RoleProtectedRoute({ allowedRoles = [], children }) {
+  const { user, loading } = useUser();
 
   // =======================================================
   // AUTHENTICATION STILL LOADING
@@ -42,20 +37,17 @@ function RoleProtectedRoute({
   // =======================================================
 
   if (!user) {
-    return (
-      <Navigate
-        to="/login"
-        replace
-      />
-    );
+    return <Navigate to="/login" replace />;
   }
 
   // =======================================================
   // CURRENT ROLE
   // =======================================================
 
-  const userRole =
-    user.role;
+  const userRole = user.role;
+
+  const hasAdministratorAccess =
+    userRole === ROLES.SUPER_ADMIN || userRole === ROLES.ADMINISTRATOR;
 
   // =======================================================
   // ROLE CHECK
@@ -63,14 +55,10 @@ function RoleProtectedRoute({
 
   if (
     allowedRoles.length > 0 &&
-    !allowedRoles.includes(userRole)
+    !allowedRoles.includes(userRole) &&
+    !(hasAdministratorAccess && allowedRoles.includes(ROLES.ADMINISTRATOR))
   ) {
-    return (
-      <Navigate
-        to="/"
-        replace
-      />
-    );
+    return <Navigate to="/" replace />;
   }
 
   // =======================================================

@@ -1,4 +1,23 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hu-icd-postgres
+    environment:
+      POSTGRES_DB: hu_icd_store_management
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./backend/database.sql:/docker-entrypoint-initdb.d/01-database.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d hu_icd_store_management"]
+      start_period: 90s
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   backend-api:
     build:
       context: ./backend
@@ -7,6 +26,9 @@ services:
       - "5000:5000"
     env_file:
       - ./backend/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   frontend-app:
     build:
@@ -16,3 +38,6 @@ services:
       - "3000:80"
     depends_on:
       - backend-api
+
+volumes:
+  postgres-data:

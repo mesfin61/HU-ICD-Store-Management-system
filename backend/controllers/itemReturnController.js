@@ -7,24 +7,16 @@ const itemReturn = require("../models/itemReturn");
 
 const returnInventory = async (req, res) => {
   try {
-    const {
-      quantityReturned,
-      conditionStatus,
-      remarks,
-    } = req.body;
+    const { quantityReturned, conditionStatus, remarks } = req.body;
 
     // -------------------------------------------------------
     // BASIC REQUEST VALIDATION
     // -------------------------------------------------------
 
-    if (
-      !Number.isInteger(quantityReturned) ||
-      quantityReturned <= 0
-    ) {
+    if (!Number.isInteger(quantityReturned) || quantityReturned <= 0) {
       return res.status(400).json({
         success: false,
-        message:
-          "Return quantity must be a positive whole number.",
+        message: "Return quantity must be a positive whole number.",
       });
     }
 
@@ -33,8 +25,7 @@ const returnInventory = async (req, res) => {
     // -------------------------------------------------------
 
     const result = await itemReturn.create({
-      issuedItemId:
-        req.params.issuedItemId,
+      issuedItemId: req.params.issuedItemId,
 
       quantityReturned,
 
@@ -42,21 +33,16 @@ const returnInventory = async (req, res) => {
 
       remarks,
 
-      performedBy:
-        req.user.id,
+      performedBy: req.user.id,
     });
 
     return res.status(200).json({
       success: true,
-      message:
-        "Inventory returned successfully.",
+      message: "Inventory returned successfully.",
       data: result,
     });
   } catch (error) {
-    console.error(
-      "[Return] returnInventory:",
-      error,
-    );
+    console.error("[Return] returnInventory:", error);
 
     // =======================================================
     // KNOWN BUSINESS / VALIDATION ERRORS
@@ -68,30 +54,15 @@ const returnInventory = async (req, res) => {
         "Return quantity must be a positive whole number.",
       ],
 
-      PERFORMED_BY_REQUIRED: [
-        400,
-        "Returning user is required.",
-      ],
+      PERFORMED_BY_REQUIRED: [400, "Returning user is required."],
 
-      ISSUED_ITEM_ID_REQUIRED: [
-        400,
-        "Issued item is required.",
-      ],
+      ISSUED_ITEM_ID_REQUIRED: [400, "Issued item is required."],
 
-      ISSUED_ITEM_NOT_FOUND: [
-        404,
-        "Issued item not found.",
-      ],
+      ISSUED_ITEM_NOT_FOUND: [404, "Issued item not found."],
 
-      ITEM_NOT_FOUND: [
-        404,
-        "Inventory item not found.",
-      ],
+      ITEM_NOT_FOUND: [404, "Inventory item not found."],
 
-      ITEM_INACTIVE: [
-        400,
-        "Inventory item is inactive.",
-      ],
+      ITEM_INACTIVE: [400, "Inventory item is inactive."],
 
       INVALID_ISSUED_QUANTITY: [
         409,
@@ -118,14 +89,10 @@ const returnInventory = async (req, res) => {
         "Inventory state is inconsistent. The return was rejected.",
       ],
 
-      INVENTORY_UPDATE_FAILED: [
-        500,
-        "Inventory could not be updated.",
-      ],
+      INVENTORY_UPDATE_FAILED: [500, "Inventory could not be updated."],
     };
 
-    const known =
-      errors[error.message];
+    const known = errors[error.message];
 
     if (known) {
       return res.status(known[0]).json({
@@ -140,8 +107,7 @@ const returnInventory = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message:
-        "Server error.",
+      message: "Server error.",
     });
   }
 };
@@ -151,15 +117,11 @@ const returnInventory = async (req, res) => {
 // Store Manager only
 // =========================================================
 
-const getReturnsByIssuedItem = async (
-  req,
-  res,
-) => {
+const getReturnsByIssuedItem = async (req, res) => {
   try {
-    const returns =
-      await itemReturn.findByIssuedItemId(
-        req.params.issuedItemId,
-      );
+    const returns = await itemReturn.findByIssuedItemId(
+      req.params.issuedItemId,
+    );
 
     return res.status(200).json({
       success: true,
@@ -167,15 +129,11 @@ const getReturnsByIssuedItem = async (
       data: returns,
     });
   } catch (error) {
-    console.error(
-      "[Return] getReturnsByIssuedItem:",
-      error,
-    );
+    console.error("[Return] getReturnsByIssuedItem:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Server error.",
+      message: "Server error.",
     });
   }
 };

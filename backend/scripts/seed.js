@@ -12,9 +12,7 @@ async function seed() {
   }
 
   if (SUPER_ADMIN_PASSWORD.length < 8) {
-    throw new Error(
-      "SEED_SUPER_ADMIN_PASSWORD must be at least 8 characters.",
-    );
+    throw new Error("SEED_SUPER_ADMIN_PASSWORD must be at least 8 characters.");
   }
 
   const client = await pool.connect();
@@ -36,12 +34,12 @@ async function seed() {
         description: "Full system access",
       },
       {
-        name: "admin",
-        description: "Administrative user",
+        name: "Store Manager",
+        description: "Store inventory and item issuance management access",
       },
       {
-        name: "user",
-        description: "Standard system user",
+        name: "Staff",
+        description: "Standard staff request and inventory access",
       },
     ];
 
@@ -107,10 +105,7 @@ async function seed() {
      */
 
     if (existingAdmin.rows.length === 0) {
-      const passwordHash = await bcrypt.hash(
-        SUPER_ADMIN_PASSWORD,
-        12,
-      );
+      const passwordHash = await bcrypt.hash(SUPER_ADMIN_PASSWORD, 12);
 
       await client.query(
         `
@@ -133,9 +128,7 @@ async function seed() {
 
       console.log("✔ Initial Super Admin created.");
     } else {
-      console.log(
-        "ℹ Super Admin already exists. Password was not changed.",
-      );
+      console.log("ℹ Super Admin already exists. Password was not changed.");
     }
 
     /*

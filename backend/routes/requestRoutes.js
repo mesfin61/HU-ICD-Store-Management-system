@@ -10,11 +10,7 @@ const {
   rejectRequest,
 } = require("../controllers/requestController");
 
-const {
-  protect,
-  restrictTo,
-  ROLES,
-} = require("../middleware/AuthMiddleware");
+const { protect, restrictTo, ROLES } = require("../middleware/AuthMiddleware");
 
 const router = express.Router();
 
@@ -22,34 +18,19 @@ const router = express.Router();
 // ADMINISTRATOR: ALL REQUESTS
 // =========================================================
 
-router.get(
-  "/",
-  protect,
-  restrictTo(ROLES.ADMINISTRATOR),
-  getAllRequests,
-);
+router.get("/", protect, restrictTo(ROLES.ADMINISTRATOR), getAllRequests);
 
 // =========================================================
 // STAFF: OWN REQUESTS
 // =========================================================
 
-router.get(
-  "/mine",
-  protect,
-  restrictTo(ROLES.STAFF),
-  getMyRequests,
-);
+router.get("/mine", protect, restrictTo(ROLES.STAFF), getMyRequests);
 
 // =========================================================
 // STAFF: CREATE REQUEST
 // =========================================================
 
-router.post(
-  "/",
-  protect,
-  restrictTo(ROLES.STAFF),
-  createRequest,
-);
+router.post("/", protect, restrictTo(ROLES.STAFF), createRequest);
 
 // =========================================================
 // STORE MANAGER: REQUESTS READY FOR ISSUANCE
@@ -109,10 +90,6 @@ router.patch(
 //   denied
 // =========================================================
 
-router.get(
-  "/:id",
-  protect,
-  getRequest,
-);
+router.get("/:id", protect, getRequest);
 
 module.exports = router;

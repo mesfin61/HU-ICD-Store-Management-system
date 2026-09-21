@@ -24,17 +24,11 @@ const message = {
       throw new Error("CANNOT_MESSAGE_SELF");
     }
 
-    if (
-      typeof subject !== "string" ||
-      !subject.trim()
-    ) {
+    if (typeof subject !== "string" || !subject.trim()) {
       throw new Error("SUBJECT_REQUIRED");
     }
 
-    if (
-      typeof body !== "string" ||
-      !body.trim()
-    ) {
+    if (typeof body !== "string" || !body.trim()) {
       throw new Error("MESSAGE_BODY_REQUIRED");
     }
 
@@ -58,13 +52,7 @@ const message = {
         is_read,
         created_at
       `,
-      [
-        senderId,
-        recipientId,
-        parentMessageId,
-        subject.trim(),
-        body.trim(),
-      ],
+      [senderId, recipientId, parentMessageId, subject.trim(), body.trim()],
     );
 
     return result.rows[0];

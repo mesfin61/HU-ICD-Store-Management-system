@@ -10,10 +10,7 @@ const getAllRoles = async (req, res) => {
       data: roles,
     });
   } catch (error) {
-    console.error(
-      "[Role] getAllRoles error:",
-      error.message,
-    );
+    console.error("[Role] getAllRoles error:", error.message);
 
     return res.status(500).json({
       success: false,
@@ -38,10 +35,7 @@ const getRoleById = async (req, res) => {
       data: foundRole,
     });
   } catch (error) {
-    console.error(
-      "[Role] getRoleById error:",
-      error.message,
-    );
+    console.error("[Role] getRoleById error:", error.message);
 
     return res.status(500).json({
       success: false,

@@ -1,53 +1,23 @@
-import React, {
-  useEffect,
-  useState,
-} from "react";
+import React, { useEffect, useState } from "react";
 
-import {
-  getRequest,
-} from "../../services/requestService";
+import { getRequest } from "../../services/requestService";
 
-import {
-  issueInventory,
-} from "../../services/issuanceService";
+import { issueInventory } from "../../services/issuanceService";
 
-function IssuanceModal({
-  requestId,
-  onClose,
-  onIssued,
-}) {
-  const [request, setRequest] =
-    useState(null);
+function IssuanceModal({ requestId, onClose, onIssued }) {
+  const [request, setRequest] = useState(null);
 
-  const [
-    selectedRequestItemId,
-    setSelectedRequestItemId,
-  ] = useState("");
+  const [selectedRequestItemId, setSelectedRequestItemId] = useState("");
 
-  const [
-    quantity,
-    setQuantity,
-  ] = useState("");
+  const [quantity, setQuantity] = useState("");
 
-  const [
-    dueDate,
-    setDueDate,
-  ] = useState("");
+  const [dueDate, setDueDate] = useState("");
 
-  const [
-    isLoading,
-    setIsLoading,
-  ] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [
-    isSubmitting,
-    setIsSubmitting,
-  ] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [
-    errorMessage,
-    setErrorMessage,
-  ] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -57,8 +27,7 @@ function IssuanceModal({
         setIsLoading(true);
         setErrorMessage("");
 
-        const data =
-          await getRequest(requestId);
+        const data = await getRequest(requestId);
 
         if (!mounted) {
           return;
@@ -66,42 +35,23 @@ function IssuanceModal({
 
         setRequest(data);
 
-        const issuableItems =
-          (data.items || []).filter(
-            (item) => {
-              const approved =
-                Number(
-                  item.quantity_approved,
-                ) || 0;
+        const issuableItems = (data.items || []).filter((item) => {
+          const approved = Number(item.quantity_approved) || 0;
 
-              const issued =
-                Number(
-                  item.quantity_issued,
-                ) || 0;
+          const issued = Number(item.quantity_issued) || 0;
 
-              return (
-                approved - issued > 0
-              );
-            },
-          );
+          return approved - issued > 0;
+        });
 
-        if (
-          issuableItems.length > 0
-        ) {
-          setSelectedRequestItemId(
-            issuableItems[0].id,
-          );
+        if (issuableItems.length > 0) {
+          setSelectedRequestItemId(issuableItems[0].id);
         }
       } catch (error) {
-        console.error(
-          "[IssuanceModal] load request:",
-          error,
-        );
+        console.error("[IssuanceModal] load request:", error);
 
         if (mounted) {
           setErrorMessage(
-            error.response?.data?.message ||
-              "Failed to load request details.",
+            error.response?.data?.message || "Failed to load request details.",
           );
         }
       } finally {
@@ -120,73 +70,39 @@ function IssuanceModal({
     };
   }, [requestId]);
 
-  const issuableItems =
-    (request?.items || []).filter(
-      (item) => {
-        const approved =
-          Number(
-            item.quantity_approved,
-          ) || 0;
+  const issuableItems = (request?.items || []).filter((item) => {
+    const approved = Number(item.quantity_approved) || 0;
 
-        const issued =
-          Number(
-            item.quantity_issued,
-          ) || 0;
+    const issued = Number(item.quantity_issued) || 0;
 
-        return (
-          approved - issued > 0
-        );
-      },
-    );
+    return approved - issued > 0;
+  });
 
-  const selectedItem =
-    issuableItems.find(
-      (item) =>
-        item.id ===
-        selectedRequestItemId,
-    );
+  const selectedItem = issuableItems.find(
+    (item) => item.id === selectedRequestItemId,
+  );
 
-  const remainingApproved =
-    selectedItem
-      ? Number(
-          selectedItem.quantity_approved,
-        ) -
-        Number(
-          selectedItem.quantity_issued,
-        )
-      : 0;
+  const remainingApproved = selectedItem
+    ? Number(selectedItem.quantity_approved) -
+      Number(selectedItem.quantity_issued)
+    : 0;
 
-  const handleSubmit = async (
-    event,
-  ) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!selectedItem) {
-      setErrorMessage(
-        "Select an item to issue.",
-      );
+      setErrorMessage("Select an item to issue.");
       return;
     }
 
-    const issueQuantity =
-      Number(quantity);
+    const issueQuantity = Number(quantity);
 
-    if (
-      !Number.isInteger(
-        issueQuantity,
-      ) ||
-      issueQuantity <= 0
-    ) {
-      setErrorMessage(
-        "Issue quantity must be a positive whole number.",
-      );
+    if (!Number.isInteger(issueQuantity) || issueQuantity <= 0) {
+      setErrorMessage("Issue quantity must be a positive whole number.");
       return;
     }
 
-    if (
-      issueQuantity >
-      remainingApproved
-    ) {
+    if (issueQuantity > remainingApproved) {
       setErrorMessage(
         "Issue quantity cannot exceed the remaining approved quantity.",
       );
@@ -197,15 +113,12 @@ function IssuanceModal({
       setIsSubmitting(true);
       setErrorMessage("");
 
-      const result =
-        await issueInventory({
-          requestId,
-          requestItemId:
-            selectedItem.id,
-          quantity:
-            issueQuantity,
-          dueDate,
-        });
+      const result = await issueInventory({
+        requestId,
+        requestItemId: selectedItem.id,
+        quantity: issueQuantity,
+        dueDate,
+      });
 
       /*
        * Pass the actual issued item back to RequestList.
@@ -221,26 +134,18 @@ function IssuanceModal({
         });
       }
     } catch (error) {
-      console.error(
-        "[IssuanceModal] issue inventory:",
-        error,
-      );
+      console.error("[IssuanceModal] issue inventory:", error);
 
       setErrorMessage(
-        error.response?.data?.message ||
-          "Failed to issue inventory.",
+        error.response?.data?.message || "Failed to issue inventory.",
       );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleItemChange = (
-    event,
-  ) => {
-    setSelectedRequestItemId(
-      event.target.value,
-    );
+  const handleItemChange = (event) => {
+    setSelectedRequestItemId(event.target.value);
 
     setQuantity("");
     setErrorMessage("");
@@ -280,18 +185,14 @@ function IssuanceModal({
           <div className="p-8 text-center text-sm text-slate-500">
             Loading request...
           </div>
-        ) : errorMessage &&
-          !request ? (
+        ) : errorMessage && !request ? (
           <div className="p-6">
             <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
               {errorMessage}
             </div>
           </div>
         ) : (
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-6 p-6"
-          >
+          <form onSubmit={handleSubmit} className="space-y-6 p-6">
             {request && (
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
@@ -334,41 +235,23 @@ function IssuanceModal({
                   </label>
 
                   <select
-                    value={
-                      selectedRequestItemId
-                    }
-                    onChange={
-                      handleItemChange
-                    }
-                    disabled={
-                      isSubmitting
-                    }
+                    value={selectedRequestItemId}
+                    onChange={handleItemChange}
+                    disabled={isSubmitting}
                     className="mt-2 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-primary"
                   >
-                    {issuableItems.map(
-                      (item) => {
-                        const remaining =
-                          Number(
-                            item.quantity_approved,
-                          ) -
-                          Number(
-                            item.quantity_issued,
-                          );
+                    {issuableItems.map((item) => {
+                      const remaining =
+                        Number(item.quantity_approved) -
+                        Number(item.quantity_issued);
 
-                        return (
-                          <option
-                            key={item.id}
-                            value={item.id}
-                          >
-                            {item.item_name} (
-                            {item.item_code})
-                            —{" "}
-                            {remaining}{" "}
-                            {item.unit} remaining
-                          </option>
-                        );
-                      },
-                    )}
+                      return (
+                        <option key={item.id} value={item.id}>
+                          {item.item_name} ({item.item_code}) — {remaining}{" "}
+                          {item.unit} remaining
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
@@ -380,10 +263,7 @@ function IssuanceModal({
                       </div>
 
                       <div className="mt-1 text-lg font-bold text-primary">
-                        {
-                          selectedItem.quantity_approved
-                        }{" "}
-                        {selectedItem.unit}
+                        {selectedItem.quantity_approved} {selectedItem.unit}
                       </div>
                     </div>
 
@@ -393,10 +273,7 @@ function IssuanceModal({
                       </div>
 
                       <div className="mt-1 text-lg font-bold text-primary">
-                        {
-                          selectedItem.quantity_issued
-                        }{" "}
-                        {selectedItem.unit}
+                        {selectedItem.quantity_issued} {selectedItem.unit}
                       </div>
                     </div>
 
@@ -406,8 +283,7 @@ function IssuanceModal({
                       </div>
 
                       <div className="mt-1 text-lg font-bold text-blue-800">
-                        {remainingApproved}{" "}
-                        {selectedItem.unit}
+                        {remainingApproved} {selectedItem.unit}
                       </div>
                     </div>
                   </div>
@@ -422,22 +298,11 @@ function IssuanceModal({
                     <input
                       type="number"
                       min="1"
-                      max={
-                        remainingApproved
-                      }
+                      max={remainingApproved}
                       step="1"
                       value={quantity}
-                      onChange={(
-                        event,
-                      ) =>
-                        setQuantity(
-                          event.target
-                            .value,
-                        )
-                      }
-                      disabled={
-                        isSubmitting
-                      }
+                      onChange={(event) => setQuantity(event.target.value)}
+                      disabled={isSubmitting}
                       className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-primary"
                     />
                   </div>
@@ -450,17 +315,8 @@ function IssuanceModal({
                     <input
                       type="date"
                       value={dueDate}
-                      onChange={(
-                        event,
-                      ) =>
-                        setDueDate(
-                          event.target
-                            .value,
-                        )
-                      }
-                      disabled={
-                        isSubmitting
-                      }
+                      onChange={(event) => setDueDate(event.target.value)}
+                      disabled={isSubmitting}
                       className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-primary"
                     />
                   </div>
@@ -469,12 +325,8 @@ function IssuanceModal({
                 <div className="flex justify-end gap-3 border-t pt-4">
                   <button
                     type="button"
-                    onClick={
-                      onClose
-                    }
-                    disabled={
-                      isSubmitting
-                    }
+                    onClick={onClose}
+                    disabled={isSubmitting}
                     className="rounded-md border border-primary px-6 py-2 text-sm font-semibold text-primary hover:bg-slate-50"
                   >
                     Cancel
@@ -482,14 +334,10 @@ function IssuanceModal({
 
                   <button
                     type="submit"
-                    disabled={
-                      isSubmitting
-                    }
+                    disabled={isSubmitting}
                     className="rounded-md bg-blue-600 px-6 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                   >
-                    {isSubmitting
-                      ? "Issuing..."
-                      : "Issue Inventory"}
+                    {isSubmitting ? "Issuing..." : "Issue Inventory"}
                   </button>
                 </div>
               </>

@@ -1,4 +1,3 @@
-
 const pool = require("../config/db");
 const auditLog = require("./auditLog");
 
@@ -98,9 +97,7 @@ const inventoryReservation = {
     }
 
     if (quantity > requestItem.quantity_approved) {
-      throw new Error(
-        "RESERVATION_EXCEEDS_APPROVED_QUANTITY",
-      );
+      throw new Error("RESERVATION_EXCEEDS_APPROVED_QUANTITY");
     }
 
     // -------------------------------------------------------
@@ -121,18 +118,12 @@ const inventoryReservation = {
       [requestItemId],
     );
 
-    const alreadyReserved = Number(
-      reservedResult.rows[0].reserved_quantity,
-    );
+    const alreadyReserved = Number(reservedResult.rows[0].reserved_quantity);
 
-    const remainingApproved =
-      requestItem.quantity_approved -
-      alreadyReserved;
+    const remainingApproved = requestItem.quantity_approved - alreadyReserved;
 
     if (quantity > remainingApproved) {
-      throw new Error(
-        "APPROVED_QUANTITY_ALREADY_RESERVED",
-      );
+      throw new Error("APPROVED_QUANTITY_ALREADY_RESERVED");
     }
 
     // -------------------------------------------------------
@@ -183,25 +174,17 @@ const inventoryReservation = {
     if (
       Number(item.current_stock) < 0 ||
       Number(item.physical_stock) < 0 ||
-      Number(item.current_stock) >
-        Number(item.physical_stock)
+      Number(item.current_stock) > Number(item.physical_stock)
     ) {
-      throw new Error(
-        "INVENTORY_STATE_INCONSISTENT",
-      );
+      throw new Error("INVENTORY_STATE_INCONSISTENT");
     }
 
     // -------------------------------------------------------
     // Verify available stock
     // -------------------------------------------------------
 
-    if (
-      Number(item.current_stock) <
-      quantity
-    ) {
-      throw new Error(
-        "INSUFFICIENT_STOCK",
-      );
+    if (Number(item.current_stock) < quantity) {
+      throw new Error("INSUFFICIENT_STOCK");
     }
 
     // -------------------------------------------------------
@@ -214,8 +197,7 @@ const inventoryReservation = {
     // to another request.
     // -------------------------------------------------------
 
-    const newStock =
-      item.current_stock - quantity;
+    const newStock = item.current_stock - quantity;
 
     await client.query(
       `
@@ -261,12 +243,7 @@ const inventoryReservation = {
         reserved_at,
         released_at
       `,
-      [
-        requestId,
-        requestItemId,
-        item.id,
-        quantity,
-      ],
+      [requestId, requestItemId, item.id, quantity],
     );
 
     const reservation = reservationResult.rows[0];
@@ -286,7 +263,7 @@ const inventoryReservation = {
     // part of the same database transaction.
     // -------------------------------------------------------
 
-   await auditLog.create({
+    await auditLog.create({
       client,
       userId: performedBy,
       action: "INVENTORY_RESERVED",
@@ -362,25 +339,19 @@ const inventoryReservation = {
   // DO NOT expose this through an HTTP route.
   // =========================================================
 
-  async reserve({
-    requestId,
-    requestItemId,
-    quantity,
-    performedBy,
-  }) {
+  async reserve({ requestId, requestItemId, quantity, performedBy }) {
     const client = await pool.connect();
 
     try {
       await client.query("BEGIN");
 
-      const reservation =
-        await this.reserveWithClient({
-          client,
-          requestId,
-          requestItemId,
-          quantity,
-          performedBy,
-        });
+      const reservation = await this.reserveWithClient({
+        client,
+        requestId,
+        requestItemId,
+        quantity,
+        performedBy,
+      });
 
       await client.query("COMMIT");
 
@@ -432,4 +403,3 @@ const inventoryReservation = {
 };
 
 module.exports = inventoryReservation;
-

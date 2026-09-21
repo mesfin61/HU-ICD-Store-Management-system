@@ -5,7 +5,5 @@ export async function getRoles() {
 
   const roles = response.data?.data;
 
-  return Array.isArray(roles)
-    ? roles
-    : [];
+  return Array.isArray(roles) ? roles : [];
 }

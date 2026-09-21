@@ -1,9 +1,6 @@
 const express = require("express");
 
-const {
-  protect,
-  restrictTo,
-} = require("../middleware/AuthMiddleware");
+const { protect, restrictTo } = require("../middleware/AuthMiddleware");
 
 const {
   getAllDepartments,
@@ -28,45 +25,25 @@ router.use(protect);
  * The normal user does not need access to the
  * administrative department-management API.
  */
-router.get(
-  "/",
-  restrictTo("Administrator"),
-  getAllDepartments,
-);
+router.get("/", restrictTo("Super Admin"), getAllDepartments);
 
-router.get(
-  "/:id",
-  restrictTo("Administrator"),
-  getDepartmentById,
-);
+router.get("/:id", restrictTo("Super Admin"), getDepartmentById);
 
 /*
  * Department administration:
  * Only Super Admin can create, modify, activate,
  * or deactivate institutional departments.
  */
-router.post(
-  "/",
-  restrictTo("Administrator"),
-  createDepartment,
-);
+router.post("/", restrictTo("Super Admin"), createDepartment);
 
-router.patch(
-  "/:id",
-  restrictTo("Administrator"),
-  updateDepartment,
-);
+router.patch("/:id", restrictTo("Super Admin"), updateDepartment);
 
 router.patch(
   "/:id/deactivate",
-  restrictTo("Administrator"),
+  restrictTo("Super Admin"),
   deactivateDepartment,
 );
 
-router.patch(
-  "/:id/activate",
-  restrictTo("Administrator"),
-  activateDepartment,
-);
+router.patch("/:id/activate", restrictTo("Super Admin"), activateDepartment);
 
 module.exports = router;

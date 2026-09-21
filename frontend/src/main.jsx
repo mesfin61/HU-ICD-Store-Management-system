@@ -12,5 +12,5 @@ createRoot(document.getElementById("root")).render(
         <App />
       </BrowserRouter>
     </UserProvider>
-  </StrictMode>
+  </StrictMode>,
 );

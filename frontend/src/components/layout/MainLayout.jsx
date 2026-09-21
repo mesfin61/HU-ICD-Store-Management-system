@@ -7,9 +7,9 @@ export default function MainLayout() {
   return (
     <div className="min-h-screen flex bg-gray-50">
       <SideBar />
-      <div className="flex-1 ml-64">
+      <div className="min-w-0 flex-1 ml-64">
         <HeaderBar />
-        <main className="p-2">
+        <main className="min-w-0 overflow-x-hidden p-2">
           <Outlet />
         </main>
       </div>

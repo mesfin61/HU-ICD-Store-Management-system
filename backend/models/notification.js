@@ -19,26 +19,16 @@ const notification = {
   // audit_logs remains the permanent accountability record.
   // =========================================================
 
-  async create({
-    userId,
-    title,
-    message,
-  }) {
+  async create({ userId, title, message }) {
     if (!userId) {
       throw new Error("NOTIFICATION_USER_REQUIRED");
     }
 
-    if (
-      typeof title !== "string" ||
-      !title.trim()
-    ) {
+    if (typeof title !== "string" || !title.trim()) {
       throw new Error("NOTIFICATION_TITLE_REQUIRED");
     }
 
-    if (
-      typeof message !== "string" ||
-      !message.trim()
-    ) {
+    if (typeof message !== "string" || !message.trim()) {
       throw new Error("NOTIFICATION_MESSAGE_REQUIRED");
     }
 
@@ -58,11 +48,7 @@ const notification = {
         is_read,
         created_at
       `,
-      [
-        userId,
-        title.trim(),
-        message.trim(),
-      ],
+      [userId, title.trim(), message.trim()],
     );
 
     return result.rows[0];
@@ -94,12 +80,7 @@ const notification = {
   // back too.
   // =========================================================
 
-  async createWithClient({
-    client,
-    userId,
-    title,
-    message,
-  }) {
+  async createWithClient({ client, userId, title, message }) {
     if (!client) {
       throw new Error("DATABASE_CLIENT_REQUIRED");
     }
@@ -108,17 +89,11 @@ const notification = {
       throw new Error("NOTIFICATION_USER_REQUIRED");
     }
 
-    if (
-      typeof title !== "string" ||
-      !title.trim()
-    ) {
+    if (typeof title !== "string" || !title.trim()) {
       throw new Error("NOTIFICATION_TITLE_REQUIRED");
     }
 
-    if (
-      typeof message !== "string" ||
-      !message.trim()
-    ) {
+    if (typeof message !== "string" || !message.trim()) {
       throw new Error("NOTIFICATION_MESSAGE_REQUIRED");
     }
 
@@ -138,11 +113,7 @@ const notification = {
         is_read,
         created_at
       `,
-      [
-        userId,
-        title.trim(),
-        message.trim(),
-      ],
+      [userId, title.trim(), message.trim()],
     );
 
     return result.rows[0];
@@ -154,21 +125,11 @@ const notification = {
 
   async findByUserId(
     userId,
-    {
-      limit = 50,
-      offset = 0,
-      unreadOnly = false,
-    } = {},
+    { limit = 50, offset = 0, unreadOnly = false } = {},
   ) {
-    const safeLimit = Math.min(
-      Math.max(Number(limit) || 50, 1),
-      100,
-    );
+    const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
 
-    const safeOffset = Math.max(
-      Number(offset) || 0,
-      0,
-    );
+    const safeOffset = Math.max(Number(offset) || 0, 0);
 
     const result = await pool.query(
       `
@@ -194,12 +155,7 @@ const notification = {
       LIMIT $3
       OFFSET $4
       `,
-      [
-        userId,
-        unreadOnly,
-        safeLimit,
-        safeOffset,
-      ],
+      [userId, unreadOnly, safeLimit, safeOffset],
     );
 
     return result.rows;

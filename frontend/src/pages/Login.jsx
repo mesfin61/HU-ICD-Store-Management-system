@@ -21,7 +21,6 @@ export default function Login() {
     remember: false,
   });
 
-
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
     setCredentials((current) => ({
@@ -51,8 +50,6 @@ export default function Login() {
 
         navigate("/");
       }
-
-
     } catch (error) {
       setError(true);
       setMessage(

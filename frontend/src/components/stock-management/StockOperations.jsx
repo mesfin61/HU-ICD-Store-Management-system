@@ -1,25 +1,12 @@
-import React, {
-  useEffect,
-  useState,
-} from "react";
+import React, { useEffect, useState } from "react";
 
-import {
-  FaCircleCheck,
-} from "react-icons/fa6";
+import { FaCircleCheck } from "react-icons/fa6";
 
-import {
-  FaDownload,
-  FaUpload,
-  FaTrash,
-} from "react-icons/fa";
+import { FaDownload, FaUpload, FaTrash } from "react-icons/fa";
 
-import {
-  PiStorefront,
-} from "react-icons/pi";
+import { PiStorefront } from "react-icons/pi";
 
-import {
-  IoBarChartSharp,
-} from "react-icons/io5";
+import { IoBarChartSharp } from "react-icons/io5";
 
 import {
   getInventoryItems,
@@ -36,60 +23,28 @@ const TRANSACTION_TYPES = {
   WRITE_OFF: "WRITE_OFF",
 };
 
-function StockOperations({
-  onProcessTransaction,
-}) {
-  const [
-    inventoryItems,
-    setInventoryItems,
-  ] = useState([]);
+function StockOperations({ onProcessTransaction }) {
+  const [inventoryItems, setInventoryItems] = useState([]);
 
-  const [
-    selectedItemId,
-    setSelectedItemId,
-  ] = useState("");
+  const [selectedItemId, setSelectedItemId] = useState("");
 
-  const [
-    transactionType,
-    setTransactionType,
-  ] = useState(
+  const [transactionType, setTransactionType] = useState(
     TRANSACTION_TYPES.RECEIPT,
   );
 
-  const [
-    quantity,
-    setQuantity,
-  ] = useState("");
+  const [quantity, setQuantity] = useState("");
 
-  const [
-    referenceNo,
-    setReferenceNo,
-  ] = useState("");
+  const [referenceNo, setReferenceNo] = useState("");
 
-  const [
-    remarks,
-    setRemarks,
-  ] = useState("");
+  const [remarks, setRemarks] = useState("");
 
-  const [
-    isLoading,
-    setIsLoading,
-  ] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [
-    isSubmitting,
-    setIsSubmitting,
-  ] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [
-    successMessage,
-    setSuccessMessage,
-  ] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
-  const [
-    errorMessage,
-    setErrorMessage,
-  ] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   // =========================================================
   // LOAD REAL INVENTORY FROM BACKEND
@@ -100,33 +55,20 @@ function StockOperations({
       setIsLoading(true);
       setErrorMessage("");
 
-      const data =
-        await getInventoryItems();
+      const data = await getInventoryItems();
 
-      const items =
-        Array.isArray(data)
-          ? data
-          : [];
+      const items = Array.isArray(data) ? data : [];
 
       setInventoryItems(items);
 
-      if (
-        !selectedItemId &&
-        items.length > 0
-      ) {
-        setSelectedItemId(
-          items[0].id,
-        );
+      if (!selectedItemId && items.length > 0) {
+        setSelectedItemId(items[0].id);
       }
     } catch (error) {
-      console.error(
-        "[StockOperations] load inventory:",
-        error,
-      );
+      console.error("[StockOperations] load inventory:", error);
 
       setErrorMessage(
-        error.response?.data?.message ||
-          "Failed to load inventory.",
+        error.response?.data?.message || "Failed to load inventory.",
       );
     } finally {
       setIsLoading(false);
@@ -141,63 +83,39 @@ function StockOperations({
   // SELECTED ITEM
   // =========================================================
 
-  const selectedItem =
-    inventoryItems.find(
-      (item) =>
-        item.id ===
-        selectedItemId,
-    );
+  const selectedItem = inventoryItems.find(
+    (item) => item.id === selectedItemId,
+  );
 
   const getItemName = (item) =>
-    item?.name ||
-    item?.item_name ||
-    item?.itemName ||
-    "Unknown item";
+    item?.name || item?.item_name || item?.itemName || "Unknown item";
 
-  const getItemCode = (item) =>
-    item?.item_code ||
-    item?.itemCode ||
-    "-";
+  const getItemCode = (item) => item?.item_code || item?.itemCode || "-";
 
-  const getUnit = (item) =>
-    item?.unit ||
-    "pcs";
+  const getUnit = (item) => item?.unit || "pcs";
 
   const getCurrentStock = (item) =>
-    Number(
-      item?.current_stock ??
-        item?.currentStock ??
-        0,
-    );
+    Number(item?.current_stock ?? item?.currentStock ?? 0);
 
   const getPhysicalStock = (item) =>
-    Number(
-      item?.physical_stock ??
-        item?.physicalStock ??
-        0,
-    );
+    Number(item?.physical_stock ?? item?.physicalStock ?? 0);
 
   // =========================================================
   // TRANSACTION METADATA
   // =========================================================
 
   const transactionLabel = {
-    [TRANSACTION_TYPES.RECEIPT]:
-      "Receipt",
+    [TRANSACTION_TYPES.RECEIPT]: "Receipt",
 
-    [TRANSACTION_TYPES.ADJUSTMENT_IN]:
-      "Adjustment In",
+    [TRANSACTION_TYPES.ADJUSTMENT_IN]: "Adjustment In",
 
-    [TRANSACTION_TYPES.ADJUSTMENT_OUT]:
-      "Adjustment Out",
+    [TRANSACTION_TYPES.ADJUSTMENT_OUT]: "Adjustment Out",
 
-    [TRANSACTION_TYPES.WRITE_OFF]:
-      "Write-Off",
+    [TRANSACTION_TYPES.WRITE_OFF]: "Write-Off",
   }[transactionType];
 
   const transactionDescription = {
-    [TRANSACTION_TYPES.RECEIPT]:
-      "Record newly received inventory.",
+    [TRANSACTION_TYPES.RECEIPT]: "Record newly received inventory.",
 
     [TRANSACTION_TYPES.ADJUSTMENT_IN]:
       "Increase inventory to correct the recorded quantity.",
@@ -213,105 +131,66 @@ function StockOperations({
   // PROCESS TRANSACTION
   // =========================================================
 
-  const handleSubmit = async (
-    event,
-  ) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     setSuccessMessage("");
     setErrorMessage("");
 
     if (!selectedItemId) {
-      setErrorMessage(
-        "Select an inventory item.",
-      );
+      setErrorMessage("Select an inventory item.");
       return;
     }
 
-    const parsedQuantity =
-      Number(quantity);
+    const parsedQuantity = Number(quantity);
 
-    if (
-      !Number.isInteger(
-        parsedQuantity,
-      ) ||
-      parsedQuantity <= 0
-    ) {
-      setErrorMessage(
-        "Quantity must be a positive whole number.",
-      );
+    if (!Number.isInteger(parsedQuantity) || parsedQuantity <= 0) {
+      setErrorMessage("Quantity must be a positive whole number.");
       return;
     }
 
-    const cleanReference =
-      referenceNo.trim();
+    const cleanReference = referenceNo.trim();
 
     if (!cleanReference) {
-      setErrorMessage(
-        "Reference number is required.",
-      );
+      setErrorMessage("Reference number is required.");
       return;
     }
 
-    const cleanRemarks =
-      remarks.trim();
+    const cleanRemarks = remarks.trim();
 
     try {
       setIsSubmitting(true);
 
       const payload = {
-        quantity:
-          parsedQuantity,
-        referenceNo:
-          cleanReference,
-        remarks:
-          cleanRemarks || null,
+        quantity: parsedQuantity,
+        referenceNo: cleanReference,
+        remarks: cleanRemarks || null,
       };
 
       let result;
 
       switch (transactionType) {
         case TRANSACTION_TYPES.RECEIPT:
-          result =
-            await receiveStock(
-              selectedItemId,
-              payload,
-            );
+          result = await receiveStock(selectedItemId, payload);
           break;
 
         case TRANSACTION_TYPES.ADJUSTMENT_IN:
-          result =
-            await adjustStockIn(
-              selectedItemId,
-              payload,
-            );
+          result = await adjustStockIn(selectedItemId, payload);
           break;
 
         case TRANSACTION_TYPES.ADJUSTMENT_OUT:
-          result =
-            await adjustStockOut(
-              selectedItemId,
-              payload,
-            );
+          result = await adjustStockOut(selectedItemId, payload);
           break;
 
         case TRANSACTION_TYPES.WRITE_OFF:
-          result =
-            await writeOffStock(
-              selectedItemId,
-              payload,
-            );
+          result = await writeOffStock(selectedItemId, payload);
           break;
 
         default:
-          throw new Error(
-            "INVALID_TRANSACTION_TYPE",
-          );
+          throw new Error("INVALID_TRANSACTION_TYPE");
       }
 
-      setSuccessMessage(
-        `${transactionLabel} processed successfully.`,
-      );
+      setSuccessMessage(`${transactionLabel} processed successfully.`);
 
       setQuantity("");
       setReferenceNo("");
@@ -319,10 +198,7 @@ function StockOperations({
 
       await loadInventory();
 
-      if (
-        typeof onProcessTransaction ===
-        "function"
-      ) {
+      if (typeof onProcessTransaction === "function") {
         await onProcessTransaction({
           type: transactionType,
           label: transactionLabel,
@@ -332,10 +208,7 @@ function StockOperations({
         });
       }
     } catch (error) {
-      console.error(
-        "[StockOperations] process transaction:",
-        error,
-      );
+      console.error("[StockOperations] process transaction:", error);
 
       setErrorMessage(
         error.response?.data?.message ||
@@ -352,9 +225,7 @@ function StockOperations({
 
   return (
     <div className="px-0 pt-1 pb-6">
-
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-
         <div>
           <h2 className="text-2xl font-semibold text-primary">
             Stock Operations
@@ -364,7 +235,6 @@ function StockOperations({
             Manage inventory receipts, adjustments, and write-offs.
           </p>
         </div>
-
       </div>
 
       {/* =====================================================
@@ -372,108 +242,79 @@ function StockOperations({
           ===================================================== */}
 
       <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-
         {[
           {
-            type:
-              TRANSACTION_TYPES.RECEIPT,
+            type: TRANSACTION_TYPES.RECEIPT,
             icon: FaDownload,
           },
           {
-            type:
-              TRANSACTION_TYPES.ADJUSTMENT_IN,
+            type: TRANSACTION_TYPES.ADJUSTMENT_IN,
             icon: FaDownload,
           },
           {
-            type:
-              TRANSACTION_TYPES.ADJUSTMENT_OUT,
+            type: TRANSACTION_TYPES.ADJUSTMENT_OUT,
             icon: FaUpload,
           },
           {
-            type:
-              TRANSACTION_TYPES.WRITE_OFF,
+            type: TRANSACTION_TYPES.WRITE_OFF,
             icon: FaTrash,
           },
-        ].map(
-          ({
-            type,
-            icon: Icon,
-          }) => {
-            const active =
-              transactionType ===
-              type;
+        ].map(({ type, icon: Icon }) => {
+          const active = transactionType === type;
 
-            const label = {
-              [TRANSACTION_TYPES.RECEIPT]:
-                "Receipt",
+          const label = {
+            [TRANSACTION_TYPES.RECEIPT]: "Receipt",
 
-              [TRANSACTION_TYPES.ADJUSTMENT_IN]:
-                "Adjustment In",
+            [TRANSACTION_TYPES.ADJUSTMENT_IN]: "Adjustment In",
 
-              [TRANSACTION_TYPES.ADJUSTMENT_OUT]:
-                "Adjustment Out",
+            [TRANSACTION_TYPES.ADJUSTMENT_OUT]: "Adjustment Out",
 
-              [TRANSACTION_TYPES.WRITE_OFF]:
-                "Write-Off",
-            }[type];
+            [TRANSACTION_TYPES.WRITE_OFF]: "Write-Off",
+          }[type];
 
-            return (
-              <button
-                key={type}
-                type="button"
-                onClick={() => {
-                  setTransactionType(
-                    type,
-                  );
-                  setSuccessMessage(
-                    "",
-                  );
-                  setErrorMessage(
-                    "",
-                  );
-                }}
-                className={`flex items-center gap-3 rounded-lg border p-4 text-left transition ${
-                  active
-                    ? "border-blue-700 bg-blue-700 text-white"
-                    : "border-gray-300 bg-white text-primary hover:bg-slate-50"
-                }`}
-              >
-                <Icon className="h-5 w-5" />
+          return (
+            <button
+              key={type}
+              type="button"
+              onClick={() => {
+                setTransactionType(type);
+                setSuccessMessage("");
+                setErrorMessage("");
+              }}
+              className={`flex items-center gap-3 rounded-lg border p-4 text-left transition ${
+                active
+                  ? "border-blue-700 bg-blue-700 text-white"
+                  : "border-gray-300 bg-white text-primary hover:bg-slate-50"
+              }`}
+            >
+              <Icon className="h-5 w-5" />
 
-                <div>
-                  <div className="font-semibold">
-                    {label}
-                  </div>
+              <div>
+                <div className="font-semibold">{label}</div>
 
-                  <div
-                    className={`text-xs ${
-                      active
-                        ? "text-blue-100"
-                        : "text-slate-500"
-                    }`}
-                  >
+                <div
+                  className={`text-xs ${
+                    active ? "text-blue-100" : "text-slate-500"
+                  }`}
+                >
+                  {
                     {
-                      {
-                        [TRANSACTION_TYPES.RECEIPT]:
-                          "Add received stock",
+                      [TRANSACTION_TYPES.RECEIPT]: "Add received stock",
 
-                        [TRANSACTION_TYPES.ADJUSTMENT_IN]:
-                          "Increase recorded stock",
+                      [TRANSACTION_TYPES.ADJUSTMENT_IN]:
+                        "Increase recorded stock",
 
-                        [TRANSACTION_TYPES.ADJUSTMENT_OUT]:
-                          "Decrease recorded stock",
+                      [TRANSACTION_TYPES.ADJUSTMENT_OUT]:
+                        "Decrease recorded stock",
 
-                        [TRANSACTION_TYPES.WRITE_OFF]:
-                          "Remove unusable stock",
-                      }[type]
-                    }
-                  </div>
+                      [TRANSACTION_TYPES.WRITE_OFF]: "Remove unusable stock",
+                    }[type]
+                  }
                 </div>
-              </button>
-            );
-          },
-        )}
-
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* =====================================================
@@ -494,13 +335,11 @@ function StockOperations({
       )}
 
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
-
         {/* ===================================================
             FORM
             =================================================== */}
 
         <div className="rounded-lg border bg-white p-4 shadow-sm sm:p-6 lg:col-span-2">
-
           <div className="mb-5">
             <h3 className="flex items-center gap-2 text-lg font-bold text-primary">
               {transactionLabel}
@@ -516,11 +355,7 @@ function StockOperations({
               Loading inventory...
             </div>
           ) : (
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-5"
-            >
-
+            <form onSubmit={handleSubmit} className="space-y-5">
               {/* ITEM */}
 
               <div>
@@ -529,56 +364,26 @@ function StockOperations({
                 </label>
 
                 <select
-                  value={
-                    selectedItemId
-                  }
+                  value={selectedItemId}
                   onChange={(event) => {
-                    setSelectedItemId(
-                      event.target.value,
-                    );
-                    setErrorMessage(
-                      "",
-                    );
+                    setSelectedItemId(event.target.value);
+                    setErrorMessage("");
                   }}
-                  disabled={
-                    isSubmitting ||
-                    inventoryItems.length ===
-                      0
-                  }
+                  disabled={isSubmitting || inventoryItems.length === 0}
                   className="mt-2 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-primary outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 >
-                  {inventoryItems.length ===
-                  0 ? (
-                    <option value="">
-                      No inventory items available
-                    </option>
+                  {inventoryItems.length === 0 ? (
+                    <option value="">No inventory items available</option>
                   ) : (
                     <>
-                      <option value="">
-                        Select an inventory item...
-                      </option>
+                      <option value="">Select an inventory item...</option>
 
-                      {inventoryItems.map(
-                        (inventoryItem) => (
-                          <option
-                            key={
-                              inventoryItem.id
-                            }
-                            value={
-                              inventoryItem.id
-                            }
-                          >
-                            {getItemName(
-                              inventoryItem,
-                            )}{" "}
-                            (
-                            {getItemCode(
-                              inventoryItem,
-                            )}
-                            )
-                          </option>
-                        ),
-                      )}
+                      {inventoryItems.map((inventoryItem) => (
+                        <option key={inventoryItem.id} value={inventoryItem.id}>
+                          {getItemName(inventoryItem)} (
+                          {getItemCode(inventoryItem)})
+                        </option>
+                      ))}
                     </>
                   )}
                 </select>
@@ -597,12 +402,8 @@ function StockOperations({
                   step="1"
                   value={quantity}
                   onChange={(event) => {
-                    setQuantity(
-                      event.target.value,
-                    );
-                    setErrorMessage(
-                      "",
-                    );
+                    setQuantity(event.target.value);
+                    setErrorMessage("");
                   }}
                   disabled={isSubmitting}
                   placeholder="Enter quantity"
@@ -611,17 +412,8 @@ function StockOperations({
 
                 {selectedItem && (
                   <p className="mt-1 text-xs text-slate-500">
-                    Current available stock:{" "}
-                    {
-                      getCurrentStock(
-                        selectedItem,
-                      )
-                    }{" "}
-                    {
-                      getUnit(
-                        selectedItem,
-                      )
-                    }
+                    Current available stock: {getCurrentStock(selectedItem)}{" "}
+                    {getUnit(selectedItem)}
                   </p>
                 )}
               </div>
@@ -637,12 +429,8 @@ function StockOperations({
                   type="text"
                   value={referenceNo}
                   onChange={(event) => {
-                    setReferenceNo(
-                      event.target.value,
-                    );
-                    setErrorMessage(
-                      "",
-                    );
+                    setReferenceNo(event.target.value);
+                    setErrorMessage("");
                   }}
                   disabled={isSubmitting}
                   placeholder="Invoice / PO / Adjustment reference"
@@ -662,11 +450,7 @@ function StockOperations({
 
                 <textarea
                   value={remarks}
-                  onChange={(event) =>
-                    setRemarks(
-                      event.target.value,
-                    )
-                  }
+                  onChange={(event) => setRemarks(event.target.value)}
                   disabled={isSubmitting}
                   rows={4}
                   placeholder="Optional explanation or internal note..."
@@ -677,11 +461,7 @@ function StockOperations({
               <div className="border-t pt-4">
                 <button
                   type="submit"
-                  disabled={
-                    isSubmitting ||
-                    inventoryItems.length ===
-                      0
-                  }
+                  disabled={isSubmitting || inventoryItems.length === 0}
                   className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <FaCircleCheck />
@@ -691,10 +471,8 @@ function StockOperations({
                     : `Process ${transactionLabel}`}
                 </button>
               </div>
-
             </form>
           )}
-
         </div>
 
         {/* ===================================================
@@ -702,14 +480,12 @@ function StockOperations({
             =================================================== */}
 
         <aside className="rounded-lg border bg-white p-4 shadow-sm">
-
           <h4 className="mb-4 text-lg font-semibold text-primary">
             Item Insight
           </h4>
 
           {selectedItem ? (
             <div className="space-y-3">
-
               <div className="rounded-lg bg-secondary-container p-4">
                 <div className="flex items-center gap-3">
                   <div className="rounded-lg bg-white p-3">
@@ -722,38 +498,27 @@ function StockOperations({
                   </div>
 
                   <div>
-                    <div className="text-xs uppercase text-slate-500">
-                      Item
-                    </div>
+                    <div className="text-xs uppercase text-slate-500">Item</div>
 
                     <div className="font-semibold text-primary">
-                      {getItemName(
-                        selectedItem,
-                      )}
+                      {getItemName(selectedItem)}
                     </div>
 
                     <div className="text-xs text-slate-500">
-                      {getItemCode(
-                        selectedItem,
-                      )}
+                      {getItemCode(selectedItem)}
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-
                 <div className="rounded-lg border p-3">
                   <div className="text-xs uppercase text-slate-500">
                     Available
                   </div>
 
                   <div className="mt-1 text-xl font-bold text-primary">
-                    {
-                      getCurrentStock(
-                        selectedItem,
-                      )
-                    }
+                    {getCurrentStock(selectedItem)}
                   </div>
                 </div>
 
@@ -763,14 +528,9 @@ function StockOperations({
                   </div>
 
                   <div className="mt-1 text-xl font-bold text-primary">
-                    {
-                      getPhysicalStock(
-                        selectedItem,
-                      )
-                    }
+                    {getPhysicalStock(selectedItem)}
                   </div>
                 </div>
-
               </div>
 
               <div className="rounded-lg border bg-slate-50 p-4 text-sm">
@@ -778,20 +538,15 @@ function StockOperations({
                   Selected operation
                 </div>
 
-                <div className="mt-1 text-slate-600">
-                  {transactionLabel}
-                </div>
+                <div className="mt-1 text-slate-600">{transactionLabel}</div>
               </div>
-
             </div>
           ) : (
             <div className="rounded-lg border border-dashed p-6 text-center text-sm text-slate-500">
               Select an inventory item to view its current stock.
             </div>
           )}
-
         </aside>
-
       </div>
     </div>
   );

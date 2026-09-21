@@ -45,23 +45,13 @@ export default function AddUserSuccessModal({
     return null;
   }
 
-  const roleName =
-    local.role ||
-    local.role_name ||
-    "user";
+  const roleName = local.role || local.role_name || "user";
 
-  const displayName =
-    local.fullName ||
-    local.full_name ||
-    "User";
+  const displayName = local.fullName || local.full_name || "User";
 
-  const displayEmail =
-    local.email ||
-    "Not provided";
+  const displayEmail = local.email || "Not provided";
 
-  const displayDepartment =
-    local.department ||
-    "Not specified";
+  const displayDepartment = local.department || "Not specified";
 
   /*
    * The frontend does NOT calculate permissions.
@@ -162,20 +152,6 @@ export default function AddUserSuccessModal({
 
         {/* User Card */}
         <div className="mb-4 flex items-center gap-4 rounded-lg border border-slate-200 p-3">
-          <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-slate-200">
-            {local.photo ? (
-              <img
-                src={local.photo}
-                alt={displayName}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-lg font-semibold text-slate-400">
-                {displayName.charAt(0).toUpperCase()}
-              </div>
-            )}
-          </div>
-
           <div className="min-w-0">
             <p className="mb-0.5 truncate text-sm font-semibold text-slate-900">
               {displayName}
@@ -184,17 +160,13 @@ export default function AddUserSuccessModal({
             <div className="mb-0.5 flex items-center gap-1.5 text-xs text-slate-500">
               <FaEnvelope className="shrink-0 text-[11px] text-slate-400" />
 
-              <span className="truncate">
-                {displayEmail}
-              </span>
+              <span className="truncate">{displayEmail}</span>
             </div>
 
             <div className="flex items-center gap-1.5 text-xs text-slate-500">
               <FaBuilding className="shrink-0 text-[11px] text-slate-400" />
 
-              <span className="truncate">
-                {displayDepartment}
-              </span>
+              <span className="truncate">{displayDepartment}</span>
             </div>
           </div>
         </div>
@@ -216,8 +188,8 @@ export default function AddUserSuccessModal({
               </p>
 
               <p className="mt-0.5 text-[11px] text-slate-500">
-                Access privileges are determined by the
-                backend according to this role.
+                Access privileges are determined by the backend according to
+                this role.
               </p>
             </div>
 
@@ -230,9 +202,8 @@ export default function AddUserSuccessModal({
         {/* Security Information */}
         <div className="mb-5 rounded-md border border-blue-100 bg-blue-50 px-3 py-2.5">
           <p className="text-[11px] leading-5 text-blue-800">
-            This account's password is securely processed
-            by the backend. The frontend does not retain
-            the password after account creation.
+            This account's password is securely processed by the backend. The
+            frontend does not retain the password after account creation.
           </p>
         </div>
 
@@ -244,7 +215,6 @@ export default function AddUserSuccessModal({
             className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
           >
             <FaUserPlus className="text-xs" />
-
             Add Another
           </button>
 
@@ -254,7 +224,6 @@ export default function AddUserSuccessModal({
             className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
           >
             <FaEdit className="text-xs" />
-
             Edit Profile
           </button>
 
@@ -268,7 +237,6 @@ export default function AddUserSuccessModal({
             className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-[#0b4a8b] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#093d75]"
           >
             <FaCheck className="text-xs" />
-
             Confirm
           </button>
         </div>

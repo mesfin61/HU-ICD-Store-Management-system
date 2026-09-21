@@ -11,38 +11,19 @@ const roleRoutes = require("./routes/roleRoutes");
 const departmentRoutes = require("./routes/departmentRoutes");
 const requestRoutes = require("./routes/requestRoutes");
 const inventoryRoutes = require("./routes/inventoryRoutes");
-const inventoryReservationRoutes = require(
-  "./routes/inventoryReservationRoutes",
-);
-const issuanceRoutes = require(
-  "./routes/issuanceRoutes",
-);
-const itemReturnRoutes = require(
-  "./routes/itemReturnRoutes",
-);
-const auditLogRoutes = require(
-  "./routes/auditLogRoutes",
-);
+const inventoryReservationRoutes = require("./routes/inventoryReservationRoutes");
+const issuanceRoutes = require("./routes/issuanceRoutes");
+const itemReturnRoutes = require("./routes/itemReturnRoutes");
+const auditLogRoutes = require("./routes/auditLogRoutes");
 
-const inventoryReservationExceptionRoutes =
-  require(
-    "./routes/inventoryReservationExceptionRoutes", 
-);
+const inventoryReservationExceptionRoutes = require("./routes/inventoryReservationExceptionRoutes");
 
-const notificationRoutes = require(
-  "./routes/notificationRoutes",
-);
+const notificationRoutes = require("./routes/notificationRoutes");
 
-const categoryRoutes = require(
-  "./routes/categoryRoutes",
-);
+const categoryRoutes = require("./routes/categoryRoutes");
 
-const messageRoutes =
-  require("./routes/messageRoutes");
-
-
-
-
+const messageRoutes = require("./routes/messageRoutes");
+const reportRoutes = require("./routes/reportRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -57,32 +38,22 @@ app.use(
   }),
 );
 
-
-
 /*
  * Static uploads
  */
 
-
-app.use(
-  "/uploads",
-  express.static(path.join(process.cwd(), "uploads")),
-);
-
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 /*
  * Request parsing
  */
 
-
 app.use(express.json());
 app.use(cookieParser());
-
 
 /*
  * API routes
  */
-
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
@@ -90,40 +61,19 @@ app.use("/api/roles", roleRoutes);
 app.use("/api/departments", departmentRoutes);
 app.use("/api/requests", requestRoutes);
 app.use("/api/inventory", inventoryRoutes);
-app.use(
-  "/api/inventory-reservations",
-  inventoryReservationRoutes,
-);
-app.use(
-  "/api/issuance",
-  issuanceRoutes,
-);
-app.use(
-  "/api/item-returns",
-  itemReturnRoutes,
-);
-app.use(
-  "/api/audit-logs",
-  auditLogRoutes,
-);
+app.use("/api/inventory-reservations", inventoryReservationRoutes);
+app.use("/api/issuance", issuanceRoutes);
+app.use("/api/item-returns", itemReturnRoutes);
+app.use("/api/audit-logs", auditLogRoutes);
 app.use(
   "/api/inventory-reservation-exceptions",
   inventoryReservationExceptionRoutes,
 );
-app.use(
-  "/api/notifications",
-  notificationRoutes,
-);
-app.use(
-  "/api/categories",
-  categoryRoutes,
-);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/categories", categoryRoutes);
 
-app.use(
-  "/api/messages",
-  messageRoutes,
-);
-
+app.use("/api/messages", messageRoutes);
+app.use("/api/reports", reportRoutes);
 
 /*
  * Start server

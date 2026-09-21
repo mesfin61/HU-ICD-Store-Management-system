@@ -34,13 +34,7 @@ const issuance = {
   // Everything happens inside ONE database transaction.
   // =========================================================
 
-  async issue({
-    requestId,
-    requestItemId,
-    quantity,
-    issuedBy,
-    dueDate,
-  }) {
+  async issue({ requestId, requestItemId, quantity, issuedBy, dueDate }) {
     // -------------------------------------------------------
     // Basic input validation
     // -------------------------------------------------------
@@ -93,9 +87,7 @@ const issuance = {
         foundRequest.status !== "APPROVED" &&
         foundRequest.status !== "PARTIALLY_APPROVED"
       ) {
-        throw new Error(
-          "REQUEST_NOT_READY_FOR_ISSUANCE",
-        );
+        throw new Error("REQUEST_NOT_READY_FOR_ISSUANCE");
       }
 
       // =======================================================
@@ -128,31 +120,22 @@ const issuance = {
         throw new Error("REQUEST_ITEM_NOT_FOUND");
       }
 
-      const quantityApproved = Number(
-        requestItem.quantity_approved || 0,
-      );
+      const quantityApproved = Number(requestItem.quantity_approved || 0);
 
-      const quantityIssued = Number(
-        requestItem.quantity_issued || 0,
-      );
+      const quantityIssued = Number(requestItem.quantity_issued || 0);
 
       // =======================================================
       // 3. CALCULATE REMAINING APPROVED QUANTITY
       // =======================================================
 
-      const remainingApproved =
-        quantityApproved - quantityIssued;
+      const remainingApproved = quantityApproved - quantityIssued;
 
       if (remainingApproved <= 0) {
-        throw new Error(
-          "REQUEST_ITEM_ALREADY_ISSUED",
-        );
+        throw new Error("REQUEST_ITEM_ALREADY_ISSUED");
       }
 
       if (quantity > remainingApproved) {
-        throw new Error(
-          "ISSUE_EXCEEDS_REMAINING_APPROVED",
-        );
+        throw new Error("ISSUE_EXCEEDS_REMAINING_APPROVED");
       }
 
       // =======================================================
@@ -191,13 +174,9 @@ const issuance = {
         throw new Error("ITEM_INACTIVE");
       }
 
-      const currentStock = Number(
-        item.current_stock,
-      );
+      const currentStock = Number(item.current_stock);
 
-      const physicalStock = Number(
-        item.physical_stock,
-      );
+      const physicalStock = Number(item.physical_stock);
 
       if (
         !Number.isInteger(currentStock) ||
@@ -206,19 +185,14 @@ const issuance = {
         physicalStock < 0 ||
         currentStock > physicalStock
       ) {
-        throw new Error(
-          "INVENTORY_STATE_INCONSISTENT",
-        );
+        throw new Error("INVENTORY_STATE_INCONSISTENT");
       }
 
       if (physicalStock < quantity) {
-        throw new Error(
-          "INSUFFICIENT_PHYSICAL_STOCK",
-        );
+        throw new Error("INSUFFICIENT_PHYSICAL_STOCK");
       }
 
-      const newPhysicalStock =
-      physicalStock - quantity;
+      const newPhysicalStock = physicalStock - quantity;
 
       await client.query(
         `
@@ -228,13 +202,8 @@ const issuance = {
           updated_at = NOW()
         WHERE id = $2
         `,
-        [
-          newPhysicalStock,
-          item.id,
-        ],
+        [newPhysicalStock, item.id],
       );
-
-
 
       // =======================================================
       // 5. LOCK ACTIVE RESERVATIONS
@@ -277,11 +246,7 @@ const issuance = {
         ORDER BY reserved_at ASC, id ASC
         FOR UPDATE
         `,
-        [
-          requestItemId,
-          requestId,
-          requestItem.item_id,
-        ],
+        [requestItemId, requestId, requestItem.item_id],
       );
 
       const reservations = reservationsResult.rows;
@@ -290,64 +255,39 @@ const issuance = {
       // 6. CALCULATE TOTAL RESERVED REMAINING
       // =======================================================
 
-      const totalReservedRemaining =
-        reservations.reduce(
-          (total, reservation) =>
-            total +
-            Number(
-              reservation.quantity_remaining,
-            ),
-          0,
-        );
-      
-      const reservedStockFromItems =
-        physicalStock - currentStock;
+      const totalReservedRemaining = reservations.reduce(
+        (total, reservation) => total + Number(reservation.quantity_remaining),
+        0,
+      );
 
-      if (
-        totalReservedRemaining !==
-        reservedStockFromItems
-      ) {
-        throw new Error(
-          "INVENTORY_STATE_INCONSISTENT",
-        );
+      const reservedStockFromItems = physicalStock - currentStock;
+
+      if (totalReservedRemaining !== reservedStockFromItems) {
+        throw new Error("INVENTORY_STATE_INCONSISTENT");
       }
-      
-      if (
-        quantity >
-        reservedStockFromItems
-      ) {
-        throw new Error(
-          "INSUFFICIENT_RESERVED_QUANTITY",
-        );
+
+      if (quantity > reservedStockFromItems) {
+        throw new Error("INSUFFICIENT_RESERVED_QUANTITY");
       }
 
       if (totalReservedRemaining < quantity) {
-        throw new Error(
-          "INSUFFICIENT_RESERVED_QUANTITY",
-        );
+        throw new Error("INSUFFICIENT_RESERVED_QUANTITY");
       }
 
-      const newQuantityIssued =
-        quantityIssued + quantity;
+      const newQuantityIssued = quantityIssued + quantity;
 
-      const requestItemUpdate =
-        await client.query(
-          `
+      const requestItemUpdate = await client.query(
+        `
           UPDATE request_items
           SET
             quantity_issued = $1
           WHERE id = $2
           `,
-          [
-            newQuantityIssued,
-            requestItemId,
-          ],
-        );
+        [newQuantityIssued, requestItemId],
+      );
 
       if (requestItemUpdate.rowCount !== 1) {
-        throw new Error(
-          "REQUEST_ITEM_UPDATE_FAILED",
-        );
+        throw new Error("REQUEST_ITEM_UPDATE_FAILED");
       }
 
       // =======================================================
@@ -406,12 +346,8 @@ const issuance = {
       // bypass this calculation.
       // =======================================================
 
-      
-
       if (newQuantityIssued > quantityApproved) {
-        throw new Error(
-          "ISSUE_EXCEEDS_REMAINING_APPROVED",
-        );
+        throw new Error("ISSUE_EXCEEDS_REMAINING_APPROVED");
       }
 
       await client.query(
@@ -421,10 +357,7 @@ const issuance = {
           quantity_issued = $1
         WHERE id = $2
         `,
-        [
-          newQuantityIssued,
-          requestItemId,
-        ],
+        [newQuantityIssued, requestItemId],
       );
 
       // =======================================================
@@ -464,22 +397,16 @@ const issuance = {
           break;
         }
 
-        const reservationRemaining =
-          Number(
-            reservation.quantity_remaining,
-          );
+        const reservationRemaining = Number(reservation.quantity_remaining);
 
         const quantityConsumed = Math.min(
           quantityToConsume,
           reservationRemaining,
         );
 
-        const newQuantityRemaining =
-          reservationRemaining -
-          quantityConsumed;
+        const newQuantityRemaining = reservationRemaining - quantityConsumed;
 
-        let newReservationStatus =
-          reservation.status;
+        let newReservationStatus = reservation.status;
 
         let releasedAt = null;
 
@@ -507,18 +434,12 @@ const issuance = {
 
         consumedReservations.push({
           reservationId: reservation.id,
-          quantityOriginal: Number(
-            reservation.quantity,
-          ),
-          quantityRemainingBefore:
-            reservationRemaining,
+          quantityOriginal: Number(reservation.quantity),
+          quantityRemainingBefore: reservationRemaining,
           quantityConsumed,
-          quantityRemainingAfter:
-            newQuantityRemaining,
-          statusBefore:
-            reservation.status,
-          statusAfter:
-            newReservationStatus,
+          quantityRemainingAfter: newQuantityRemaining,
+          statusBefore: reservation.status,
+          statusAfter: newReservationStatus,
         });
 
         quantityToConsume -= quantityConsumed;
@@ -535,9 +456,7 @@ const issuance = {
       // =======================================================
 
       if (quantityToConsume > 0) {
-        throw new Error(
-          "RESERVATION_CONSUMPTION_FAILED",
-        );
+        throw new Error("RESERVATION_CONSUMPTION_FAILED");
       }
 
       // =======================================================
@@ -601,9 +520,8 @@ const issuance = {
       // Neither status describes physical issuance progress.
       // =======================================================
 
-      const fulfillmentResult =
-        await client.query(
-          `
+      const fulfillmentResult = await client.query(
+        `
           SELECT
             COUNT(*) AS total_items,
 
@@ -614,26 +532,18 @@ const issuance = {
           FROM request_items
           WHERE request_id = $1
           `,
-          [requestId],
-        );
-
-      const fulfillment =
-        fulfillmentResult.rows[0];
-
-      const totalItems = Number(
-        fulfillment.total_items,
+        [requestId],
       );
 
-      const fullyIssuedItems = Number(
-        fulfillment.fully_issued_items,
-      );
+      const fulfillment = fulfillmentResult.rows[0];
+
+      const totalItems = Number(fulfillment.total_items);
+
+      const fullyIssuedItems = Number(fulfillment.fully_issued_items);
 
       let newRequestStatus;
 
-      if (
-        totalItems > 0 &&
-        fullyIssuedItems === totalItems
-      ) {
+      if (totalItems > 0 && fullyIssuedItems === totalItems) {
         newRequestStatus = "FULFILLED";
       } else {
         // Keep the administrator's original decision.
@@ -644,8 +554,7 @@ const issuance = {
         // Issuance progress is represented by
         // request_items.quantity_issued, not by inventing
         // another request status.
-        newRequestStatus =
-          foundRequest.status;
+        newRequestStatus = foundRequest.status;
       }
 
       // =======================================================
@@ -661,10 +570,7 @@ const issuance = {
             updated_at = NOW()
           WHERE id = $2
           `,
-          [
-            newRequestStatus,
-            requestId,
-          ],
+          [newRequestStatus, requestId],
         );
       }
 
@@ -704,27 +610,21 @@ const issuance = {
           request_item_id: requestItemId,
           item_id: requestItem.item_id,
 
-          quantity_issued_before:
-            quantityIssued,
+          quantity_issued_before: quantityIssued,
 
-          quantity_issued_this_transaction:
-            quantity,
+          quantity_issued_this_transaction: quantity,
 
-          quantity_issued_after:
-            newQuantityIssued,
+          quantity_issued_after: newQuantityIssued,
 
-          request_status_before:
-            foundRequest.status,
+          request_status_before: foundRequest.status,
 
-          request_status_after:
-            newRequestStatus,
+          request_status_after: newRequestStatus,
 
-          consumed_reservations:
-            consumedReservations,
+          consumed_reservations: consumedReservations,
         },
       });
 
-            // =======================================================
+      // =======================================================
       // 15. NOTIFICATIONS
       //
       // Notifications MUST use the SAME database transaction.
@@ -739,8 +639,7 @@ const issuance = {
       const itemName = item.name;
       const itemUnit = item.unit || "pcs";
 
-      const remainingToIssue =
-        quantityApproved - newQuantityIssued;
+      const remainingToIssue = quantityApproved - newQuantityIssued;
 
       // -------------------------------------------------------
       // REQUESTER NOTIFICATION
@@ -788,8 +687,6 @@ const issuance = {
             : `Issuance completed successfully. ${quantity} ${itemUnit} of ${itemName} was issued for request ${requestId}. ${remainingToIssue} ${itemUnit} remains to be issued.`,
       });
 
-
-
       // =======================================================
       // 15. COMMIT EVERYTHING
       // =======================================================
@@ -803,17 +700,13 @@ const issuance = {
       return {
         issuedItem,
 
-        requestStatus:
-          newRequestStatus,
+        requestStatus: newRequestStatus,
 
         quantityApproved,
 
-        quantityIssued:
-          newQuantityIssued,
+        quantityIssued: newQuantityIssued,
 
-        remainingToIssue:
-          quantityApproved -
-          newQuantityIssued,
+        remainingToIssue: quantityApproved - newQuantityIssued,
 
         consumedReservations,
       };
@@ -875,21 +768,20 @@ const issuance = {
     return result.rows;
   },
 
-
   // =========================================================
-// GET ALL CURRENTLY ISSUED INVENTORY
-//
-// Store Manager use.
-//
-// Returns issued inventory that has not been fully returned.
-//
-// Partial returns are included because issued_items.returned
-// remains FALSE until the entire issued quantity is returned.
-// =========================================================
+  // GET ALL CURRENTLY ISSUED INVENTORY
+  //
+  // Store Manager use.
+  //
+  // Returns issued inventory that has not been fully returned.
+  //
+  // Partial returns are included because issued_items.returned
+  // remains FALSE until the entire issued quantity is returned.
+  // =========================================================
 
-async findOutstandingIssuedItems() {
-  const result = await pool.query(
-    `
+  async findOutstandingIssuedItems() {
+    const result = await pool.query(
+      `
     SELECT
       ii.id,
       ii.request_id,
@@ -947,36 +839,34 @@ async findOutstandingIssuedItems() {
       ii.issued_date ASC,
       ii.id ASC
     `,
-  );
+    );
 
-  return result.rows.map((row) => ({
-    ...row,
-    quantity_issued:
-      Number(row.quantity_issued) || 0,
-    quantity_returned:
-      Number(row.quantity_returned) || 0,
-    quantity_remaining:
-      (Number(row.quantity_issued) || 0) -
-      (Number(row.quantity_returned) || 0),
-  }));
-},
+    return result.rows.map((row) => ({
+      ...row,
+      quantity_issued: Number(row.quantity_issued) || 0,
+      quantity_returned: Number(row.quantity_returned) || 0,
+      quantity_remaining:
+        (Number(row.quantity_issued) || 0) -
+        (Number(row.quantity_returned) || 0),
+    }));
+  },
 
-// =========================================================
-// GET MY OUTSTANDING ISSUED INVENTORY
-//
-// Staff use.
-//
-// Returns ONLY inventory issued to the authenticated user
-// that has not been fully returned.
-// =========================================================
+  // =========================================================
+  // GET MY OUTSTANDING ISSUED INVENTORY
+  //
+  // Staff use.
+  //
+  // Returns ONLY inventory issued to the authenticated user
+  // that has not been fully returned.
+  // =========================================================
 
-async findMyOutstandingIssuedItems(userId) {
-  if (!userId) {
-    throw new Error("USER_ID_REQUIRED");
-  }
+  async findMyOutstandingIssuedItems(userId) {
+    if (!userId) {
+      throw new Error("USER_ID_REQUIRED");
+    }
 
-  const result = await pool.query(
-    `
+    const result = await pool.query(
+      `
     SELECT
       ii.id,
       ii.request_id,
@@ -1036,23 +926,21 @@ async findMyOutstandingIssuedItems(userId) {
       ii.issued_date ASC,
       ii.id ASC
     `,
-    [userId],
-  );
+      [userId],
+    );
 
-  return result.rows.map((row) => ({
-    ...row,
+    return result.rows.map((row) => ({
+      ...row,
 
-    quantity_issued:
-      Number(row.quantity_issued) || 0,
+      quantity_issued: Number(row.quantity_issued) || 0,
 
-    quantity_returned:
-      Number(row.quantity_returned) || 0,
+      quantity_returned: Number(row.quantity_returned) || 0,
 
-    quantity_remaining:
-      (Number(row.quantity_issued) || 0) -
-      (Number(row.quantity_returned) || 0),
-  }));
-},
+      quantity_remaining:
+        (Number(row.quantity_issued) || 0) -
+        (Number(row.quantity_returned) || 0),
+    }));
+  },
 };
 
 module.exports = issuance;

@@ -11,7 +11,7 @@ CREATE TABLE roles (
 );
 
 INSERT INTO roles (id, name, description) VALUES
-    (1, 'Administrator', 'Full system administration and authorization access'),
+    (1, 'Super Admin', 'Full system administration and authorization access'),
     (2, 'Store Manager', 'Store inventory and item issuance management access'),
     (3, 'Staff', 'Standard staff request and inventory access');
     
@@ -56,7 +56,6 @@ CREATE TABLE users (
 
     phone_number VARCHAR(20),
     office_location VARCHAR(100),
-    profile_picture TEXT,
 
     reset_otp VARCHAR(10),
     reset_otp_expires TIMESTAMP,
@@ -109,6 +108,7 @@ CREATE TABLE items (
 
     minimum_stock INTEGER NOT NULL DEFAULT 5,
     current_stock INTEGER NOT NULL DEFAULT 0,
+    physical_stock INTEGER NOT NULL DEFAULT 0,
 
     is_asset BOOLEAN NOT NULL DEFAULT FALSE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -124,7 +124,13 @@ CREATE TABLE items (
         CHECK (minimum_stock >= 0),
 
     CONSTRAINT chk_item_current_stock
-        CHECK (current_stock >= 0)
+        CHECK (current_stock >= 0),
+
+    CONSTRAINT chk_item_physical_stock
+        CHECK (physical_stock >= 0),
+
+    CONSTRAINT chk_item_stock_consistency
+        CHECK (current_stock <= physical_stock)
 );
 
 
@@ -344,6 +350,7 @@ CREATE TABLE inventory_reservations (
     item_id UUID NOT NULL,
 
     quantity INTEGER NOT NULL,
+    quantity_remaining INTEGER NOT NULL,
 
     status VARCHAR(20) NOT NULL DEFAULT 'RESERVED',
 
@@ -366,6 +373,12 @@ CREATE TABLE inventory_reservations (
 
     CONSTRAINT chk_reservation_quantity
         CHECK (quantity > 0),
+
+    CONSTRAINT chk_reservation_quantity_remaining
+        CHECK (
+            quantity_remaining >= 0
+            AND quantity_remaining <= quantity
+        ),
 
     CONSTRAINT chk_reservation_status
         CHECK (

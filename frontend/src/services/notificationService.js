@@ -9,16 +9,13 @@ export async function getMyNotifications({
   offset = 0,
   unreadOnly = false,
 } = {}) {
-  const response = await apiClient.get(
-    "/api/notifications",
-    {
-      params: {
-        limit,
-        offset,
-        unreadOnly,
-      },
+  const response = await apiClient.get("/api/notifications", {
+    params: {
+      limit,
+      offset,
+      unreadOnly,
     },
-  );
+  });
 
   return response.data.data;
 }
@@ -28,22 +25,16 @@ export async function getMyNotifications({
 // =========================================================
 
 export async function getUnreadNotificationCount() {
-  const response = await apiClient.get(
-    "/api/notifications/unread-count",
-  );
+  const response = await apiClient.get("/api/notifications/unread-count");
 
-  return (
-    response.data?.data?.count ?? 0
-  );
+  return response.data?.data?.count ?? 0;
 }
 
 // =========================================================
 // MARK ONE AS READ
 // =========================================================
 
-export async function markNotificationAsRead(
-  notificationId,
-) {
+export async function markNotificationAsRead(notificationId) {
   const response = await apiClient.patch(
     `/api/notifications/${notificationId}/read`,
   );
@@ -56,9 +47,7 @@ export async function markNotificationAsRead(
 // =========================================================
 
 export async function markAllNotificationsAsRead() {
-  const response = await apiClient.patch(
-    "/api/notifications/read-all",
-  );
+  const response = await apiClient.patch("/api/notifications/read-all");
 
   return response.data.data;
 }
@@ -67,10 +56,6 @@ export async function markAllNotificationsAsRead() {
 // DELETE ONE
 // =========================================================
 
-export async function deleteNotification(
-  notificationId,
-) {
-  await apiClient.delete(
-    `/api/notifications/${notificationId}`,
-  );
+export async function deleteNotification(notificationId) {
+  await apiClient.delete(`/api/notifications/${notificationId}`);
 }

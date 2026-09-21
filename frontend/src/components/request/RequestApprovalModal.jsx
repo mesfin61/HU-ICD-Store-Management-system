@@ -1,32 +1,17 @@
-import React, {
-  useEffect,
-  useState,
-} from "react";
+import React, { useEffect, useState } from "react";
 
-import {
-  approveRequest,
-  getRequest,
-} from "../../services/requestService";
+import { approveRequest, getRequest } from "../../services/requestService";
 
-function RequestApprovalModal({
-  requestId,
-  onClose,
-  onSuccess,
-}) {
-  const [request, setRequest] =
-    useState(null);
+function RequestApprovalModal({ requestId, onClose, onSuccess }) {
+  const [request, setRequest] = useState(null);
 
-  const [approvalQuantities, setApprovalQuantities] =
-    useState({});
+  const [approvalQuantities, setApprovalQuantities] = useState({});
 
-  const [isLoading, setIsLoading] =
-    useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [isSubmitting, setIsSubmitting] =
-    useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [errorMessage, setErrorMessage] =
-    useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -36,8 +21,7 @@ function RequestApprovalModal({
         setIsLoading(true);
         setErrorMessage("");
 
-        const data =
-          await getRequest(requestId);
+        const data = await getRequest(requestId);
 
         if (!mounted) {
           return;
@@ -48,23 +32,16 @@ function RequestApprovalModal({
         const initialQuantities = {};
 
         for (const item of data.items || []) {
-          initialQuantities[item.id] =
-            Number(item.quantity_requested) || 0;
+          initialQuantities[item.id] = Number(item.quantity_requested) || 0;
         }
 
-        setApprovalQuantities(
-          initialQuantities,
-        );
+        setApprovalQuantities(initialQuantities);
       } catch (error) {
-        console.error(
-          "[RequestApprovalModal] load request:",
-          error,
-        );
+        console.error("[RequestApprovalModal] load request:", error);
 
         if (mounted) {
           setErrorMessage(
-            error.response?.data?.message ||
-              "Failed to load request details.",
+            error.response?.data?.message || "Failed to load request details.",
           );
         }
       } finally {
@@ -83,24 +60,14 @@ function RequestApprovalModal({
     };
   }, [requestId]);
 
-  const handleQuantityChange = (
-    requestItemId,
-    value,
-  ) => {
-    setApprovalQuantities(
-      (current) => ({
-        ...current,
-        [requestItemId]:
-          value === ""
-            ? ""
-            : Number(value),
-      }),
-    );
+  const handleQuantityChange = (requestItemId, value) => {
+    setApprovalQuantities((current) => ({
+      ...current,
+      [requestItemId]: value === "" ? "" : Number(value),
+    }));
   };
 
-  const handleSubmit = async (
-    event,
-  ) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!request) {
@@ -112,35 +79,18 @@ function RequestApprovalModal({
     const approvedItems = [];
 
     for (const item of request.items || []) {
-      const rawQuantity =
-        approvalQuantities[item.id];
+      const rawQuantity = approvalQuantities[item.id];
 
-      const quantityApproved =
-        rawQuantity === ""
-          ? 0
-          : Number(rawQuantity);
+      const quantityApproved = rawQuantity === "" ? 0 : Number(rawQuantity);
 
-      if (
-        !Number.isInteger(
-          quantityApproved,
-        ) ||
-        quantityApproved < 0
-      ) {
-        setErrorMessage(
-          `Invalid approval quantity for ${item.item_name}.`,
-        );
+      if (!Number.isInteger(quantityApproved) || quantityApproved < 0) {
+        setErrorMessage(`Invalid approval quantity for ${item.item_name}.`);
         return;
       }
 
-      const requestedQuantity =
-        Number(
-          item.quantity_requested,
-        );
+      const requestedQuantity = Number(item.quantity_requested);
 
-      if (
-        quantityApproved >
-        requestedQuantity
-      ) {
+      if (quantityApproved > requestedQuantity) {
         setErrorMessage(
           `Approved quantity for ${item.item_name} cannot exceed the requested quantity.`,
         );
@@ -156,23 +106,16 @@ function RequestApprovalModal({
     try {
       setIsSubmitting(true);
 
-      await approveRequest(
-        request.id,
-        approvedItems,
-      );
+      await approveRequest(request.id, approvedItems);
 
       if (onSuccess) {
         await onSuccess();
       }
     } catch (error) {
-      console.error(
-        "[RequestApprovalModal] approve request:",
-        error,
-      );
+      console.error("[RequestApprovalModal] approve request:", error);
 
       setErrorMessage(
-        error.response?.data?.message ||
-          "Failed to approve request.",
+        error.response?.data?.message || "Failed to approve request.",
       );
     } finally {
       setIsSubmitting(false);
@@ -189,9 +132,7 @@ function RequestApprovalModal({
         <div className="sticky top-0 z-10 border-b bg-white px-6 py-4">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-xl font-bold text-primary">
-                Review Request
-              </h2>
+              <h2 className="text-xl font-bold text-primary">Review Request</h2>
 
               {request && (
                 <p className="mt-1 text-sm text-slate-600">
@@ -222,10 +163,7 @@ function RequestApprovalModal({
             </div>
           </div>
         ) : request ? (
-          <form
-            onSubmit={handleSubmit}
-            className="p-6"
-          >
+          <form onSubmit={handleSubmit} className="p-6">
             {errorMessage && (
               <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
                 {errorMessage}
@@ -271,84 +209,53 @@ function RequestApprovalModal({
                 <table className="w-full min-w-[650px] text-sm">
                   <thead>
                     <tr className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
-                      <th className="p-3">
-                        Item
-                      </th>
+                      <th className="p-3">Item</th>
 
-                      <th className="p-3">
-                        Requested
-                      </th>
+                      <th className="p-3">Requested</th>
 
-                      <th className="p-3">
-                        Previously Issued
-                      </th>
+                      <th className="p-3">Previously Issued</th>
 
-                      <th className="p-3">
-                        Approve
-                      </th>
+                      <th className="p-3">Approve</th>
                     </tr>
                   </thead>
 
                   <tbody>
-                    {(request.items || []).map(
-                      (item) => (
-                        <tr
-                          key={item.id}
-                          className="border-t"
-                        >
-                          <td className="p-3">
-                            <div className="font-semibold text-primary">
-                              {item.item_name}
-                            </div>
+                    {(request.items || []).map((item) => (
+                      <tr key={item.id} className="border-t">
+                        <td className="p-3">
+                          <div className="font-semibold text-primary">
+                            {item.item_name}
+                          </div>
 
-                            <div className="text-xs text-slate-500">
-                              {item.item_code}
-                            </div>
-                          </td>
+                          <div className="text-xs text-slate-500">
+                            {item.item_code}
+                          </div>
+                        </td>
 
-                          <td className="p-3 font-semibold">
-                            {item.quantity_requested}{" "}
-                            {item.unit}
-                          </td>
+                        <td className="p-3 font-semibold">
+                          {item.quantity_requested} {item.unit}
+                        </td>
 
-                          <td className="p-3">
-                            {Number(
-                              item.quantity_issued,
-                            ) || 0}{" "}
-                            {item.unit}
-                          </td>
+                        <td className="p-3">
+                          {Number(item.quantity_issued) || 0} {item.unit}
+                        </td>
 
-                          <td className="p-3">
-                            <input
-                              type="number"
-                              min="0"
-                              max={
-                                item.quantity_requested
-                              }
-                              step="1"
-                              value={
-                                approvalQuantities[
-                                  item.id
-                                ] ?? ""
-                              }
-                              onChange={(
-                                event,
-                              ) =>
-                                handleQuantityChange(
-                                  item.id,
-                                  event.target
-                                    .value,
-                                )
-                              }
-                              disabled={
-                                isSubmitting
-                              }
-                              className="w-28 rounded-md border border-gray-300 bg-white px-3 py-2 font-semibold text-primary outline-none focus:border-blue-500"
-                            />
-                          </td>
-                        </tr>
-                      ),
-                    )}
+                        <td className="p-3">
+                          <input
+                            type="number"
+                            min="0"
+                            max={item.quantity_requested}
+                            step="1"
+                            value={approvalQuantities[item.id] ?? ""}
+                            onChange={(event) =>
+                              handleQuantityChange(item.id, event.target.value)
+                            }
+                            disabled={isSubmitting}
+                            className="w-28 rounded-md border border-gray-300 bg-white px-3 py-2 font-semibold text-primary outline-none focus:border-blue-500"
+                          />
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -366,15 +273,10 @@ function RequestApprovalModal({
 
               <button
                 type="submit"
-                disabled={
-                  isSubmitting ||
-                  !request.items?.length
-                }
+                disabled={isSubmitting || !request.items?.length}
                 className="rounded-md bg-blue-600 px-6 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isSubmitting
-                  ? "Submitting..."
-                  : "Submit Decision"}
+                {isSubmitting ? "Submitting..." : "Submit Decision"}
               </button>
             </div>
           </form>

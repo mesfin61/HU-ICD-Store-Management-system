@@ -3,7 +3,7 @@ const pool = require("../config/db");
 const role = {
   async findAll() {
     const result = await pool.query(
-      "SELECT id, name, description FROM roles ORDER BY id ASC"
+      "SELECT id, name, description FROM roles ORDER BY id ASC",
     );
 
     return result.rows;
@@ -12,7 +12,7 @@ const role = {
   async findById(id) {
     const result = await pool.query(
       "SELECT id, name, description FROM roles WHERE id = $1",
-      [id]
+      [id],
     );
 
     return result.rows[0] || null;
@@ -21,7 +21,7 @@ const role = {
   async findByName(name) {
     const result = await pool.query(
       "SELECT id, name, description FROM roles WHERE name = $1",
-      [name]
+      [name],
     );
 
     return result.rows[0] || null;

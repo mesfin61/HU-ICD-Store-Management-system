@@ -4,15 +4,14 @@ const nodemailer = require("nodemailer");
 // EMAIL TRANSPORTER
 // =========================================================
 
-const emailTransporter =
-  nodemailer.createTransport({
-    service: "gmail",
+const emailTransporter = nodemailer.createTransport({
+  service: "gmail",
 
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
 // =========================================================
 // WELCOME EMAIL
@@ -25,15 +24,11 @@ async function sendWelcomeEmail({
   initialPassword,
 }) {
   if (!recipientEmail) {
-    throw new Error(
-      "RECIPIENT_EMAIL_REQUIRED",
-    );
+    throw new Error("RECIPIENT_EMAIL_REQUIRED");
   }
 
   if (!initialPassword) {
-    throw new Error(
-      "INITIAL_PASSWORD_REQUIRED",
-    );
+    throw new Error("INITIAL_PASSWORD_REQUIRED");
   }
 
   await emailTransporter.sendMail({
@@ -41,8 +36,7 @@ async function sendWelcomeEmail({
 
     to: recipientEmail,
 
-    subject:
-      "HU-ICT Store Management System - Account Created",
+    subject: "HU-ICT Store Management System - Account Created",
 
     html: `
       <div
@@ -289,21 +283,13 @@ async function sendWelcomeEmail({
 // PASSWORD RESET EMAIL
 // =========================================================
 
-async function sendPasswordResetEmail({
-  recipientEmail,
-  recipientName,
-  otp,
-}) {
+async function sendPasswordResetEmail({ recipientEmail, recipientName, otp }) {
   if (!recipientEmail) {
-    throw new Error(
-      "RECIPIENT_EMAIL_REQUIRED",
-    );
+    throw new Error("RECIPIENT_EMAIL_REQUIRED");
   }
 
   if (!otp) {
-    throw new Error(
-      "RESET_OTP_REQUIRED",
-    );
+    throw new Error("RESET_OTP_REQUIRED");
   }
 
   await emailTransporter.sendMail({
@@ -311,8 +297,7 @@ async function sendPasswordResetEmail({
 
     to: recipientEmail,
 
-    subject:
-      "HU-ICT Store Management System - Password Reset",
+    subject: "HU-ICT Store Management System - Password Reset",
 
     html: `
       <div

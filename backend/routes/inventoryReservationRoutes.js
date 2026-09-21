@@ -1,14 +1,8 @@
 const express = require("express");
 
-const inventoryReservationController = require(
-  "../controllers/inventoryReservationController",
-);
+const inventoryReservationController = require("../controllers/inventoryReservationController");
 
-const {
-  protect,
-  restrictTo,
-  ROLES,
-} = require("../middleware/AuthMiddleware");
+const { protect, restrictTo, ROLES } = require("../middleware/AuthMiddleware");
 
 const router = express.Router();
 
@@ -31,11 +25,7 @@ const router = express.Router();
 router.get(
   "/request/:requestId",
   protect,
-  restrictTo(
-    ROLES.ADMINISTRATOR,
-    ROLES.STORE_MANAGER,
-    ROLES.STAFF,
-  ),
+  restrictTo(ROLES.ADMINISTRATOR, ROLES.STORE_MANAGER, ROLES.STAFF),
   inventoryReservationController.getByRequest,
 );
 

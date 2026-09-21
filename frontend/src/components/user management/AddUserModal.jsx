@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useState } from "react";
-import { FaCamera, FaTimes } from "react-icons/fa";
+import { FaTimes } from "react-icons/fa";
 
 import AddUserSuccessModal from "./AddUserSuccessModal";
 
@@ -15,13 +15,7 @@ const EMPTY_FORM = {
   roleId: "",
 };
 
-export default function AddUserModal({
-  isOpen,
-  onClose,
-  onUserCreated,
-}) {
-  const [photo, setPhoto] = useState(null);
-
+export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -86,10 +80,7 @@ export default function AddUserModal({
 
         const availableRoles = Array.isArray(roleData)
           ? roleData.filter(
-              (role) =>
-                role &&
-                role.id !== undefined &&
-                role.name,
+              (role) => role && role.id !== undefined && role.name,
             )
           : [];
 
@@ -106,8 +97,7 @@ export default function AddUserModal({
         }
 
         const message =
-          error?.message ||
-          "Failed to load departments and roles.";
+          error?.message || "Failed to load departments and roles.";
 
         /*
          * We don't invent fallback department or role data.
@@ -145,7 +135,6 @@ export default function AddUserModal({
       return;
     }
 
-    setPhoto(null);
     setFullName(EMPTY_FORM.fullName);
     setEmail(EMPTY_FORM.email);
     setPassword(EMPTY_FORM.password);
@@ -164,74 +153,17 @@ export default function AddUserModal({
     return null;
   }
 
-  async function handleFile(event) {
-    const file = event.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
-
-    if (!file.type.startsWith("image/")) {
-      alert("Please select an image file.");
-      event.target.value = "";
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Profile picture must be smaller than 5 MB.");
-      event.target.value = "";
-      return;
-    }
-
-    try {
-      const fileDataUrl = await new Promise(
-        (resolve, reject) => {
-          const reader = new FileReader();
-
-          reader.onload = () => {
-            resolve(String(reader.result || ""));
-          };
-
-          reader.onerror = () => {
-            reject(
-              new Error("Failed to read selected file."),
-            );
-          };
-
-          reader.readAsDataURL(file);
-        },
-      );
-
-      setPhoto(fileDataUrl);
-    } catch (error) {
-      console.error(
-        "[AddUserModal] Failed to read profile image:",
-        error,
-      );
-
-      alert(
-        error?.message ||
-          "Failed to read the selected image.",
-      );
-    }
-  }
-
   function getSelectedDepartment() {
     return departments.find(
-      (department) =>
-        String(department.id) === String(departmentId),
+      (department) => String(department.id) === String(departmentId),
     );
   }
 
   function getSelectedRole() {
-    return roles.find(
-      (role) =>
-        String(role.id) === String(roleId),
-    );
+    return roles.find((role) => String(role.id) === String(roleId));
   }
 
   function resetForm() {
-    setPhoto(null);
     setFullName("");
     setEmail("");
     setPassword("");
@@ -272,9 +204,7 @@ export default function AddUserModal({
     }
 
     if (password.length < 8) {
-      setSubmitError(
-        "Password must be at least 8 characters.",
-      );
+      setSubmitError("Password must be at least 8 characters.");
       return;
     }
 
@@ -341,24 +271,13 @@ export default function AddUserModal({
       const userForDisplay = {
         ...created,
 
-        id:
-          created?.id ||
-          created?.user_id ||
-          "",
+        id: created?.id || created?.user_id || "",
 
-        fullName:
-          created?.fullName ||
-          created?.full_name ||
-          cleanFullName,
+        fullName: created?.fullName || created?.full_name || cleanFullName,
 
-        full_name:
-          created?.full_name ||
-          created?.fullName ||
-          cleanFullName,
+        full_name: created?.full_name || created?.fullName || cleanFullName,
 
-        email:
-          created?.email ||
-          cleanEmail,
+        email: created?.email || cleanEmail,
 
         department:
           created?.department ||
@@ -380,27 +299,13 @@ export default function AddUserModal({
           created?.departmentId ||
           selectedDepartment.id,
 
-        role:
-          created?.role ||
-          created?.role_name ||
-          selectedRole.name,
+        role: created?.role || created?.role_name || selectedRole.name,
 
-        role_name:
-          created?.role_name ||
-          created?.role ||
-          selectedRole.name,
+        role_name: created?.role_name || created?.role || selectedRole.name,
 
-        roleId:
-          created?.roleId ||
-          created?.role_id ||
-          selectedRole.id,
+        roleId: created?.roleId || created?.role_id || selectedRole.id,
 
-        role_id:
-          created?.role_id ||
-          created?.roleId ||
-          selectedRole.id,
-
-        photo: photo || null,
+        role_id: created?.role_id || created?.roleId || selectedRole.id,
       };
 
       /*
@@ -417,15 +322,9 @@ export default function AddUserModal({
 
       setShowSuccess(true);
     } catch (error) {
-      console.error(
-        "[AddUserModal] User creation failed:",
-        error,
-      );
+      console.error("[AddUserModal] User creation failed:", error);
 
-      setSubmitError(
-        error?.message ||
-          "Failed to create the user account.",
-      );
+      setSubmitError(error?.message || "Failed to create the user account.");
     } finally {
       setSubmitting(false);
     }
@@ -456,27 +355,13 @@ export default function AddUserModal({
       return;
     }
 
-    setPhoto(user.photo || null);
-
-    setFullName(
-      user.fullName ||
-        user.full_name ||
-        "",
-    );
+    setFullName(user.fullName || user.full_name || "");
 
     setEmail(user.email || "");
 
-    setDepartmentId(
-      user.departmentId ||
-        user.department_id ||
-        "",
-    );
+    setDepartmentId(user.departmentId || user.department_id || "");
 
-    setRoleId(
-      user.roleId ||
-        user.role_id ||
-        "",
-    );
+    setRoleId(user.roleId || user.role_id || "");
 
     /*
      * Never restore the password.
@@ -518,211 +403,157 @@ export default function AddUserModal({
 
           {/* Main form */}
           <div className="max-h-[75vh] overflow-y-auto p-5">
-            <div className="grid gap-4 md:grid-cols-3">
-              {/* Profile picture */}
-              <div className="col-span-1">
-                <div className="rounded-md border border-dashed border-slate-200 p-4 text-center">
-                  <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center overflow-hidden rounded bg-slate-50">
-                    {photo ? (
-                      <img
-                        src={photo}
-                        alt="Profile preview"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <FaCamera className="text-xl text-slate-400" />
-                    )}
-                  </div>
-
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50">
-                    <FaCamera />
-
-                    <span>
-                      {photo
-                        ? "Change Photo"
-                        : "Upload Photo"}
-                    </span>
-
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFile}
-                      disabled={submitting}
-                      className="hidden"
-                    />
+            {/* User information */}
+            <div className="md:col-span-3">
+              <div className="grid gap-4">
+                {/* Full name */}
+                <div>
+                  <label
+                    htmlFor="fullName"
+                    className="mb-1 block text-xs font-semibold text-slate-600"
+                  >
+                    Full Name
                   </label>
 
-                  <p className="mt-2 text-[11px] text-slate-400">
-                    JPG, PNG or other image formats.
-                    <br />
-                    Maximum 5 MB.
+                  <input
+                    id="fullName"
+                    type="text"
+                    value={fullName}
+                    onChange={(event) => setFullName(event.target.value)}
+                    placeholder="Enter full name"
+                    disabled={submitting}
+                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-[#0b4a8b] focus:ring-1 focus:ring-[#0b4a8b] disabled:cursor-not-allowed disabled:bg-slate-50"
+                  />
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label
+                    htmlFor="email"
+                    className="mb-1 block text-xs font-semibold text-slate-600"
+                  >
+                    Email Address
+                  </label>
+
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder="name@haramaya.edu.et"
+                    disabled={submitting}
+                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-[#0b4a8b] focus:ring-1 focus:ring-[#0b4a8b] disabled:cursor-not-allowed disabled:bg-slate-50"
+                  />
+                </div>
+
+                {/* Initial password */}
+                <div>
+                  <label
+                    htmlFor="initialPassword"
+                    className="mb-1 block text-xs font-semibold text-slate-600"
+                  >
+                    Initial Password
+                  </label>
+
+                  <input
+                    id="initialPassword"
+                    type="password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    placeholder="Minimum 8 characters"
+                    disabled={submitting}
+                    autoComplete="new-password"
+                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-[#0b4a8b] focus:ring-1 focus:ring-[#0b4a8b] disabled:cursor-not-allowed disabled:bg-slate-50"
+                  />
+
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    The password is sent securely to the backend and hashed
+                    before storage.
                   </p>
                 </div>
-              </div>
 
-              {/* User information */}
-              <div className="col-span-2">
-                <div className="grid gap-4">
-                  {/* Full name */}
-                  <div>
-                    <label
-                      htmlFor="fullName"
-                      className="mb-1 block text-xs font-semibold text-slate-600"
-                    >
-                      Full Name
-                    </label>
+                {/* Department */}
+                <div>
+                  <label
+                    htmlFor="department"
+                    className="mb-1 block text-xs font-semibold text-slate-600"
+                  >
+                    Department
+                  </label>
 
-                    <input
-                      id="fullName"
-                      type="text"
-                      value={fullName}
-                      onChange={(event) =>
-                        setFullName(event.target.value)
-                      }
-                      placeholder="Enter full name"
-                      disabled={submitting}
-                      className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-[#0b4a8b] focus:ring-1 focus:ring-[#0b4a8b] disabled:cursor-not-allowed disabled:bg-slate-50"
-                    />
-                  </div>
+                  <select
+                    id="department"
+                    value={departmentId}
+                    onChange={(e) => setDepartmentId(e.target.value)}
+                    disabled={departmentsLoading}
+                    required
+                    className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#0b4a8b] focus:ring-1 focus:ring-[#0b4a8b] disabled:cursor-not-allowed disabled:bg-slate-50"
+                  >
+                    <option value="" disabled>
+                      {departmentsLoading
+                        ? "Loading departments..."
+                        : "Select Department"}
+                    </option>
 
-                  {/* Email */}
-                  <div>
-                    <label
-                      htmlFor="email"
-                      className="mb-1 block text-xs font-semibold text-slate-600"
-                    >
-                      Email Address
-                    </label>
+                    {departments.map((department) => (
+                      <option key={department.id} value={department.id}>
+                        {department.name}
+                      </option>
+                    ))}
+                  </select>
 
-                    <input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(event) =>
-                        setEmail(event.target.value)
-                      }
-                      placeholder="name@haramaya.edu.et"
-                      disabled={submitting}
-                      className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-[#0b4a8b] focus:ring-1 focus:ring-[#0b4a8b] disabled:cursor-not-allowed disabled:bg-slate-50"
-                    />
-                  </div>
-
-                  {/* Initial password */}
-                  <div>
-                    <label
-                      htmlFor="initialPassword"
-                      className="mb-1 block text-xs font-semibold text-slate-600"
-                    >
-                      Initial Password
-                    </label>
-
-                    <input
-                      id="initialPassword"
-                      type="password"
-                      value={password}
-                      onChange={(event) =>
-                        setPassword(event.target.value)
-                      }
-                      placeholder="Minimum 8 characters"
-                      disabled={submitting}
-                      autoComplete="new-password"
-                      className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-[#0b4a8b] focus:ring-1 focus:ring-[#0b4a8b] disabled:cursor-not-allowed disabled:bg-slate-50"
-                    />
-
-                    <p className="mt-1 text-[11px] text-slate-400">
-                      The password is sent securely to the
-                      backend and hashed before storage.
+                  {departmentsError && (
+                    <p className="mt-1 text-xs text-red-600">
+                      {departmentsError}
                     </p>
-                  </div>
+                  )}
 
-                  {/* Department */}
-                  <div>
-                    <label
-                      htmlFor="department"
-                      className="mb-1 block text-xs font-semibold text-slate-600"
-                    >
-                      Department
-                    </label>
-
-                    <select
-                      id="department"
-                      value={departmentId}
-                      onChange={(e) => setDepartmentId(e.target.value)}
-                      disabled={departmentsLoading}
-                      required
-                      className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#0b4a8b] focus:ring-1 focus:ring-[#0b4a8b] disabled:cursor-not-allowed disabled:bg-slate-50"
-                    >
-                      <option value="" disabled>
-                        {departmentsLoading
-                          ? "Loading departments..."
-                          : "Select Department"}
-                      </option>
-
-                      {departments.map((department) => (
-                        <option key={department.id} value={department.id}>
-                          {department.name}
-                        </option>
-                      ))}
-                    </select>
-
-                    {departmentsError && (
-                      <p className="mt-1 text-xs text-red-600">
-                        {departmentsError}
+                  {!departmentsLoading &&
+                    !departmentsError &&
+                    departments.length === 0 && (
+                      <p className="mt-1 text-xs text-amber-600">
+                        No active departments were found.
                       </p>
                     )}
+                </div>
 
-                    {!departmentsLoading &&
-                      !departmentsError &&
-                      departments.length === 0 && (
-                        <p className="mt-1 text-xs text-amber-600">
-                          No active departments were found.
-                        </p>
-                      )}
-                  </div>
+                {/* Role */}
+                <div>
+                  <label
+                    htmlFor="role"
+                    className="mb-1 block text-xs font-semibold text-slate-600"
+                  >
+                    Role
+                  </label>
 
-                  {/* Role */}
-                  <div>
-                    <label
-                      htmlFor="role"
-                      className="mb-1 block text-xs font-semibold text-slate-600"
-                    >
-                      Role
-                    </label>
+                  <select
+                    id="role"
+                    value={roleId}
+                    onChange={(e) => setRoleId(e.target.value)}
+                    disabled={rolesLoading}
+                    required
+                    className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#0b4a8b] focus:ring-1 focus:ring-[#0b4a8b] disabled:cursor-not-allowed disabled:bg-slate-50"
+                  >
+                    <option value="" disabled>
+                      {rolesLoading ? "Loading roles..." : "Assign a Role"}
+                    </option>
 
-                    <select
-                      id="role"
-                      value={roleId}
-                      onChange={(e) => setRoleId(e.target.value)}
-                      disabled={rolesLoading}
-                      required
-                      className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#0b4a8b] focus:ring-1 focus:ring-[#0b4a8b] disabled:cursor-not-allowed disabled:bg-slate-50"
-                    >
-                      <option value="" disabled>
-                        {rolesLoading ? "Loading roles..." : "Assign a Role"}
+                    {roles.map((role) => (
+                      <option key={role.id} value={role.id}>
+                        {role.name}
                       </option>
+                    ))}
+                  </select>
 
-                      {roles.map((role) => (
-                        <option key={role.id} value={role.id}>
-                          {role.name}
-                        </option>
-                      ))}
-                    </select>
+                  {rolesError && (
+                    <p className="mt-1 text-xs text-red-600">{rolesError}</p>
+                  )}
 
-                    {rolesError && (
-                      <p className="mt-1 text-xs text-red-600">
-                        {rolesError}
-                      </p>
-                    )}
-
-                    {!rolesLoading &&
-                      !rolesError &&
-                      roles.length === 0 && (
-                        <p className="mt-1 text-xs text-amber-600">
-                          No roles were returned by the
-                          system.
-                        </p>
-                      )}
-                  </div>
+                  {!rolesLoading && !rolesError && roles.length === 0 && (
+                    <p className="mt-1 text-xs text-amber-600">
+                      No roles were returned by the system.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -734,9 +565,8 @@ export default function AddUserModal({
               </p>
 
               <p className="mt-1 text-[11px] leading-5 text-blue-800">
-                Access privileges are determined by the
-                user's database role. The frontend does not
-                independently create or persist permission
+                Access privileges are determined by the user's database role.
+                The frontend does not independently create or persist permission
                 assignments.
               </p>
             </div>
@@ -744,9 +574,7 @@ export default function AddUserModal({
             {/* Submission error */}
             {submitError && (
               <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2">
-                <p className="text-xs leading-5 text-red-700">
-                  {submitError}
-                </p>
+                <p className="text-xs leading-5 text-red-700">{submitError}</p>
               </div>
             )}
           </div>
@@ -774,9 +602,7 @@ export default function AddUserModal({
               }
               className="rounded-md bg-[#0b4a8b] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#083c71] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {submitting
-                ? "Creating Account..."
-                : "Add User"}
+              {submitting ? "Creating Account..." : "Add User"}
             </button>
           </div>
         </div>
