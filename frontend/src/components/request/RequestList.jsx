@@ -17,6 +17,10 @@ import apiClient from "../../services/apiClient";
 function RequestList() {
   const [filterOpen, setFilterOpen] = useState(false);
 
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const [statusFilter, setStatusFilter] = useState("ALL");
+
   const [requests, setRequests] = useState([]);
 
   const [user, setUser] = useState(null);
@@ -113,6 +117,8 @@ function RequestList() {
   const isAdministrator =
     user?.role === "Administrator" || user?.role === "Super Admin";
 
+  const isSuperAdmin = user?.role === "Super Admin";
+
   const isStaff = user?.role === "Staff";
 
   const isStoreManager = user?.role === "Store Manager";
@@ -140,6 +146,28 @@ function RequestList() {
         return "bg-amber-100 text-amber-800 border-amber-200";
     }
   };
+
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+
+  const filteredRequests = requests.filter((request) => {
+    const searchableText = [
+      request.id,
+      request.requester_name,
+      request.department_name,
+      request.purpose,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    const matchesSearch =
+      !normalizedSearchTerm || searchableText.includes(normalizedSearchTerm);
+
+    const matchesStatus =
+      statusFilter === "ALL" || request.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
 
   // =========================================================
   // RENDER
@@ -192,13 +220,50 @@ function RequestList() {
       </div>
 
       {/* =====================================================
-          FILTER PLACEHOLDER
+          FILTERS
           ===================================================== */}
 
       {filterOpen && (
-        <div className="rounded-lg border bg-white p-4 text-sm text-slate-500">
-          Filtering controls can be added here once the database-backed request
-          list is established.
+        <div className="flex flex-col gap-3 rounded-lg border bg-white p-4 sm:flex-row sm:items-end">
+          <label className="flex flex-1 flex-col gap-1 text-sm font-medium text-primary">
+            Search requests
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="ID, requester, department, or purpose"
+              className="rounded-md border border-gray-300 px-3 py-2 font-normal outline-none focus:border-blue-500"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm font-medium text-primary">
+            Status
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+              className="rounded-md border border-gray-300 bg-white px-3 py-2 font-normal outline-none focus:border-blue-500"
+            >
+              <option value="ALL">All statuses</option>
+              <option value="PENDING">Pending</option>
+              <option value="APPROVED">Approved</option>
+              <option value="PARTIALLY_APPROVED">Partially approved</option>
+              <option value="FULFILLED">Fulfilled</option>
+              <option value="REJECTED">Rejected</option>
+            </select>
+          </label>
+
+          {(searchTerm || statusFilter !== "ALL") && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchTerm("");
+                setStatusFilter("ALL");
+              }}
+              className="rounded-md border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-slate-100"
+            >
+              Clear
+            </button>
+          )}
         </div>
       )}
 
@@ -248,9 +313,36 @@ function RequestList() {
             </thead>
 
             <tbody>
-              {requests.length > 0 ? (
-                requests.map((request) => (
-                  <tr key={request.id} className="border-b last:border-b-0">
+              {filteredRequests.length > 0 ? (
+                filteredRequests.map((request) => {
+                  const canReviewRequest =
+                    isAdministrator && request.status === "PENDING";
+
+                  return (
+                  <tr
+                    key={request.id}
+                    onClick={
+                      canReviewRequest
+                        ? () => setApprovalRequestId(request.id)
+                        : undefined
+                    }
+                    onKeyDown={
+                      canReviewRequest
+                        ? (event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              setApprovalRequestId(request.id);
+                            }
+                          }
+                        : undefined
+                    }
+                    tabIndex={canReviewRequest ? 0 : undefined}
+                    className={`border-b last:border-b-0 ${
+                      canReviewRequest
+                        ? "cursor-pointer hover:bg-slate-50 focus:bg-slate-50 focus:outline-none"
+                        : ""
+                    }`}
+                  >
                     {/* REQUEST ID */}
 
                     <td className="p-3 font-medium text-primary">
@@ -300,11 +392,19 @@ function RequestList() {
                               ========================= */}
 
                         {isAdministrator && request.status === "PENDING" ? (
+                          isSuperAdmin ? (
+                            <span className="text-xs font-medium text-slate-500">
+                              Action needed
+                            </span>
+                          ) : (
                           <div className="flex flex-wrap gap-2">
                             <button
                               type="button"
                               disabled={actionId === request.id}
-                              onClick={() => setApprovalRequestId(request.id)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setApprovalRequestId(request.id);
+                              }}
                               className="rounded-md border border-emerald-600 px-3 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
                             >
                               Approve
@@ -313,12 +413,16 @@ function RequestList() {
                             <button
                               type="button"
                               disabled={actionId === request.id}
-                              onClick={() => handleReject(request.id)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleReject(request.id);
+                              }}
                               className="rounded-md border border-rose-600 px-3 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
                             >
                               Reject
                             </button>
                           </div>
+                          )
                         ) : null}
 
                         {/* =========================
@@ -354,14 +458,17 @@ function RequestList() {
                       </td>
                     )}
                   </tr>
-                ))
+                  );
+                })
               ) : (
                 <tr>
                   <td
                     className="p-8 text-center text-slate-500"
                     colSpan={isAdministrator || isStoreManager ? 7 : 4}
                   >
-                    No requests found.
+                    {requests.length > 0
+                      ? "No requests match the selected filters."
+                      : "No requests found."}
                   </td>
                 </tr>
               )}

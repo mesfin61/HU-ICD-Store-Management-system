@@ -255,7 +255,7 @@ export default function Login() {
               </a>
             </p>
             <p className="text-center text-xs tracking-widest uppercase text-gray-400">
-              © 2024 Haramaya University ICT Directorate
+              &copy; {new Date().getFullYear()} Haramaya University ICT Directorate
             </p>
           </div>
         </main>

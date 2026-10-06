@@ -139,29 +139,64 @@ const user = {
   // =========================================================
 
   async create({ fullName, email, passwordHash, roleId, departmentId }) {
-    const result = await pool.query(
-      `
-      INSERT INTO users (
-        full_name,
-        email,
-        password_hash,
-        role_id,
-        department_id
-      )
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING
-        id,
-        full_name,
-        email,
-        role_id,
-        department_id,
-        is_active,
-        created_at
-      `,
-      [fullName, email, passwordHash, roleId, departmentId || null],
-    );
+    const client = await pool.connect();
 
-    return result.rows[0];
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT pg_advisory_xact_lock($1)", [874231]);
+
+      const roleResult = await client.query(
+        "SELECT name FROM roles WHERE id = $1",
+        [roleId],
+      );
+
+      if (roleResult.rows[0]?.name === SUPER_ADMIN) {
+        const countResult = await client.query(
+          `
+          SELECT COUNT(*)::integer AS count
+          FROM users u
+          JOIN roles r ON r.id = u.role_id
+          WHERE r.name = $1
+          `,
+          [SUPER_ADMIN],
+        );
+
+        if (countResult.rows[0].count >= 2) {
+          throw new Error("SUPER_ADMIN_LIMIT");
+        }
+      }
+
+      const result = await client.query(
+        `
+        INSERT INTO users (
+          full_name,
+          email,
+          password_hash,
+          role_id,
+          department_id
+        )
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING
+          id,
+          full_name,
+          email,
+          role_id,
+          department_id,
+          is_active,
+          created_at
+        `,
+        [fullName, email, passwordHash, roleId, departmentId || null],
+      );
+
+      await client.query("COMMIT");
+
+      return result.rows[0];
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 
   // =========================================================
@@ -292,6 +327,30 @@ const user = {
           success: false,
           reason: "INVALID_ROLE",
         };
+      }
+
+      if (
+        requestedRole.name === SUPER_ADMIN &&
+        targetUser.role_name !== SUPER_ADMIN
+      ) {
+        const superAdminResult = await client.query(
+          `
+          SELECT COUNT(*)::integer AS count
+          FROM users u
+          JOIN roles r ON r.id = u.role_id
+          WHERE r.name = $1
+          `,
+          [SUPER_ADMIN],
+        );
+
+        if (superAdminResult.rows[0].count >= 2) {
+          await client.query("ROLLBACK");
+
+          return {
+            success: false,
+            reason: "SUPER_ADMIN_LIMIT",
+          };
+        }
       }
 
       /*

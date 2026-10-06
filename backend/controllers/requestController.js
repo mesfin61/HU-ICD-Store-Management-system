@@ -88,6 +88,11 @@ const createRequest = async (req, res) => {
       ITEM_NOT_FOUND: [404, "One or more requested items do not exist."],
 
       ITEM_INACTIVE: [400, "One or more requested items are inactive."],
+
+      INSUFFICIENT_STOCK: [
+        400,
+        "Requested quantity exceeds the available stock for one or more items.",
+      ],
     };
 
     const known = errors[error.message];

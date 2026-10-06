@@ -1,5 +1,6 @@
 const pool = require("../config/db");
 const { isAdministratorRole } = require("../middleware/AuthMiddleware");
+const { message, notification } = require("../models");
 
 // =========================================================
 // MESSAGE CONTROLLER

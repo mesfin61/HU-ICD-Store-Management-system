@@ -135,7 +135,8 @@ function SideBar() {
 
   const canViewInventory = isAdministrator || isStoreManager || isStaff;
 
-  const canViewStockMovement = isAdministrator || isStoreManager;
+  const canViewStockMovement =
+    userRole !== ROLES.SUPER_ADMIN && (isStoreManager);
 
   const canViewRequests = isAdministrator || isStoreManager || isStaff;
 

@@ -73,7 +73,8 @@ const request = {
           `
           SELECT
             id,
-            is_active
+            is_active,
+            current_stock
           FROM items
           WHERE id = $1
           FOR SHARE
@@ -89,6 +90,10 @@ const request = {
 
         if (!inventoryItem.is_active) {
           throw new Error("ITEM_INACTIVE");
+        }
+
+        if (Number(inventoryItem.current_stock) < item.quantity) {
+          throw new Error("INSUFFICIENT_STOCK");
         }
       }
 

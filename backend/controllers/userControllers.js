@@ -183,6 +183,13 @@ const createUser = async (req, res) => {
   } catch (error) {
     console.error("[User] createUser error:", error);
 
+    if (error.message === "SUPER_ADMIN_LIMIT") {
+      return res.status(400).json({
+        success: false,
+        message: "The system allows a maximum of two Super Admin accounts.",
+      });
+    }
+
     return res.status(500).json({
       success: false,
       message: "Server error.",
@@ -339,6 +346,12 @@ const updateUser = async (req, res) => {
             success: false,
             message:
               "The system must always have at least one active Administrator.",
+          });
+
+        case "SUPER_ADMIN_LIMIT":
+          return res.status(400).json({
+            success: false,
+            message: "The system allows a maximum of two Super Admin accounts.",
           });
 
         case "SELF_PRIVILEGE_CHANGE":

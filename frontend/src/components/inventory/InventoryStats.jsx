@@ -4,8 +4,10 @@ import { PiStorefront } from "react-icons/pi";
 import { GoAlert } from "react-icons/go";
 import { IoMdCloseCircleOutline } from "react-icons/io";
 import { MdCategory } from "react-icons/md";
+import { useUser } from "../../context/AuthContext";
 
 function InventoryStats({ items = [], isLoading = false }) {
+  const { user } = useUser();
   const totalItems = items.length;
 
   const lowStockItems = items.filter(
@@ -37,14 +39,16 @@ function InventoryStats({ items = [], isLoading = false }) {
             departments.
           </p>
         </div>
-        <div className="ml-auto">
-          <Link
-            to="/inventory/add-new-item"
-            className="flex items-center gap-2 px-4 py-2 bg-surface-container-highest hover:bg-primary text-primary border border-primary/20 rounded-lg hover:text-white transition-all"
-          >
-            Add New Item
-          </Link>
-        </div>
+        {user?.role !== "Staff" && (
+          <div className="ml-auto">
+            <Link
+              to="/inventory/add-new-item"
+              className="flex items-center gap-2 px-4 py-2 bg-surface-container-highest hover:bg-primary text-primary border border-primary/20 rounded-lg hover:text-white transition-all"
+            >
+              Add New Item
+            </Link>
+          </div>
+        )}
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mt-2">
         <span className="flex p-4 gap-6 shadow-lg items-center rounded-lg border bg-white min-h-24">

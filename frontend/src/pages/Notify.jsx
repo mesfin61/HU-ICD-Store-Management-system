@@ -95,6 +95,8 @@ function Notify() {
 
       await markNotificationAsRead(notificationId);
 
+      window.dispatchEvent(new Event("notifications-updated"));
+
       await loadNotifications({
         showLoading: false,
       });
@@ -116,6 +118,8 @@ function Notify() {
       setErrorMessage("");
 
       await markAllNotificationsAsRead();
+
+      window.dispatchEvent(new Event("notifications-updated"));
 
       await loadNotifications({
         showLoading: false,
@@ -139,6 +143,8 @@ function Notify() {
       setErrorMessage("");
 
       await deleteNotification(notificationId);
+
+      window.dispatchEvent(new Event("notifications-updated"));
 
       await loadNotifications({
         showLoading: false,

@@ -468,6 +468,44 @@ CREATE TABLE item_returns (
 
 
 -- =========================================================
+-- MESSAGES
+-- =========================================================
+
+CREATE TABLE messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    sender_id UUID NOT NULL,
+    recipient_id UUID NOT NULL,
+    parent_message_id UUID,
+
+    subject VARCHAR(255) NOT NULL,
+    body TEXT NOT NULL,
+
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_message_sender
+        FOREIGN KEY (sender_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_message_recipient
+        FOREIGN KEY (recipient_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_message_parent
+        FOREIGN KEY (parent_message_id)
+        REFERENCES messages(id)
+        ON DELETE SET NULL,
+
+    CONSTRAINT chk_message_participants
+        CHECK (sender_id <> recipient_id)
+);
+
+
+-- =========================================================
 -- NOTIFICATIONS
 -- =========================================================
 
@@ -588,6 +626,15 @@ CREATE INDEX idx_issued_items_user
 
 CREATE INDEX idx_notifications_user
     ON notifications(user_id, is_read);
+
+CREATE INDEX idx_messages_recipient
+    ON messages(recipient_id, is_read, created_at DESC);
+
+CREATE INDEX idx_messages_sender
+    ON messages(sender_id, created_at DESC);
+
+CREATE INDEX idx_messages_parent
+    ON messages(parent_message_id);
 
 CREATE INDEX idx_audit_logs_entity
     ON audit_logs(entity_name, entity_id);

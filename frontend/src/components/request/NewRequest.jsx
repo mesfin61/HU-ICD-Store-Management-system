@@ -69,6 +69,10 @@ function NewRequest() {
 
     setSubmitError("");
 
+    const selectedItem = inventoryItems.find(
+      (item) => item.id === form.itemId,
+    );
+
     if (!form.purpose.trim()) {
       setSubmitError("A reason for the request is required.");
       return;
@@ -81,6 +85,13 @@ function NewRequest() {
 
     if (!Number.isInteger(form.quantity) || form.quantity <= 0) {
       setSubmitError("Quantity must be a positive whole number.");
+      return;
+    }
+
+    if (selectedItem && form.quantity > Number(selectedItem.current_stock)) {
+      setSubmitError(
+        `Quantity cannot exceed the available stock of ${selectedItem.current_stock} ${selectedItem.unit}.`,
+      );
       return;
     }
 
@@ -171,6 +182,10 @@ function NewRequest() {
                 value={form.quantity}
                 onChange={handleChange}
                 min="1"
+                max={
+                  inventoryItems.find((item) => item.id === form.itemId)
+                    ?.current_stock
+                }
                 step="1"
                 required
                 disabled={isSubmitting}

@@ -5,7 +5,7 @@ import AddUserSuccessModal from "./AddUserSuccessModal";
 
 import { getDepartments } from "../../services/departmentService";
 import { getRoles } from "../../services/roleService";
-import { createUser } from "../../services/userService";
+import { createUser, getUsers } from "../../services/userService";
 
 const EMPTY_FORM = {
   fullName: "",
@@ -30,6 +30,8 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
   const [rolesLoading, setRolesLoading] = useState(false);
   const [rolesError, setRolesError] = useState("");
 
+  const [superAdminCount, setSuperAdminCount] = useState(0);
+
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
@@ -37,7 +39,7 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
   const [createdUser, setCreatedUser] = useState(null);
 
   /*
-   * Load departments and roles from the backend whenever
+  * Load departments, roles, and current users from the backend whenever
    * the Add User modal opens.
    *
    * Departments and roles are database data.
@@ -59,9 +61,10 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
       setRolesError("");
 
       try {
-        const [departmentData, roleData] = await Promise.all([
+        const [departmentData, roleData, userData] = await Promise.all([
           getDepartments(),
           getRoles(),
+          getUsers(),
         ]);
 
         if (cancelled) {
@@ -86,6 +89,11 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
 
         setDepartments(activeDepartments);
         setRoles(availableRoles);
+        setSuperAdminCount(
+          (Array.isArray(userData) ? userData : []).filter(
+            (user) => user.role_name === "Super Admin" || user.role === "Super Admin",
+          ).length,
+        );
       } catch (error) {
         console.error(
           "[AddUserModal] Failed to load departments/roles:",
@@ -144,6 +152,7 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
     setSubmitError("");
     setShowSuccess(false);
     setCreatedUser(null);
+    setSuperAdminCount(0);
   }, [isOpen]);
 
   /*
@@ -232,6 +241,11 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
       setSubmitError(
         "The selected role is no longer available. Please select another role.",
       );
+      return;
+    }
+
+    if (selectedRole.name === "Super Admin" && superAdminCount >= 2) {
+      setSubmitError("The system allows a maximum of two Super Admin accounts.");
       return;
     }
 
@@ -539,8 +553,16 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
                     </option>
 
                     {roles.map((role) => (
-                      <option key={role.id} value={role.id}>
-                        {role.name}
+                      <option
+                        key={role.id}
+                        value={role.id}
+                        disabled={
+                          role.name === "Super Admin" && superAdminCount >= 2
+                        }
+                      >
+                        {role.name === "Super Admin" && superAdminCount >= 2
+                          ? "Super Admin (limit reached)"
+                          : role.name}
                       </option>
                     ))}
                   </select>

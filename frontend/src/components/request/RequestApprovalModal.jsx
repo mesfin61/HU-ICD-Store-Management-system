@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 
-import { approveRequest, getRequest } from "../../services/requestService";
+import {
+  approveRequest,
+  getRequest,
+  rejectRequest,
+} from "../../services/requestService";
 
 function RequestApprovalModal({ requestId, onClose, onSuccess }) {
   const [request, setRequest] = useState(null);
@@ -12,6 +16,35 @@ function RequestApprovalModal({ requestId, onClose, onSuccess }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [errorMessage, setErrorMessage] = useState("");
+
+  const handleReject = async () => {
+    const reason = window.prompt(
+      "Enter the reason for rejecting this request:",
+    );
+
+    if (typeof reason !== "string" || !reason.trim() || !request) {
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setErrorMessage("");
+
+      await rejectRequest(request.id, reason.trim());
+
+      if (onSuccess) {
+        await onSuccess();
+      }
+    } catch (error) {
+      console.error("[RequestApprovalModal] reject request:", error);
+
+      setErrorMessage(
+        error.response?.data?.message || "Failed to reject request.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -264,11 +297,11 @@ function RequestApprovalModal({ requestId, onClose, onSuccess }) {
             <div className="mt-6 flex flex-col-reverse gap-3 border-t pt-4 sm:flex-row sm:justify-end">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleReject}
                 disabled={isSubmitting}
-                className="rounded-md border border-primary px-6 py-2 text-sm font-semibold text-primary hover:bg-slate-50 disabled:opacity-50"
+                className="rounded-md border border-rose-600 px-6 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Cancel
+                Reject
               </button>
 
               <button
@@ -276,7 +309,7 @@ function RequestApprovalModal({ requestId, onClose, onSuccess }) {
                 disabled={isSubmitting || !request.items?.length}
                 className="rounded-md bg-blue-600 px-6 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isSubmitting ? "Submitting..." : "Submit Decision"}
+                {isSubmitting ? "Approving..." : "Approve"}
               </button>
             </div>
           </form>
