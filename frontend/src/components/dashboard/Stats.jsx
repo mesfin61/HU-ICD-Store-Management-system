@@ -10,6 +10,8 @@ import {
   FaClock,
   FaBan,
   FaCheckCircle,
+  FaBell,
+  FaHistory,
 } from "react-icons/fa";
 
 import apiClient from "../../services/apiClient";
@@ -19,8 +21,8 @@ import apiClient from "../../services/apiClient";
 // =========================================================
 
 const ROLES = Object.freeze({
-  SUPER_ADMIN: "Super Admin",
   ADMINISTRATOR: "Administrator",
+  DIRECTORATE: "Directorate",
   STORE_MANAGER: "Store Manager",
   STAFF: "Staff",
 });
@@ -31,7 +33,7 @@ const ROLES = Object.freeze({
 
 const INITIAL_STATS = {
   inventoryItems: 0,
-  availableStock: 0,
+  availableStockByUnit: {},
   lowStockItems: 0,
 
   totalRequests: 0,
@@ -45,6 +47,8 @@ const INITIAL_STATS = {
   outstandingReturns: 0,
 
   users: 0,
+  activeUsers: 0,
+  inactiveUsers: 0,
   unreadNotifications: 0,
 };
 
@@ -56,6 +60,30 @@ function normalizeStatus(status) {
   return String(status || "")
     .trim()
     .toUpperCase();
+}
+
+function formatUnit(unit) {
+  const normalizedUnit = String(unit || "pcs").trim().toLowerCase();
+
+  return normalizedUnit || "pcs";
+}
+
+function AvailableStockValue({ stockByUnit }) {
+  const stockEntries = Object.entries(stockByUnit);
+
+  if (stockEntries.length === 0) {
+    return "0";
+  }
+
+  return (
+    <span className="flex flex-col gap-1 text-lg leading-tight">
+      {stockEntries.map(([unit, quantity]) => (
+        <span key={unit}>
+          {Number(quantity).toLocaleString()} {unit}
+        </span>
+      ))}
+    </span>
+  );
 }
 
 function isOverdue(item) {
@@ -105,10 +133,7 @@ function Stats() {
           throw new Error("Unable to determine the current user.");
         }
 
-        const role =
-          currentUser.role === ROLES.SUPER_ADMIN
-            ? ROLES.ADMINISTRATOR
-            : currentUser.role || null;
+        const role = currentUser.role || null;
 
         if (mounted) {
           setUser(currentUser);
@@ -120,19 +145,30 @@ function Stats() {
         // All authenticated roles may read inventory.
         // ===================================================
 
-        const inventoryResponse = await apiClient.get("/api/inventory");
+        const canReadInventory =
+          role === ROLES.DIRECTORATE ||
+          role === ROLES.STORE_MANAGER ||
+          role === ROLES.STAFF;
 
-        const inventory = Array.isArray(inventoryResponse.data?.data)
-          ? inventoryResponse.data.data
-          : [];
+        let inventory = [];
+
+        if (canReadInventory) {
+          const inventoryResponse = await apiClient.get("/api/inventory");
+          inventory = Array.isArray(inventoryResponse.data?.data)
+            ? inventoryResponse.data.data
+            : [];
+        }
 
         const inventoryItems = inventory.length;
 
-        const availableStock = inventory.reduce((total, item) => {
+        const availableStockByUnit = inventory.reduce((totals, item) => {
           const currentStock = Number(item.current_stock) || 0;
+          const unit = formatUnit(item.unit);
 
-          return total + currentStock;
-        }, 0);
+          totals[unit] = (totals[unit] || 0) + currentStock;
+
+          return totals;
+        }, {});
 
         const lowStockItems = inventory.filter((item) => {
           const currentStock = Number(item.current_stock) || 0;
@@ -157,7 +193,7 @@ function Stats() {
 
         let requests = [];
 
-        if (role === ROLES.ADMINISTRATOR) {
+        if (role === ROLES.DIRECTORATE) {
           const response = await apiClient.get("/api/requests");
 
           requests = Array.isArray(response.data?.data)
@@ -246,6 +282,8 @@ function Stats() {
         // ===================================================
 
         let users = 0;
+        let activeUsers = 0;
+        let inactiveUsers = 0;
 
         if (role === ROLES.ADMINISTRATOR) {
           const response = await apiClient.get("/api/users");
@@ -255,6 +293,10 @@ function Stats() {
             : [];
 
           users = systemUsers.length;
+          activeUsers = systemUsers.filter(
+            (systemUser) => systemUser.is_active,
+          ).length;
+          inactiveUsers = users - activeUsers;
         }
 
         // ===================================================
@@ -277,7 +319,7 @@ function Stats() {
         if (mounted) {
           setStats({
             inventoryItems,
-            availableStock,
+            availableStockByUnit,
             lowStockItems,
 
             totalRequests,
@@ -292,6 +334,8 @@ function Stats() {
             outstandingReturns,
 
             users,
+            activeUsers,
+            inactiveUsers,
 
             unreadNotifications,
           });
@@ -320,8 +364,7 @@ function Stats() {
     };
   }, []);
 
-  const role =
-    user?.role === ROLES.SUPER_ADMIN ? ROLES.ADMINISTRATOR : user?.role || null;
+  const role = user?.role || null;
 
   // =======================================================
   // LOADING
@@ -390,9 +433,79 @@ function Stats() {
           <StatCard title="System Users" value={stats.users} icon={FaUsers} />
 
           <StatCard
+            title="Active Users"
+            value={stats.activeUsers}
+            icon={FaCheckCircle}
+          />
+
+          <StatCard
+            title="Inactive Users"
+            value={stats.inactiveUsers}
+            icon={FaBan}
+            warning={stats.inactiveUsers > 0}
+          />
+
+          <StatCard
+            title="Unread Notifications"
+            value={stats.unreadNotifications}
+            icon={FaBell}
+            warning={stats.unreadNotifications > 0}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <InfoCard
+            title="Administrator Actions"
+            value={stats.activeUsers + stats.inactiveUsers}
+            icon={FaHistory}
+            description="Users currently managed by the system."
+          />
+
+          <InfoCard
+            title="Audit Log"
+            value="Review"
+            icon={FaHistory}
+            description="Monitor system activity and changes."
+          />
+
+          <InfoCard
+            title="System Access"
+            value="Managed"
+            icon={FaUsers}
+            description="Roles and user access are under administrator control."
+          />
+        </div>
+      </section>
+    );
+  }
+
+  // =======================================================
+  // DIRECTORATE DASHBOARD
+  // =======================================================
+
+  if (role === ROLES.DIRECTORATE) {
+    return (
+      <section className="space-y-5">
+        <DashboardHeading
+          title="Directorate Dashboard"
+          description="Current inventory, request, and operational oversight."
+        />
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard
             title="Inventory Items"
             value={stats.inventoryItems}
             icon={FaBoxOpen}
+          />
+
+          <StatCard
+            title="Available Stock"
+            value={
+              <AvailableStockValue
+                stockByUnit={stats.availableStockByUnit}
+              />
+            }
+            icon={FaBoxes}
           />
 
           <StatCard
@@ -403,10 +516,10 @@ function Stats() {
           />
 
           <StatCard
-            title="Low Stock Items"
-            value={stats.lowStockItems}
-            icon={FaExclamationTriangle}
-            warning={stats.lowStockItems > 0}
+            title="Unread Notifications"
+            value={stats.unreadNotifications}
+            icon={FaBell}
+            warning={stats.unreadNotifications > 0}
           />
         </div>
 
@@ -415,11 +528,12 @@ function Stats() {
             title="Total Requests"
             value={stats.totalRequests}
             icon={FaClipboardList}
+            description="Requests currently visible to the Directorate."
           />
 
           <InfoCard
-            title="Fulfilled Requests"
-            value={stats.fulfilledRequests}
+            title="Approved Requests"
+            value={stats.approvedRequests}
             icon={FaCheckCircle}
           />
 
@@ -427,6 +541,22 @@ function Stats() {
             title="Rejected Requests"
             value={stats.rejectedRequests}
             icon={FaBan}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <InfoCard
+            title="Partially Approved"
+            value={stats.partiallyApprovedRequests}
+            icon={FaClipboardCheck}
+          />
+
+          <InfoCard
+            title="Low Stock Items"
+            value={stats.lowStockItems}
+            icon={FaExclamationTriangle}
+            warning={stats.lowStockItems > 0}
+            description="Inventory items at or below their minimum stock level."
           />
         </div>
       </section>
@@ -454,7 +584,11 @@ function Stats() {
 
           <StatCard
             title="Available Stock"
-            value={stats.availableStock}
+            value={
+              <AvailableStockValue
+                stockByUnit={stats.availableStockByUnit}
+              />
+            }
             icon={FaBoxes}
           />
 
@@ -612,13 +746,13 @@ function StatCard({ title, value, icon: Icon, warning = false }) {
           {title}
         </p>
 
-        <p
+        <div
           className={`mt-2 text-3xl font-bold ${
             warning ? "text-red-600" : "text-primary"
           }`}
         >
           {value}
-        </p>
+        </div>
       </div>
 
       <div

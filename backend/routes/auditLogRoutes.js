@@ -1,6 +1,6 @@
 const express = require("express");
 
-const { protect, restrictTo } = require("../middleware/AuthMiddleware");
+const { protect, restrictTo, ROLES } = require("../middleware/AuthMiddleware");
 
 const {
   getAuditLogs,
@@ -28,7 +28,7 @@ router.get("/mine", getMyAuditLogs);
 // ADMINISTRATOR AUDIT LOGS
 // =========================================================
 
-router.use(restrictTo("Super Admin"));
+router.use(restrictTo(ROLES.ADMINISTRATOR));
 
 router.get("/", getAuditLogs);
 

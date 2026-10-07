@@ -1,5 +1,8 @@
 const { request } = require("../models");
-const { isAdministratorRole } = require("../middleware/AuthMiddleware");
+const {
+  isAdministratorRole,
+  isDirectorateRole,
+} = require("../middleware/AuthMiddleware");
 
 // =========================================================
 // STAFF: CREATE REQUEST
@@ -160,7 +163,9 @@ const getRequest = async (req, res) => {
       });
     }
 
-    const isAdministrator = isAdministratorRole(req.user.role_name);
+    const canViewBusinessRequest =
+      isAdministratorRole(req.user.role_name) ||
+      isDirectorateRole(req.user.role_name);
 
     const isRequester = foundRequest.requester_id === req.user.id;
 
@@ -171,7 +176,7 @@ const getRequest = async (req, res) => {
       (foundRequest.status === "APPROVED" ||
         foundRequest.status === "PARTIALLY_APPROVED");
 
-    if (!isAdministrator && !isRequester && !managerCanView) {
+    if (!canViewBusinessRequest && !isRequester && !managerCanView) {
       return res.status(403).json({
         success: false,
         message: "Access denied.",

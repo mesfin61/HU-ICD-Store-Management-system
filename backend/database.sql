@@ -11,9 +11,10 @@ CREATE TABLE roles (
 );
 
 INSERT INTO roles (id, name, description) VALUES
-    (1, 'Super Admin', 'Full system administration and authorization access'),
-    (2, 'Store Manager', 'Store inventory and item issuance management access'),
-    (3, 'Staff', 'Standard staff request and inventory access');
+    (1, 'Administrator', 'System administration, user management, and audit access'),
+    (2, 'Directorate', 'Business request review and approval access'),
+    (3, 'Store Manager', 'Store inventory and item issuance management access'),
+    (4, 'Staff', 'Standard staff request and inventory access');
     
 SELECT setval(
     'roles_id_seq',

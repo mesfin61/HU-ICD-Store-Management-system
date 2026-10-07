@@ -183,12 +183,6 @@ const createUser = async (req, res) => {
   } catch (error) {
     console.error("[User] createUser error:", error);
 
-    if (error.message === "SUPER_ADMIN_LIMIT") {
-      return res.status(400).json({
-        success: false,
-        message: "The system allows a maximum of two Super Admin accounts.",
-      });
-    }
 
     return res.status(500).json({
       success: false,
@@ -348,11 +342,6 @@ const updateUser = async (req, res) => {
               "The system must always have at least one active Administrator.",
           });
 
-        case "SUPER_ADMIN_LIMIT":
-          return res.status(400).json({
-            success: false,
-            message: "The system allows a maximum of two Super Admin accounts.",
-          });
 
         case "SELF_PRIVILEGE_CHANGE":
           return res.status(403).json({
@@ -407,10 +396,10 @@ const transferOwnership = async (req, res) => {
   try {
     const { currentPassword } = req.body;
 
-    if (req.user.role_name !== ROLES.SUPER_ADMIN) {
+    if (req.user.role_name !== ROLES.ADMINISTRATOR) {
       return res.status(403).json({
         success: false,
-        message: "Only a Super Admin can transfer ownership.",
+        message: "Only an Administrator can transfer ownership.",
       });
     }
 
@@ -464,7 +453,7 @@ const transferOwnership = async (req, res) => {
         case "NOT_AUTHORIZED":
           return res.status(403).json({
             success: false,
-            message: "Only the current Super Admin can transfer ownership.",
+            message: "Only the current Administrator can transfer ownership.",
           });
 
         case "TARGET_INACTIVE":
@@ -494,14 +483,14 @@ const transferOwnership = async (req, res) => {
       entityId: targetUser.id,
       oldData: {
         previousOwnerId: req.user.id,
-        previousOwnerRole: ROLES.SUPER_ADMIN,
+        previousOwnerRole: ROLES.ADMINISTRATOR,
         targetUserRole: targetUser.role_name,
       },
       newData: {
         previousOwnerId: req.user.id,
         previousOwnerRole: ROLES.STORE_MANAGER,
         newOwnerId: targetUser.id,
-        newOwnerRole: ROLES.SUPER_ADMIN,
+        newOwnerRole: ROLES.ADMINISTRATOR,
       },
     });
 
@@ -669,10 +658,10 @@ const activateUser = async (req, res) => {
   try {
     const { id } = req.params;
 
-    if (req.user.role_name !== ROLES.SUPER_ADMIN) {
+    if (req.user.role_name !== ROLES.ADMINISTRATOR) {
       return res.status(403).json({
         success: false,
-        message: "Only a Super Admin can activate users.",
+        message: "Only an Administrator can activate users.",
       });
     }
 

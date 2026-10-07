@@ -7,7 +7,7 @@ const {
   rejectException,
 } = require("../controllers/inventoryReservationExceptionController");
 
-const { protect, restrictTo } = require("../middleware/AuthMiddleware");
+const { protect, restrictTo, ROLES } = require("../middleware/AuthMiddleware");
 
 const router = express.Router();
 
@@ -21,12 +21,9 @@ router.use(protect);
 // ADMINISTRATOR ONLY
 // =========================================================
 
-router.get("/", restrictTo("Super Admin"), getOpenExceptions);
-
-router.get("/:id", restrictTo("Super Admin"), getException);
-
-router.post("/:id/approve", restrictTo("Super Admin"), approveException);
-
-router.post("/:id/reject", restrictTo("Super Admin"), rejectException);
+router.get("/", restrictTo(ROLES.ADMINISTRATOR), getOpenExceptions);
+router.get("/:id", restrictTo(ROLES.ADMINISTRATOR), getException);
+router.post("/:id/approve", restrictTo(ROLES.ADMINISTRATOR), approveException);
+router.post("/:id/reject", restrictTo(ROLES.ADMINISTRATOR), rejectException);
 
 module.exports = router;

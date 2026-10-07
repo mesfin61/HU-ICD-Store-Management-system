@@ -43,7 +43,7 @@ const settingsOptions = [
   {
     key: "transfer-ownership",
     label: "Transfer Ownership",
-    description: "Move Super Admin ownership",
+    description: "Transfer administrator ownership",
     icon: FaShieldAlt,
   },
   {
@@ -1042,7 +1042,7 @@ function TransferOwnership({ currentUser, onTransferComplete }) {
       <div className="border-b border-slate-100 px-6 py-5">
         <h3 className="text-lg font-bold text-primary">Transfer ownership</h3>
         <p className="mt-1 max-w-2xl text-sm text-slate-500">
-          Give another active user full Super Admin control. Your account will
+          Give another active user full Administrator control. Your account will
           become a Store Manager after the transfer.
         </p>
       </div>
@@ -1134,7 +1134,7 @@ function TransferOwnership({ currentUser, onTransferComplete }) {
             <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
               Are you sure you want to transfer ownership to{" "}
               <strong>{selectedUser.full_name}</strong>? Your account will lose
-              Super Admin access and cannot undo this change by itself.
+              Administrator access and cannot undo this change by itself.
             </div>
 
             {error && (
@@ -1184,8 +1184,8 @@ export default function Settings() {
   const [activeSetting, setActiveSetting] = useState("profile");
   const canManageCategories = user?.role === "Store Manager";
   const canManageDepartments =
-    user?.role === "Super Admin" || user?.role === "Administrator";
-  const canTransferOwnership = user?.role === "Super Admin";
+    user?.role === "Administrator";
+  const canTransferOwnership = false;
   const visibleSettings = settingsOptions.filter(
     (setting) =>
       ((setting.key !== "category" && setting.key !== "category-update") ||

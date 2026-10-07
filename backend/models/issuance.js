@@ -138,6 +138,10 @@ const issuance = {
         throw new Error("ISSUE_EXCEEDS_REMAINING_APPROVED");
       }
 
+      if (quantity !== remainingApproved) {
+        throw new Error("ISSUE_MUST_MATCH_REMAINING_APPROVED");
+      }
+
       // =======================================================
       // 4. VERIFY INVENTORY ITEM
       //

@@ -9,8 +9,6 @@ function IssuanceModal({ requestId, onClose, onIssued }) {
 
   const [selectedRequestItemId, setSelectedRequestItemId] = useState("");
 
-  const [quantity, setQuantity] = useState("");
-
   const [dueDate, setDueDate] = useState("");
 
   const [isLoading, setIsLoading] = useState(true);
@@ -95,19 +93,7 @@ function IssuanceModal({ requestId, onClose, onIssued }) {
       return;
     }
 
-    const issueQuantity = Number(quantity);
-
-    if (!Number.isInteger(issueQuantity) || issueQuantity <= 0) {
-      setErrorMessage("Issue quantity must be a positive whole number.");
-      return;
-    }
-
-    if (issueQuantity > remainingApproved) {
-      setErrorMessage(
-        "Issue quantity cannot exceed the remaining approved quantity.",
-      );
-      return;
-    }
+    const issueQuantity = remainingApproved;
 
     try {
       setIsSubmitting(true);
@@ -147,7 +133,6 @@ function IssuanceModal({ requestId, onClose, onIssued }) {
   const handleItemChange = (event) => {
     setSelectedRequestItemId(event.target.value);
 
-    setQuantity("");
     setErrorMessage("");
   };
 
@@ -292,19 +277,15 @@ function IssuanceModal({ requestId, onClose, onIssued }) {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <label className="block text-sm font-semibold text-primary">
-                      Issue Quantity
+                      Quantity to Issue
                     </label>
 
-                    <input
-                      type="number"
-                      min="1"
-                      max={remainingApproved}
-                      step="1"
-                      value={quantity}
-                      onChange={(event) => setQuantity(event.target.value)}
-                      disabled={isSubmitting}
-                      className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-primary"
-                    />
+                    <div
+                      aria-label="Quantity to issue"
+                      className="mt-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 font-semibold text-blue-800"
+                    >
+                      {remainingApproved} {selectedItem.unit}
+                    </div>
                   </div>
 
                   <div>

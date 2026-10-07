@@ -39,7 +39,7 @@ function InventoryStats({ items = [], isLoading = false }) {
             departments.
           </p>
         </div>
-        {user?.role !== "Staff" && (
+        {user?.role === "Store Manager" && (
           <div className="ml-auto">
             <Link
               to="/inventory/add-new-item"

@@ -1,5 +1,5 @@
 const express = require("express");
-const { protect, restrictToExact } = require("../middleware/AuthMiddleware");
+const { protect, restrictToExact, ROLES } = require("../middleware/AuthMiddleware");
 const {
 	getInventoryReport,
 	getTransactionReport,
@@ -18,7 +18,7 @@ router.get(
 	restrictToExact("Store Manager"),
 	getTransactionReport,
 );
-router.get("/requests", restrictToExact("Super Admin"), getRequestReport);
+router.get("/requests", restrictToExact(ROLES.DIRECTORATE), getRequestReport);
 router.get("/issuances", restrictToExact("Store Manager"), getIssuanceReport);
 router.get("/returns", restrictToExact("Store Manager"), getReturnReport);
 

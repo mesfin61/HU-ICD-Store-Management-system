@@ -1,18 +1,22 @@
+require("dotenv").config();
+
 const bcrypt = require("bcryptjs");
 const pool = require("../config/db");
 
-const SUPER_ADMIN_EMAIL = process.env.SEED_SUPER_ADMIN_EMAIL;
-const SUPER_ADMIN_PASSWORD = process.env.SEED_SUPER_ADMIN_PASSWORD;
+const ADMINISTRATOR_EMAIL =
+  process.env.SEED_ADMINISTRATOR_EMAIL || process.env.ADMINISTRATOR_EMAIL;
+const ADMINISTRATOR_PASSWORD =
+  process.env.SEED_ADMINISTRATOR_PASSWORD || process.env.ADMINISTRATOR_PASSWORD;
 
 async function seed() {
-  if (!SUPER_ADMIN_EMAIL || !SUPER_ADMIN_PASSWORD) {
+  if (!ADMINISTRATOR_EMAIL || !ADMINISTRATOR_PASSWORD) {
     throw new Error(
-      "SEED_SUPER_ADMIN_EMAIL and SEED_SUPER_ADMIN_PASSWORD must be defined.",
+      "SEED_ADMINISTRATOR_EMAIL and SEED_ADMINISTRATOR_PASSWORD must be defined.",
     );
   }
 
-  if (SUPER_ADMIN_PASSWORD.length < 8) {
-    throw new Error("SEED_SUPER_ADMIN_PASSWORD must be at least 8 characters.");
+  if (ADMINISTRATOR_PASSWORD.length < 8) {
+    throw new Error("SEED_ADMINISTRATOR_PASSWORD must be at least 8 characters.");
   }
 
   const client = await pool.connect();
@@ -30,8 +34,12 @@ async function seed() {
 
     const roles = [
       {
-        name: "Super Admin",
-        description: "Full system access",
+        name: "Administrator",
+        description: "System administration, user management, and audit access",
+      },
+      {
+        name: "Directorate",
+        description: "Business request review and approval access",
       },
       {
         name: "Store Manager",
@@ -60,27 +68,45 @@ async function seed() {
 
     /*
      * ---------------------------------------------------------
-     * 2. Get Super Admin role
+     * 2. Migrate the retired Super Admin role and get Administrator role
      * ---------------------------------------------------------
      */
+
+    await client.query(`
+      UPDATE roles
+      SET name = 'Administrator',
+          description = 'System administration, user management, and audit access'
+      WHERE name = 'Super Admin'
+        AND NOT EXISTS (
+          SELECT 1 FROM roles existing WHERE existing.name = 'Administrator'
+        )
+    `);
+
+    await client.query(`
+      UPDATE users
+      SET role_id = (SELECT id FROM roles WHERE name = 'Administrator')
+      WHERE role_id = (SELECT id FROM roles WHERE name = 'Super Admin')
+    `);
+
+    await client.query("DELETE FROM roles WHERE name = 'Super Admin'");
 
     const roleResult = await client.query(
       `
       SELECT id
       FROM roles
-      WHERE name = 'Super Admin'
+      WHERE name = 'Administrator'
       `,
     );
 
     if (roleResult.rows.length === 0) {
-      throw new Error("Super Admin role was not created.");
+      throw new Error("Administrator role was not created.");
     }
 
-    const superAdminRoleId = roleResult.rows[0].id;
+    const administratorRoleId = roleResult.rows[0].id;
 
     /*
      * ---------------------------------------------------------
-     * 3. Check whether bootstrap Super Admin exists
+     * 3. Check whether bootstrap Administrator exists
      * ---------------------------------------------------------
      */
 
@@ -90,22 +116,22 @@ async function seed() {
       FROM users
       WHERE email = $1
       `,
-      [SUPER_ADMIN_EMAIL.trim().toLowerCase()],
+      [ADMINISTRATOR_EMAIL.trim().toLowerCase()],
     );
 
     /*
      * ---------------------------------------------------------
-     * 4. Create Super Admin only if it doesn't exist
+     * 4. Create Administrator only if it doesn't exist
      * ---------------------------------------------------------
      *
      * IMPORTANT:
      * Running the seed again will NOT overwrite the
-     * existing Super Admin's password.
+     * existing Administrator's password.
      * ---------------------------------------------------------
      */
 
     if (existingAdmin.rows.length === 0) {
-      const passwordHash = await bcrypt.hash(SUPER_ADMIN_PASSWORD, 12);
+      const passwordHash = await bcrypt.hash(ADMINISTRATOR_PASSWORD, 12);
 
       await client.query(
         `
@@ -119,16 +145,16 @@ async function seed() {
         VALUES ($1, $2, $3, $4, true)
         `,
         [
-          "System Super Administrator",
-          SUPER_ADMIN_EMAIL.trim().toLowerCase(),
+          "System Administrator",
+          ADMINISTRATOR_EMAIL.trim().toLowerCase(),
           passwordHash,
-          superAdminRoleId,
+          administratorRoleId,
         ],
       );
 
-      console.log("✔ Initial Super Admin created.");
+      console.log("✔ Initial Administrator created.");
     } else {
-      console.log("ℹ Super Admin already exists. Password was not changed.");
+      console.log("ℹ Administrator already exists. Password was not changed.");
     }
 
     /*

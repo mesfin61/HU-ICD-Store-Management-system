@@ -69,6 +69,11 @@ const issueInventory = async (req, res) => {
         "Issue quantity exceeds the remaining approved quantity.",
       ],
 
+      ISSUE_MUST_MATCH_REMAINING_APPROVED: [
+        400,
+        "Issue quantity must match the remaining approved quantity.",
+      ],
+
       INSUFFICIENT_RESERVED_QUANTITY: [
         409,
         "Insufficient reserved quantity for this request item.",

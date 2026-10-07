@@ -7,8 +7,8 @@ import { useUser } from "../context/AuthContext";
 // =========================================================
 
 export const ROLES = Object.freeze({
-  SUPER_ADMIN: "Super Admin",
   ADMINISTRATOR: "Administrator",
+  DIRECTORATE: "Directorate",
   STORE_MANAGER: "Store Manager",
   STAFF: "Staff",
 });
@@ -46,17 +46,13 @@ function RoleProtectedRoute({ allowedRoles = [], children }) {
 
   const userRole = user.role;
 
-  const hasAdministratorAccess =
-    userRole === ROLES.SUPER_ADMIN || userRole === ROLES.ADMINISTRATOR;
-
   // =======================================================
   // ROLE CHECK
   // =======================================================
 
   if (
     allowedRoles.length > 0 &&
-    !allowedRoles.includes(userRole) &&
-    !(hasAdministratorAccess && allowedRoles.includes(ROLES.ADMINISTRATOR))
+    !allowedRoles.includes(userRole)
   ) {
     return <Navigate to="/" replace />;
   }

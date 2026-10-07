@@ -24,24 +24,24 @@ router.use(protect);
 
 router.use(restrictTo(ROLES.ADMINISTRATOR));
 
-router.get("/", restrictTo("Super Admin"), getAllUsers);
+router.get("/", getAllUsers);
 
-router.get("/:id", restrictTo("Super Admin"), getUserById);
+router.get("/:id", getUserById);
 
-router.post("/", restrictTo("Super Admin"), createUser);
+router.post("/", createUser);
 
-router.put("/:id", restrictTo("Super Admin"), updateUser);
+router.put("/:id", updateUser);
 
 router.patch(
   "/:id/transfer-ownership",
-  restrictToExact(ROLES.SUPER_ADMIN),
+  restrictToExact(ROLES.ADMINISTRATOR),
   transferOwnership,
 );
 
 router.patch("/:id/change-password", changePassword);
 
-router.patch("/:id/activate", restrictToExact(ROLES.SUPER_ADMIN), activateUser);
-router.patch("/:id/deactivate", restrictToExact(ROLES.SUPER_ADMIN), deactivateUser);
+router.patch("/:id/activate", restrictToExact(ROLES.ADMINISTRATOR), activateUser);
+router.patch("/:id/deactivate", restrictToExact(ROLES.ADMINISTRATOR), deactivateUser);
 
 /*
  * Kept for API compatibility, but controller

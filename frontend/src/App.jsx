@@ -81,8 +81,8 @@ function App() {
             element={
               <RoleProtectedRoute
                 allowedRoles={[
-                  ROLES.SUPER_ADMIN,
                   ROLES.ADMINISTRATOR,
+                  ROLES.DIRECTORATE,
                   ROLES.STORE_MANAGER,
                   ROLES.STAFF,
                 ]}
@@ -102,8 +102,8 @@ function App() {
             element={
               <RoleProtectedRoute
                 allowedRoles={[
-                  ROLES.SUPER_ADMIN,
                   ROLES.ADMINISTRATOR,
+                  ROLES.DIRECTORATE,
                   ROLES.STORE_MANAGER,
                   ROLES.STAFF,
                 ]}
@@ -124,6 +124,7 @@ function App() {
               <RoleProtectedRoute
                 allowedRoles={[
                   ROLES.ADMINISTRATOR,
+                  ROLES.DIRECTORATE,
                   ROLES.STORE_MANAGER,
                   ROLES.STAFF,
                 ]}
@@ -142,7 +143,9 @@ function App() {
             path="inventory/add-new-item"
             element={
               <RoleProtectedRoute
-                allowedRoles={[ROLES.SUPER_ADMIN, ROLES.STORE_MANAGER]}
+                allowedRoles={[
+                  ROLES.STORE_MANAGER,
+                ]}
               >
                 <AddItem />
               </RoleProtectedRoute>
@@ -158,7 +161,9 @@ function App() {
             path="stock"
             element={
               <RoleProtectedRoute
-                allowedRoles={[ROLES.ADMINISTRATOR, ROLES.STORE_MANAGER]}
+                allowedRoles={[
+                  ROLES.STORE_MANAGER,
+                ]}
               >
                 <Stock />
               </RoleProtectedRoute>
@@ -175,8 +180,7 @@ function App() {
             element={
               <RoleProtectedRoute
                 allowedRoles={[
-                  ROLES.SUPER_ADMIN,
-                  ROLES.ADMINISTRATOR,
+                  ROLES.DIRECTORATE,
                   ROLES.STORE_MANAGER,
                   ROLES.STAFF,
                 ]}
@@ -223,7 +227,10 @@ function App() {
             path="reports"
             element={
               <RoleProtectedRoute
-                allowedRoles={[ROLES.ADMINISTRATOR, ROLES.STORE_MANAGER]}
+                allowedRoles={[
+                  ROLES.DIRECTORATE,
+                  ROLES.STORE_MANAGER,
+                ]}
               >
                 <Reports />
               </RoleProtectedRoute>
@@ -250,6 +257,7 @@ function App() {
               <RoleProtectedRoute
                 allowedRoles={[
                   ROLES.ADMINISTRATOR,
+                  ROLES.DIRECTORATE,
                   ROLES.STORE_MANAGER,
                   ROLES.STAFF,
                 ]}
@@ -327,7 +335,11 @@ function App() {
             path="generate-report"
             element={
               <RoleProtectedRoute
-                allowedRoles={[ROLES.ADMINISTRATOR, ROLES.STORE_MANAGER]}
+                allowedRoles={[
+                  ROLES.ADMINISTRATOR,
+                  ROLES.DIRECTORATE,
+                  ROLES.STORE_MANAGER,
+                ]}
               >
                 <GenerateReportModal />
               </RoleProtectedRoute>

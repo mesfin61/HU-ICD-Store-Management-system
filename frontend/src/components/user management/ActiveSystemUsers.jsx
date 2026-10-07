@@ -23,7 +23,7 @@ import { useUser } from "../../context/AuthContext";
  */
 const roleDefinitions = [
   {
-    title: "Super Admin",
+    title: "Administrator",
     description:
       "Highest-level administrative access for system governance and security.",
     tone: "blue",
@@ -305,7 +305,7 @@ function ActiveSystemUsers({ refreshKey = 0 }) {
     loadUsers();
   }, [refreshKey]);
 
-  const isSuperAdmin = currentUser?.role === "Super Admin";
+  const canManageUserStatus = currentUser?.role === "Administrator";
 
   async function handleUserStatusChange() {
     if (!selectedUser) {
@@ -331,7 +331,7 @@ function ActiveSystemUsers({ refreshKey = 0 }) {
   }
 
   function openUserStatusModal(targetUser) {
-    if (isSuperAdmin) {
+    if (canManageUserStatus) {
       setSelectedUser(targetUser);
     }
   }
@@ -373,41 +373,9 @@ function ActiveSystemUsers({ refreshKey = 0 }) {
     });
   }, [users, search, statusFilter]);
 
-  /*
-   * Real statistics derived from the database
-   * response.
-   *
-   * We deliberately do NOT calculate 2FA statistics
-   * because the current users query does not provide
-   * a 2FA field.
-   */
-  const summary = useMemo(() => {
-    const totalUsers = users.length;
-
-    const activeUsers = users.filter((user) => Boolean(user.is_active)).length;
-
-    const inactiveUsers = totalUsers - activeUsers;
-
-    const superAdminUsers = users.filter(
-      (user) => String(user.role_name || "").toLowerCase() === "super admin",
-    ).length;
-
-    const adminUsers = users.filter(
-      (user) => String(user.role_name || "").toLowerCase() === "admin",
-    ).length;
-
-    return {
-      totalUsers,
-      activeUsers,
-      inactiveUsers,
-      superAdminUsers,
-      adminUsers,
-    };
-  }, [users]);
-
   return (
     <section className="w-full">
-      <div className="grid gap-3 xl:grid-cols-[minmax(0,2.1fr)_minmax(290px,0.9fr)]">
+      <div>
         {/* Users table */}
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
@@ -454,7 +422,7 @@ function ActiveSystemUsers({ refreshKey = 0 }) {
 
                       <th className="px-4 py-3">Created</th>
 
-                      {isSuperAdmin && <th className="px-4 py-3" />}
+                      {canManageUserStatus && <th className="px-4 py-3" />}
                     </tr>
                   </thead>
 
@@ -485,9 +453,9 @@ function ActiveSystemUsers({ refreshKey = 0 }) {
                               openUserStatusModal(user);
                             }
                           }}
-                          tabIndex={isSuperAdmin ? 0 : undefined}
+                          tabIndex={canManageUserStatus ? 0 : undefined}
                           className={`align-top text-sm text-slate-700 transition ${
-                            isSuperAdmin
+                            canManageUserStatus
                               ? "cursor-pointer hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
                               : ""
                           } ${active ? "" : "bg-red-50 hover:bg-red-100"}`}
@@ -534,7 +502,7 @@ function ActiveSystemUsers({ refreshKey = 0 }) {
                             {createdDate}
                           </td>
 
-                          {isSuperAdmin && (
+                          {canManageUserStatus && (
                             <td className="px-4 py-4 text-right text-slate-400">
                               <FaChevronRight className="inline-block text-xs" />
                             </td>
@@ -563,61 +531,9 @@ function ActiveSystemUsers({ refreshKey = 0 }) {
           )}
         </div>
 
-        {/* Right-side information */}
-        <div className="flex flex-col gap-3">
-          {/* Live database summary */}
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Live Database Summary
-            </div>
-
-            <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-lg bg-slate-50 p-3">
-                <div className="text-xs text-slate-500">Total Users</div>
-
-                <div className="mt-1 text-lg font-semibold text-slate-900">
-                  {summary.totalUsers}
-                </div>
-              </div>
-
-              <div className="rounded-lg bg-slate-50 p-3">
-                <div className="text-xs text-slate-500">Active Users</div>
-
-                <div className="mt-1 text-lg font-semibold text-emerald-600">
-                  {summary.activeUsers}
-                </div>
-              </div>
-
-              <div className="rounded-lg bg-slate-50 p-3">
-                <div className="text-xs text-slate-500">Inactive Users</div>
-
-                <div className="mt-1 text-lg font-semibold text-slate-600">
-                  {summary.inactiveUsers}
-                </div>
-              </div>
-
-              <div className="rounded-lg bg-slate-50 p-3">
-                <div className="text-xs text-slate-500">Super Admins</div>
-
-                <div className="mt-1 text-lg font-semibold text-blue-700">
-                  {summary.superAdminUsers}
-                </div>
-              </div>
-
-              <div className="rounded-lg bg-slate-50 p-3">
-                <div className="text-xs text-slate-500">Admins</div>
-
-                <div className="mt-1 text-lg font-semibold text-purple-700">
-                  {summary.adminUsers}
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
       </div>
 
-      {selectedUser && isSuperAdmin && (
+      {selectedUser && canManageUserStatus && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
           role="presentation"

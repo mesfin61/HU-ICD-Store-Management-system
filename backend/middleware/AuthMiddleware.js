@@ -2,14 +2,14 @@ const jwt = require("jsonwebtoken");
 const { user } = require("../models");
 
 const ROLES = Object.freeze({
-  SUPER_ADMIN: "Super Admin",
   ADMINISTRATOR: "Administrator",
+  DIRECTORATE: "Directorate",
   STORE_MANAGER: "Store Manager",
   STAFF: "Staff",
 });
 
-const isAdministratorRole = (role) =>
-  role === ROLES.SUPER_ADMIN || role === ROLES.ADMINISTRATOR;
+const isAdministratorRole = (role) => role === ROLES.ADMINISTRATOR;
+const isDirectorateRole = (role) => role === ROLES.DIRECTORATE;
 
 const protect = async (req, res, next) => {
   try {
@@ -89,12 +89,7 @@ const restrictTo = (...roles) => {
       });
     }
 
-    const hasAdministratorAccess =
-      isAdministratorRole(req.user.role_name) &&
-      (roles.includes(ROLES.SUPER_ADMIN) ||
-        roles.includes(ROLES.ADMINISTRATOR));
-
-    if (!roles.includes(req.user.role_name) && !hasAdministratorAccess) {
+    if (!roles.includes(req.user.role_name)) {
       return res.status(403).json({
         success: false,
         message: "Access denied.",
@@ -131,4 +126,5 @@ module.exports = {
   restrictToExact,
   ROLES,
   isAdministratorRole,
+  isDirectorateRole,
 };

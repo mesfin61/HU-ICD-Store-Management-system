@@ -289,7 +289,7 @@ function AddItem() {
               >
                 <option value="pcs">Pieces</option>
                 <option value="boxes">Boxes</option>
-                <option value="units">Units</option>
+                <option value="meters">meters</option>
               </select>
             </div>
 

@@ -196,7 +196,7 @@ const request = {
         JOIN roles r
           ON r.id = u.role_id
         WHERE
-          r.name IN ('Super Admin', 'Administrator')
+          r.name IN ('Administrator', 'Directorate')
           AND u.is_active = TRUE
           AND u.id <> $1
         `,
@@ -417,7 +417,14 @@ const request = {
       approver.full_name AS approver_name,
       r.approved_at,
 
-      r.rejection_reason
+      r.rejection_reason,
+
+      COALESCE(SUM(ri.quantity_approved), 0)::integer AS total_approved_quantity,
+      COALESCE(SUM(ri.quantity_issued), 0)::integer AS total_issued_quantity,
+      COALESCE(
+        SUM(ri.quantity_approved - ri.quantity_issued),
+        0
+      )::integer AS total_remaining_quantity
 
     FROM requests r
 
@@ -430,14 +437,24 @@ const request = {
     LEFT JOIN users approver
       ON approver.id = r.approved_by
 
+    JOIN request_items ri
+      ON ri.request_id = r.id
+
     WHERE r.status IN (
       'APPROVED',
       'PARTIALLY_APPROVED'
     )
 
+    GROUP BY
+      r.id,
+      requester.full_name,
+      requester.email,
+      d.name,
+      approver.full_name
+
     ORDER BY
-      r.approved_at ASC,
-      r.requested_at ASC
+      r.approved_at DESC NULLS LAST,
+      r.requested_at DESC
     `,
     );
 

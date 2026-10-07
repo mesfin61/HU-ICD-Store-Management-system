@@ -17,8 +17,8 @@ import { Link } from "react-router-dom";
 // =========================================================
 
 const ROLES = Object.freeze({
-  SUPER_ADMIN: "Super Admin",
   ADMINISTRATOR: "Administrator",
+  DIRECTORATE: "Directorate",
   STORE_MANAGER: "Store Manager",
   STAFF: "Staff",
 });
@@ -307,7 +307,7 @@ function RecentActivities() {
         const currentRole = meResponse.data?.user?.role || null;
 
         const effectiveRole =
-          currentRole === ROLES.SUPER_ADMIN ? ROLES.ADMINISTRATOR : currentRole;
+          currentRole;
 
         if (!currentRole) {
           throw new Error("Unable to determine the current user role.");
@@ -317,6 +317,8 @@ function RecentActivities() {
 
         if (effectiveRole === ROLES.ADMINISTRATOR) {
           loadedActivities = await loadAdministratorActivities();
+        } else if (effectiveRole === ROLES.DIRECTORATE) {
+          loadedActivities = [];
         } else if (effectiveRole === ROLES.STORE_MANAGER) {
           loadedActivities = await loadStoreManagerActivities();
         } else if (effectiveRole === ROLES.STAFF) {
@@ -376,6 +378,8 @@ function RecentActivities() {
   const title =
     role === ROLES.ADMINISTRATOR
       ? "Recent System Activity"
+      : role === ROLES.DIRECTORATE
+        ? "Recent Directorate Activity"
       : role === ROLES.STORE_MANAGER
         ? "Recent Store Activity"
         : "My Recent Activity";
@@ -383,6 +387,8 @@ function RecentActivities() {
   const viewAllPath =
     role === ROLES.ADMINISTRATOR
       ? "/audit-logs"
+      : role === ROLES.DIRECTORATE
+        ? "/requests"
       : role === ROLES.STAFF
         ? "/requests"
         : "/issued-inventory";

@@ -137,8 +137,8 @@ function ReportTable({ reportType, rows }) {
 
 export default function Reports() {
   const { user } = useUser();
-  const isSuperAdmin = user?.role === "Super Admin";
-  const availableReportTypes = isSuperAdmin ? ["requests"] : STORE_MANAGER_REPORTS;
+  const isDirectorate = user?.role === "Directorate";
+  const availableReportTypes = isDirectorate ? ["requests"] : STORE_MANAGER_REPORTS;
   const [reportType, setReportType] = useState(availableReportTypes[0]);
   const [filters, setFilters] = useState({
     startDate: "",

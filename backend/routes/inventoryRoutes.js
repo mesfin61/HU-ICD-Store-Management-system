@@ -1,6 +1,10 @@
 const express = require("express");
 
-const { protect, restrictTo } = require("../middleware/AuthMiddleware");
+const {
+  protect,
+  restrictTo,
+  ROLES,
+} = require("../middleware/AuthMiddleware");
 
 const {
   createItem,
@@ -29,7 +33,11 @@ router.use(protect);
 // Authenticated users
 // =========================================================
 
-router.get("/", getAllItems);
+router.get(
+  "/",
+  restrictTo(ROLES.DIRECTORATE, ROLES.STORE_MANAGER, ROLES.STAFF),
+  getAllItems,
+);
 
 // =========================================================
 // INVENTORY MOVEMENT READ
@@ -40,7 +48,11 @@ router.get("/", getAllItems);
 // Otherwise "transactions" could be interpreted as an item ID.
 // =========================================================
 
-router.get("/transactions/trends", getInventoryMovementTrends);
+router.get(
+  "/transactions/trends",
+  restrictTo(ROLES.DIRECTORATE, ROLES.STORE_MANAGER, ROLES.STAFF),
+  getInventoryMovementTrends,
+);
 
 // =========================================================
 // CREATE INVENTORY ITEM
@@ -53,7 +65,11 @@ router.post("/", restrictTo("Store Manager"), createItem);
 // GET INVENTORY ITEM BY ID
 // =========================================================
 
-router.get("/:id", getItemById);
+router.get(
+  "/:id",
+  restrictTo(ROLES.DIRECTORATE, ROLES.STORE_MANAGER, ROLES.STAFF),
+  getItemById,
+);
 
 // =========================================================
 // STOCK MANAGEMENT

@@ -9,7 +9,6 @@ import {
   getMyRequests,
   getAllRequests,
   getRequestsForIssuance,
-  rejectRequest,
 } from "../../services/requestService";
 
 import apiClient from "../../services/apiClient";
@@ -28,8 +27,6 @@ function RequestList() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [errorMessage, setErrorMessage] = useState("");
-
-  const [actionId, setActionId] = useState(null);
 
   const [approvalRequestId, setApprovalRequestId] = useState(null);
 
@@ -53,8 +50,7 @@ function RequestList() {
       let data = [];
 
       if (
-        currentUser.role === "Administrator" ||
-        currentUser.role === "Super Admin"
+        currentUser.role === "Directorate"
       ) {
         data = await getAllRequests();
       } else if (currentUser.role === "Staff") {
@@ -80,44 +76,10 @@ function RequestList() {
   }, []);
 
   // =========================================================
-  // REJECT REQUEST
-  // =========================================================
-
-  const handleReject = async (requestId) => {
-    const reason = window.prompt(
-      "Enter the reason for rejecting this request:",
-    );
-
-    if (typeof reason !== "string" || !reason.trim()) {
-      return;
-    }
-
-    try {
-      setActionId(requestId);
-      setErrorMessage("");
-
-      await rejectRequest(requestId, reason.trim());
-
-      await loadData();
-    } catch (error) {
-      console.error("[Request] reject:", error);
-
-      setErrorMessage(
-        error.response?.data?.message || "Failed to reject request.",
-      );
-    } finally {
-      setActionId(null);
-    }
-  };
-
-  // =========================================================
   // ROLE FLAGS
   // =========================================================
 
-  const isAdministrator =
-    user?.role === "Administrator" || user?.role === "Super Admin";
-
-  const isSuperAdmin = user?.role === "Super Admin";
+  const isAdministrator = user?.role === "Directorate";
 
   const isStaff = user?.role === "Staff";
 
@@ -304,6 +266,10 @@ function RequestList() {
 
                 <th className="p-3">Requested Date</th>
 
+                {isStoreManager && (
+                  <th className="p-3">Approved Quantity</th>
+                )}
+
                 <th className="p-3">Status</th>
 
                 {(isAdministrator || isStoreManager) && (
@@ -339,8 +305,8 @@ function RequestList() {
                     tabIndex={canReviewRequest ? 0 : undefined}
                     className={`border-b last:border-b-0 ${
                       canReviewRequest
-                        ? "cursor-pointer hover:bg-slate-50 focus:bg-slate-50 focus:outline-none"
-                        : ""
+                        ? "cursor-pointer border-l-4 border-l-amber-400 bg-amber-50/70 hover:bg-amber-100/70 focus:bg-amber-100/70 focus:outline-none"
+                        : "bg-white"
                     }`}
                   >
                     {/* REQUEST ID */}
@@ -371,6 +337,17 @@ function RequestList() {
                         : "—"}
                     </td>
 
+                    {isStoreManager && (
+                      <td className="p-3">
+                        <span className="font-semibold text-primary">
+                          {request.total_remaining_quantity} remaining
+                        </span>
+                        <span className="block text-xs text-slate-500">
+                          of {request.total_approved_quantity} approved
+                        </span>
+                      </td>
+                    )}
+
                     {/* STATUS */}
 
                     <td className="p-3">
@@ -392,37 +369,9 @@ function RequestList() {
                               ========================= */}
 
                         {isAdministrator && request.status === "PENDING" ? (
-                          isSuperAdmin ? (
-                            <span className="text-xs font-medium text-slate-500">
-                              Action needed
-                            </span>
-                          ) : (
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              disabled={actionId === request.id}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setApprovalRequestId(request.id);
-                              }}
-                              className="rounded-md border border-emerald-600 px-3 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
-                            >
-                              Approve
-                            </button>
-
-                            <button
-                              type="button"
-                              disabled={actionId === request.id}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleReject(request.id);
-                              }}
-                              className="rounded-md border border-rose-600 px-3 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                          )
+                          <span className="inline-flex rounded-md border border-amber-300 bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+                            Action needed
+                          </span>
                         ) : null}
 
                         {/* =========================
@@ -464,7 +413,9 @@ function RequestList() {
                 <tr>
                   <td
                     className="p-8 text-center text-slate-500"
-                    colSpan={isAdministrator || isStoreManager ? 7 : 4}
+                    colSpan={
+                      isAdministrator ? 7 : isStoreManager ? 8 : 4
+                    }
                   >
                     {requests.length > 0
                       ? "No requests match the selected filters."

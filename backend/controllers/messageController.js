@@ -72,7 +72,7 @@ const messageController = {
       // =====================================================
 
       if (
-        !["Super Admin", "Administrator", "Staff", "Store Manager"].includes(
+        !["Administrator", "Directorate", "Staff", "Store Manager"].includes(
           senderRole,
         )
       ) {
@@ -479,8 +479,10 @@ const messageController = {
 
       if (isAdministratorRole(senderRole)) {
         allowedRoles = ["Staff", "Store Manager"];
+      } else if (senderRole === "Directorate") {
+        allowedRoles = ["Administrator"];
       } else if (senderRole === "Staff" || senderRole === "Store Manager") {
-        allowedRoles = ["Super Admin"];
+        allowedRoles = ["Administrator", "Directorate"];
       } else {
         return res.status(403).json({
           success: false,

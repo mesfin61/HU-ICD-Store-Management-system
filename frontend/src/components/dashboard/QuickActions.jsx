@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import apiClient from "../../services/apiClient";
 
 const ROLES = {
-  SUPER_ADMIN: "Super Admin",
   ADMINISTRATOR: "Administrator",
+  DIRECTORATE: "Directorate",
   STORE_MANAGER: "Store Manager",
   STAFF: "Staff",
 };
@@ -21,9 +21,7 @@ function QuickActions() {
         if (mounted) {
           const currentRole = response.data?.user?.role || null;
           setRole(
-            currentRole === ROLES.SUPER_ADMIN
-              ? ROLES.ADMINISTRATOR
-              : currentRole,
+            currentRole,
           );
         }
       })
@@ -70,17 +68,20 @@ function QuickActions() {
     });
 
     actions.push({
+      label: "Audit Log",
+      to: "/audit-logs",
+    });
+
+  }
+
+  if (role === ROLES.DIRECTORATE) {
+    actions.push({
       label: "Review Requests",
       to: "/requests",
     });
 
     actions.push({
-      label: "Audit Log",
-      to: "/audit-logs",
-    });
-
-    actions.push({
-      label: "Reports",
+      label: "Request Reports",
       to: "/reports",
     });
   }

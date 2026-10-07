@@ -1,6 +1,5 @@
 const pool = require("../config/db");
 
-const SUPER_ADMIN = "Super Admin";
 const ADMINISTRATOR = "Administrator";
 
 const user = {
@@ -150,22 +149,6 @@ const user = {
         [roleId],
       );
 
-      if (roleResult.rows[0]?.name === SUPER_ADMIN) {
-        const countResult = await client.query(
-          `
-          SELECT COUNT(*)::integer AS count
-          FROM users u
-          JOIN roles r ON r.id = u.role_id
-          WHERE r.name = $1
-          `,
-          [SUPER_ADMIN],
-        );
-
-        if (countResult.rows[0].count >= 2) {
-          throw new Error("SUPER_ADMIN_LIMIT");
-        }
-      }
-
       const result = await client.query(
         `
         INSERT INTO users (
@@ -314,8 +297,8 @@ const user = {
        * Only the three application roles are allowed.
        */
       const allowedRoles = [
-        SUPER_ADMIN,
         ADMINISTRATOR,
+        "Directorate",
         "Store Manager",
         "Staff",
       ];
@@ -327,30 +310,6 @@ const user = {
           success: false,
           reason: "INVALID_ROLE",
         };
-      }
-
-      if (
-        requestedRole.name === SUPER_ADMIN &&
-        targetUser.role_name !== SUPER_ADMIN
-      ) {
-        const superAdminResult = await client.query(
-          `
-          SELECT COUNT(*)::integer AS count
-          FROM users u
-          JOIN roles r ON r.id = u.role_id
-          WHERE r.name = $1
-          `,
-          [SUPER_ADMIN],
-        );
-
-        if (superAdminResult.rows[0].count >= 2) {
-          await client.query("ROLLBACK");
-
-          return {
-            success: false,
-            reason: "SUPER_ADMIN_LIMIT",
-          };
-        }
       }
 
       /*
@@ -407,22 +366,19 @@ const user = {
           FROM users u
           JOIN roles r
             ON r.id = u.role_id
-          WHERE r.name IN ($1, $2)
+          WHERE r.name = $1
             AND u.is_active = TRUE
           FOR UPDATE
           `,
-        [SUPER_ADMIN, ADMINISTRATOR],
+        [ADMINISTRATOR],
       );
 
       const activeAdministratorCount = administratorsResult.rows.length;
 
-      const targetIsAdministrator =
-        targetUser.role_name === SUPER_ADMIN ||
-        targetUser.role_name === ADMINISTRATOR;
+      const targetIsAdministrator = targetUser.role_name === ADMINISTRATOR;
 
       const removingAdministratorRole =
         targetIsAdministrator &&
-        requestedRole.name !== SUPER_ADMIN &&
         requestedRole.name !== ADMINISTRATOR;
 
       const deactivatingAdministrator =
@@ -663,11 +619,11 @@ const user = {
           FROM users u
           JOIN roles r
             ON r.id = u.role_id
-          WHERE r.name IN ($1, $2)
+          WHERE r.name = $1
             AND u.is_active = TRUE
           FOR UPDATE
           `,
-        [SUPER_ADMIN, ADMINISTRATOR],
+        [ADMINISTRATOR],
       );
 
       const activeAdministratorCount = administratorsResult.rows.length;
@@ -676,8 +632,7 @@ const user = {
        * Never deactivate the final Administrator.
        */
       if (
-        (targetUser.role_name === SUPER_ADMIN ||
-          targetUser.role_name === ADMINISTRATOR) &&
+        targetUser.role_name === ADMINISTRATOR &&
         activeAdministratorCount <= 1
       ) {
         await client.query("ROLLBACK");
@@ -774,7 +729,7 @@ const user = {
         return { success: false, reason: "NOT_FOUND" };
       }
 
-      if (actingUser.role_name !== SUPER_ADMIN) {
+      if (actingUser.role_name !== ADMINISTRATOR) {
         await client.query("ROLLBACK");
         return { success: false, reason: "NOT_AUTHORIZED" };
       }
@@ -790,11 +745,11 @@ const user = {
         FROM roles
         WHERE name IN ($1, $2)
         `,
-        [SUPER_ADMIN, "Store Manager"],
+        [ADMINISTRATOR, "Store Manager"],
       );
 
       const superAdminRole = rolesResult.rows.find(
-        (role) => role.name === SUPER_ADMIN,
+        (role) => role.name === ADMINISTRATOR,
       );
       const replacementRole = rolesResult.rows.find(
         (role) => role.name === "Store Manager",

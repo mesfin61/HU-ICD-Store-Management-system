@@ -5,7 +5,7 @@ import AddUserSuccessModal from "./AddUserSuccessModal";
 
 import { getDepartments } from "../../services/departmentService";
 import { getRoles } from "../../services/roleService";
-import { createUser, getUsers } from "../../services/userService";
+import { createUser } from "../../services/userService";
 
 const EMPTY_FORM = {
   fullName: "",
@@ -30,7 +30,6 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
   const [rolesLoading, setRolesLoading] = useState(false);
   const [rolesError, setRolesError] = useState("");
 
-  const [superAdminCount, setSuperAdminCount] = useState(0);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -61,10 +60,9 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
       setRolesError("");
 
       try {
-        const [departmentData, roleData, userData] = await Promise.all([
+        const [departmentData, roleData] = await Promise.all([
           getDepartments(),
           getRoles(),
-          getUsers(),
         ]);
 
         if (cancelled) {
@@ -89,11 +87,6 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
 
         setDepartments(activeDepartments);
         setRoles(availableRoles);
-        setSuperAdminCount(
-          (Array.isArray(userData) ? userData : []).filter(
-            (user) => user.role_name === "Super Admin" || user.role === "Super Admin",
-          ).length,
-        );
       } catch (error) {
         console.error(
           "[AddUserModal] Failed to load departments/roles:",
@@ -152,7 +145,6 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
     setSubmitError("");
     setShowSuccess(false);
     setCreatedUser(null);
-    setSuperAdminCount(0);
   }, [isOpen]);
 
   /*
@@ -244,10 +236,6 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
       return;
     }
 
-    if (selectedRole.name === "Super Admin" && superAdminCount >= 2) {
-      setSubmitError("The system allows a maximum of two Super Admin accounts.");
-      return;
-    }
 
     try {
       setSubmitting(true);
@@ -338,7 +326,11 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
     } catch (error) {
       console.error("[AddUserModal] User creation failed:", error);
 
-      setSubmitError(error?.message || "Failed to create the user account.");
+      setSubmitError(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to create the user account.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -557,12 +549,10 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
                         key={role.id}
                         value={role.id}
                         disabled={
-                          role.name === "Super Admin" && superAdminCount >= 2
+                          false
                         }
                       >
-                        {role.name === "Super Admin" && superAdminCount >= 2
-                          ? "Super Admin (limit reached)"
-                          : role.name}
+                        {role.name}
                       </option>
                     ))}
                   </select>

@@ -25,8 +25,8 @@ import apiClient from "../../services/apiClient";
 // =========================================================
 
 const ROLES = Object.freeze({
-  SUPER_ADMIN: "Super Admin",
   ADMINISTRATOR: "Administrator",
+  DIRECTORATE: "Directorate",
   STORE_MANAGER: "Store Manager",
   STAFF: "Staff",
 });
@@ -120,8 +120,8 @@ function SideBar() {
 
   const userRole = user?.role || null;
 
-  const isAdministrator =
-    userRole === ROLES.ADMINISTRATOR || userRole === ROLES.SUPER_ADMIN;
+  const isAdministrator = userRole === ROLES.ADMINISTRATOR;
+  const isDirectorate = userRole === ROLES.DIRECTORATE;
 
   const isStoreManager = userRole === ROLES.STORE_MANAGER;
 
@@ -131,30 +131,30 @@ function SideBar() {
   // ROLE-BASED PERMISSIONS
   // =======================================================
 
-  const canViewDashboard = isAdministrator || isStoreManager || isStaff;
+  const canViewDashboard =
+    isAdministrator || isDirectorate || isStoreManager || isStaff;
 
-  const canViewInventory = isAdministrator || isStoreManager || isStaff;
+  const canViewInventory = isDirectorate || isStoreManager || isStaff;
 
-  const canViewStockMovement =
-    userRole !== ROLES.SUPER_ADMIN && (isStoreManager);
+  const canViewStockMovement = isStoreManager;
 
-  const canViewRequests = isAdministrator || isStoreManager || isStaff;
+  const canViewRequests = isDirectorate || isStoreManager || isStaff;
 
-  const canViewNotifications = isAdministrator || isStoreManager || isStaff;
+  const canViewNotifications = isDirectorate || isStoreManager || isStaff;
 
   const canViewIssuedInventory = isStoreManager;
 
-  const canViewReports =
-    userRole === ROLES.SUPER_ADMIN || isStoreManager;
+  const canViewReports = isDirectorate || isStoreManager;
 
   const canViewAuditLogs = isAdministrator;
 
-  const canViewMyActivity = isAdministrator || isStoreManager || isStaff;
+  const canViewMyActivity = isAdministrator || isDirectorate || isStoreManager || isStaff;
 
   const canViewUserManagement = isAdministrator;
 
-  const canViewSettings = isAdministrator || isStoreManager || isStaff;
-  const canViewMessages = isAdministrator || isStoreManager || isStaff;
+  const canViewSettings = isAdministrator;
+  const canViewMessages =
+    isAdministrator || isDirectorate || isStoreManager || isStaff;
 
   // =======================================================
   // RENDER

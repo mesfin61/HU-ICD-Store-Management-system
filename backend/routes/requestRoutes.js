@@ -18,7 +18,7 @@ const router = express.Router();
 // ADMINISTRATOR: ALL REQUESTS
 // =========================================================
 
-router.get("/", protect, restrictTo(ROLES.ADMINISTRATOR), getAllRequests);
+router.get("/", protect, restrictTo(ROLES.DIRECTORATE), getAllRequests);
 
 // =========================================================
 // STAFF: OWN REQUESTS
@@ -57,7 +57,7 @@ router.get(
 router.patch(
   "/:id/approve",
   protect,
-  restrictTo(ROLES.ADMINISTRATOR),
+  restrictTo(ROLES.DIRECTORATE),
   approveRequest,
 );
 
@@ -68,7 +68,7 @@ router.patch(
 router.patch(
   "/:id/reject",
   protect,
-  restrictTo(ROLES.ADMINISTRATOR),
+  restrictTo(ROLES.DIRECTORATE),
   rejectRequest,
 );
 
