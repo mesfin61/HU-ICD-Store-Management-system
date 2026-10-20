@@ -183,6 +183,14 @@ const createUser = async (req, res) => {
   } catch (error) {
     console.error("[User] createUser error:", error);
 
+    if (error.message === "ROLE_LIMIT_REACHED") {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Only one active Administrator and one active Directorate user are allowed.",
+      });
+    }
+
 
     return res.status(500).json({
       success: false,
@@ -340,6 +348,13 @@ const updateUser = async (req, res) => {
             success: false,
             message:
               "The system must always have at least one active Administrator.",
+          });
+
+        case "ROLE_LIMIT_REACHED":
+          return res.status(400).json({
+            success: false,
+            message:
+              "Only one active Administrator and one active Directorate user are allowed.",
           });
 
 
@@ -681,7 +696,24 @@ const activateUser = async (req, res) => {
       });
     }
 
-    const activatedUser = await user.activate(id);
+    const activationResult = await user.activate(id);
+
+    if (!activationResult.success) {
+      if (activationResult.reason === "ROLE_LIMIT_REACHED") {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Only one active Administrator and one active Directorate user are allowed.",
+        });
+      }
+
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    const activatedUser = activationResult.user;
 
     await auditLog.create({
       userId: req.user.id,

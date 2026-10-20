@@ -1,5 +1,4 @@
 const pool = require("../config/db");
-const { isAdministratorRole } = require("../middleware/AuthMiddleware");
 const { message, notification } = require("../models");
 
 // =========================================================
@@ -129,29 +128,6 @@ const messageController = {
         return res.status(400).json({
           success: false,
           message: "You cannot send a message to yourself.",
-        });
-      }
-
-      // =====================================================
-      // MESSAGING AUTHORIZATION
-      //
-      // Staff
-      // Store Manager
-      //     ↓
-      // Administrator only
-      //
-      // Administrator
-      //     ↓
-      // Staff / Store Manager
-      // =====================================================
-
-      if (
-        !isAdministratorRole(senderRole) &&
-        !isAdministratorRole(recipient.role)
-      ) {
-        return res.status(403).json({
-          success: false,
-          message: "You may only send messages to an Administrator.",
         });
       }
 
@@ -462,7 +438,7 @@ const messageController = {
   },
 
   // =========================================================
-  // GET ALLOWED MESSAGE RECIPIENTS
+  // GET ACTIVE MESSAGE RECIPIENTS
   // =========================================================
 
   async getRecipients(req, res) {
@@ -470,25 +446,6 @@ const messageController = {
       const sender = req.user;
 
       const senderRole = sender.role_name || sender.role || null;
-
-      // =====================================================
-      // DETERMINE ALLOWED RECIPIENT ROLES
-      // =====================================================
-
-      let allowedRoles = [];
-
-      if (isAdministratorRole(senderRole)) {
-        allowedRoles = ["Staff", "Store Manager"];
-      } else if (senderRole === "Directorate") {
-        allowedRoles = ["Administrator"];
-      } else if (senderRole === "Staff" || senderRole === "Store Manager") {
-        allowedRoles = ["Administrator", "Directorate"];
-      } else {
-        return res.status(403).json({
-          success: false,
-          message: "You are not authorized to use messaging.",
-        });
-      }
 
       // =====================================================
       // GET ACTIVE USERS ONLY
@@ -513,13 +470,12 @@ const messageController = {
 
           WHERE
             u.is_active = TRUE
-            AND r.name = ANY($1::VARCHAR[])
-            AND u.id <> $2
+            AND u.id <> $1
 
           ORDER BY
             u.full_name ASC
           `,
-        [allowedRoles, sender.id],
+        [sender.id],
       );
 
       return res.status(200).json({

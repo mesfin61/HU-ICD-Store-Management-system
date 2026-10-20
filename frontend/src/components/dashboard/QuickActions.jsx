@@ -123,7 +123,7 @@ function QuickActions() {
           <Link
             key={action.to}
             to={action.to}
-            className="rounded-md border border-blue-800 px-4 py-3 text-center text-sm font-semibold text-blue-800 transition hover:bg-blue-800 hover:text-white"
+            className="green-action-outline rounded-md px-4 py-3 text-center text-sm font-semibold transition"
           >
             {action.label}
           </Link>

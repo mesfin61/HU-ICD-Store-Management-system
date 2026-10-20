@@ -224,41 +224,6 @@ export default function Profile() {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-              <div className="px-5 py-4 border-b border-gray-100">
-                <h2 className="font-semibold text-gray-800">
-                  Roles & Permissions
-                </h2>
-              </div>
-
-              <div className="p-5">
-                <div className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 mb-5">
-                  {user?.role}
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <PermissionCard
-                    title="Inventory Management"
-                    description="Full access to create, update and delete inventory records."
-                  />
-
-                  <PermissionCard
-                    title="Report Generation"
-                    description="Generate and export operational reports."
-                  />
-
-                  <PermissionCard
-                    title="User Management"
-                    description="Manage users, roles and permissions."
-                  />
-
-                  <PermissionCard
-                    title="System Configuration"
-                    description="Configure global application settings."
-                  />
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -281,12 +246,3 @@ function InfoItem({ label, value, icon }) {
   );
 }
 
-function PermissionCard({ title, description }) {
-  return (
-    <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
-      <div className="font-semibold text-gray-800 mb-2">{title}</div>
-
-      <p className="text-sm text-gray-500 leading-relaxed">{description}</p>
-    </div>
-  );
-}

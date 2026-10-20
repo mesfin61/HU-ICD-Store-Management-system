@@ -363,10 +363,10 @@ const resetPassword = async (req, res) => {
 const updateProfile = async (req, res) => {
   const { fullName, email, phoneNumber, officeLocation } = req.body;
 
-  if (!fullName || !email || !phoneNumber || !officeLocation) {
+  if (!fullName?.trim() || !email?.trim()) {
     return res.status(400).json({
       success: false,
-      message: "all fields are required.",
+      message: "Full name and email are required.",
     });
   }
 
@@ -391,10 +391,10 @@ const updateProfile = async (req, res) => {
     }
 
     const updated = await user.updateProfile(id, {
-      fullName: fullName ?? foundUser.full_name,
+      fullName: fullName.trim(),
       email: email ? email.trim().toLowerCase() : foundUser.email,
-      phoneNumber: phoneNumber ?? foundUser.phone_number,
-      officeLocation: officeLocation ?? foundUser.office_location,
+      phoneNumber: phoneNumber?.trim() || null,
+      officeLocation: officeLocation?.trim() || null,
     });
 
     res.status(200).json({ success: true, data: updated });

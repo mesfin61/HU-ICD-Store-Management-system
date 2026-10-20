@@ -523,7 +523,7 @@ function Stats() {
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           <InfoCard
             title="Total Requests"
             value={stats.totalRequests}
@@ -541,6 +541,12 @@ function Stats() {
             title="Rejected Requests"
             value={stats.rejectedRequests}
             icon={FaBan}
+          />
+
+          <InfoCard
+            title="Fulfilled Requests"
+            value={stats.fulfilledRequests}
+            icon={FaCheckCircle}
           />
         </div>
 
@@ -607,7 +613,7 @@ function Stats() {
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <InfoCard
             title="Outstanding Issuances"
             value={stats.issuedItems}
@@ -667,7 +673,7 @@ function Stats() {
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           <InfoCard
             title="Approved Requests"
             value={stats.approvedRequests}
@@ -684,6 +690,12 @@ function Stats() {
             title="Rejected Requests"
             value={stats.rejectedRequests}
             icon={FaBan}
+          />
+
+          <InfoCard
+            title="Fulfilled Requests"
+            value={stats.fulfilledRequests}
+            icon={FaCheckCircle}
           />
         </div>
 

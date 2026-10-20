@@ -1,3 +1,61 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+  .green-action-button {
+    background: linear-gradient(90deg, #14532d 0%, #15803d 100%) !important;
+  }
+
+  .green-action-button:hover {
+    opacity: 0.9;
+  }
+
+  .green-action-outline {
+    border: 1px solid #15803d;
+    color: #14532d;
+  }
+
+  .green-action-outline:hover {
+    background: linear-gradient(90deg, #14532d 0%, #15803d 100%);
+    color: white;
+  }
+
+  button[class~="bg-blue-500"],
+  button[class~="bg-blue-600"],
+  button[class~="bg-blue-700"],
+  button[class~="bg-blue-800"],
+  button[class~="bg-blue-900"],
+  button[class~="bg-primary"],
+  a[class~="bg-primary"],
+  button[class*="bg-[#0b4a8b]"],
+  a[class*="bg-[#0b4a8b]"] {
+    background: linear-gradient(90deg, #14532d 0%, #15803d 100%) !important;
+  }
+
+  button[class*="border-blue-"],
+  a[class*="border-blue-"],
+  input[class*="focus:border-blue-"],
+  select[class*="focus:border-blue-"],
+  textarea[class*="focus:border-blue-"] {
+    border-color: #15803d !important;
+  }
+
+  input[class*="focus:border-blue-"]:focus,
+  select[class*="focus:border-blue-"]:focus,
+  textarea[class*="focus:border-blue-"]:focus {
+    border-color: #15803d !important;
+  }
+
+  button[class~="bg-blue-500"]:hover,
+  button[class~="bg-blue-600"]:hover,
+  button[class~="bg-blue-700"]:hover,
+  button[class~="bg-blue-800"]:hover,
+  button[class~="bg-blue-900"]:hover,
+  button[class~="bg-primary"]:hover,
+  a[class~="bg-primary"]:hover,
+  button[class*="bg-[#0b4a8b]"]:hover,
+  a[class*="bg-[#0b4a8b]"]:hover {
+    opacity: 0.9;
+  }
+}

@@ -20,6 +20,9 @@ import {
 
 import apiClient from "../../services/apiClient";
 
+const ACTIVE_LINK_BACKGROUND =
+  "linear-gradient(90deg, #14532d 0%, #15803d 100%)";
+
 // =========================================================
 // ROLE CONSTANTS
 // =========================================================
@@ -49,9 +52,14 @@ function NavItem({
       className={({ isActive }) =>
         `flex items-center gap-3 rounded-md px-3 py-2 transition-colors ${
           isActive || isReportsRoute
-            ? "bg-blue-700 text-white"
+            ? "text-white"
             : "text-slate-200 hover:bg-slate-800"
         }`
+      }
+      style={({ isActive }) =>
+        isActive || isReportsRoute
+          ? { background: ACTIVE_LINK_BACKGROUND }
+          : undefined
       }
     >
       <Icon className="h-4 w-4 shrink-0 text-current" />
@@ -152,7 +160,8 @@ function SideBar() {
 
   const canViewUserManagement = isAdministrator;
 
-  const canViewSettings = isAdministrator;
+  const canViewSettings =
+    isAdministrator || isDirectorate || isStoreManager || isStaff;
   const canViewMessages =
     isAdministrator || isDirectorate || isStoreManager || isStaff;
 
@@ -168,7 +177,10 @@ function SideBar() {
 
       <div className="shrink-0 p-6">
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-blue-600 font-bold">
+          <div
+            className="flex h-10 w-10 items-center justify-center rounded-md font-bold"
+            style={{ background: ACTIVE_LINK_BACKGROUND }}
+          >
             HU
           </div>
 
@@ -306,9 +318,12 @@ function SideBar() {
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-md px-3 py-2 transition-colors ${
                 isActive
-                  ? "bg-slate-800 text-white"
+                  ? "text-white"
                   : "text-slate-200 hover:bg-slate-800"
               }`
+            }
+            style={({ isActive }) =>
+              isActive ? { background: ACTIVE_LINK_BACKGROUND } : undefined
             }
           >
             <FaCog className="h-4 w-4 shrink-0 text-current" />

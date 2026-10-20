@@ -68,7 +68,7 @@ export default function Login() {
           className="hidden lg:flex lg:w-[50%] xl:w-[48%] flex-col justify-between p-10 relative overflow-hidden"
           style={{
             background:
-              "linear-gradient(160deg, #0d2d6b 0%, #1141a0 45%, #0a2460 100%)",
+              "linear-gradient(160deg, #14532d 0%, #15803d 45%, #166534 100%)",
           }}
         >
           <div
@@ -233,7 +233,7 @@ export default function Login() {
                 className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white transition hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
                 style={{
                   background:
-                    "linear-gradient(90deg, #0d2d6b 0%, #1141a0 100%)",
+                    "linear-gradient(90deg, #14532d 0%, #15803d 100%)",
                 }}
               >
                 {loading ? "Signing in..." : "Sign In"}

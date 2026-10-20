@@ -1182,7 +1182,9 @@ function TransferOwnership({ currentUser, onTransferComplete }) {
 export default function Settings() {
   const { user, refreshUser } = useUser();
   const [activeSetting, setActiveSetting] = useState("profile");
-  const canManageCategories = user?.role === "Store Manager";
+  const canManageCategories = ["Administrator", "Store Manager"].includes(
+    user?.role,
+  );
   const canManageDepartments =
     user?.role === "Administrator";
   const canTransferOwnership = false;

@@ -1,6 +1,8 @@
 const pool = require("../config/db");
 
 const ADMINISTRATOR = "Administrator";
+const DIRECTORATE = "Directorate";
+const SINGLE_ACTIVE_ROLE_NAMES = [ADMINISTRATOR, DIRECTORATE];
 
 const user = {
   // =========================================================
@@ -148,6 +150,28 @@ const user = {
         "SELECT name FROM roles WHERE id = $1",
         [roleId],
       );
+
+      const requestedRoleName = roleResult.rows[0]?.name;
+
+      if (SINGLE_ACTIVE_ROLE_NAMES.includes(requestedRoleName)) {
+        const existingRoleResult = await client.query(
+          `
+            SELECT u.id
+            FROM users u
+            JOIN roles r
+              ON r.id = u.role_id
+            WHERE r.name = $1
+              AND u.is_active = TRUE
+            FOR UPDATE
+          `,
+          [requestedRoleName],
+        );
+
+        if (existingRoleResult.rows.length > 0) {
+          const error = new Error("ROLE_LIMIT_REACHED");
+          throw error;
+        }
+      }
 
       const result = await client.query(
         `
@@ -310,6 +334,34 @@ const user = {
           success: false,
           reason: "INVALID_ROLE",
         };
+      }
+
+      if (
+        isActive &&
+        SINGLE_ACTIVE_ROLE_NAMES.includes(requestedRole.name)
+      ) {
+        const existingRoleResult = await client.query(
+          `
+            SELECT u.id
+            FROM users u
+            JOIN roles r
+              ON r.id = u.role_id
+            WHERE r.name = $1
+              AND u.is_active = TRUE
+              AND u.id <> $2
+            FOR UPDATE
+          `,
+          [requestedRole.name, id],
+        );
+
+        if (existingRoleResult.rows.length > 0) {
+          await client.query("ROLLBACK");
+
+          return {
+            success: false,
+            reason: "ROLE_LIMIT_REACHED",
+          };
+        }
       }
 
       /*
@@ -672,17 +724,76 @@ const user = {
   },
 
   async activate(id) {
-    const result = await pool.query(
-      `
-      UPDATE users
-      SET is_active = TRUE, updated_at = NOW()
-      WHERE id = $1
-      RETURNING id, is_active, updated_at
-      `,
-      [id],
-    );
+    const client = await pool.connect();
 
-    return result.rows[0] || null;
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT pg_advisory_xact_lock($1)", [874231]);
+
+      const targetResult = await client.query(
+        `
+          SELECT
+            u.id,
+            u.is_active,
+            r.name AS role_name
+          FROM users u
+          JOIN roles r
+            ON r.id = u.role_id
+          WHERE u.id = $1
+          FOR UPDATE
+        `,
+        [id],
+      );
+
+      const targetUser = targetResult.rows[0];
+
+      if (!targetUser) {
+        await client.query("ROLLBACK");
+        return { success: false, reason: "NOT_FOUND" };
+      }
+
+      if (
+        SINGLE_ACTIVE_ROLE_NAMES.includes(targetUser.role_name)
+      ) {
+        const existingRoleResult = await client.query(
+          `
+            SELECT u.id
+            FROM users u
+            JOIN roles r
+              ON r.id = u.role_id
+            WHERE r.name = $1
+              AND u.is_active = TRUE
+              AND u.id <> $2
+            FOR UPDATE
+          `,
+          [targetUser.role_name, id],
+        );
+
+        if (existingRoleResult.rows.length > 0) {
+          await client.query("ROLLBACK");
+          return { success: false, reason: "ROLE_LIMIT_REACHED" };
+        }
+      }
+
+      const result = await client.query(
+        `
+          UPDATE users
+          SET is_active = TRUE, updated_at = NOW()
+          WHERE id = $1
+          RETURNING id, is_active, updated_at
+        `,
+        [id],
+      );
+
+      await client.query("COMMIT");
+
+      return { success: true, user: result.rows[0] };
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 
   /*

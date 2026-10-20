@@ -278,6 +278,7 @@ function App() {
               <RoleProtectedRoute
                 allowedRoles={[
                   ROLES.ADMINISTRATOR,
+                  ROLES.DIRECTORATE,
                   ROLES.STORE_MANAGER,
                   ROLES.STAFF,
                 ]}
@@ -298,6 +299,7 @@ function App() {
               <RoleProtectedRoute
                 allowedRoles={[
                   ROLES.ADMINISTRATOR,
+                  ROLES.DIRECTORATE,
                   ROLES.STORE_MANAGER,
                   ROLES.STAFF,
                 ]}
@@ -318,6 +320,7 @@ function App() {
               <RoleProtectedRoute
                 allowedRoles={[
                   ROLES.ADMINISTRATOR,
+                  ROLES.DIRECTORATE,
                   ROLES.STORE_MANAGER,
                   ROLES.STAFF,
                 ]}

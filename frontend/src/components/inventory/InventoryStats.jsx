@@ -43,7 +43,7 @@ function InventoryStats({ items = [], isLoading = false }) {
           <div className="ml-auto">
             <Link
               to="/inventory/add-new-item"
-              className="flex items-center gap-2 px-4 py-2 bg-surface-container-highest hover:bg-primary text-primary border border-primary/20 rounded-lg hover:text-white transition-all"
+              className="green-action-button flex items-center gap-2 rounded-lg px-4 py-2 text-white transition-all"
             >
               Add New Item
             </Link>

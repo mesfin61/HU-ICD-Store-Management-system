@@ -18,21 +18,25 @@ router.get("/", getAllCategories);
 
 router.post(
   "/create-category",
-  restrictToExact("Store Manager"),
+  restrictToExact("Store Manager", "Administrator"),
   CreateCategories,
 );
 
-router.patch("/:id", restrictToExact("Store Manager"), updateCategory);
+router.patch(
+  "/:id",
+  restrictToExact("Store Manager", "Administrator"),
+  updateCategory,
+);
 
 router.patch(
   "/:id/deactivate",
-  restrictToExact("Store Manager"),
+  restrictToExact("Store Manager", "Administrator"),
   deactivateCategory,
 );
 
 router.patch(
   "/:id/activate",
-  restrictToExact("Store Manager"),
+  restrictToExact("Store Manager", "Administrator"),
   activateCategory,
 );
 

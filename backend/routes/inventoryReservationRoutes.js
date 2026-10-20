@@ -7,10 +7,6 @@ const { protect, restrictTo, ROLES } = require("../middleware/AuthMiddleware");
 const router = express.Router();
 
 // =========================================================
-// GET RESERVATIONS FOR REQUEST
-//
-// Reservation creation is INTERNAL ONLY.
-//
 // Administrator:
 //   Can inspect.
 //
